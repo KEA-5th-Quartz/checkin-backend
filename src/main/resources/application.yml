@@ -3,7 +3,7 @@ spring:
     name: checkin
 
   config:
-    import: application-development.yml
+    import: application-secret.yml
 
   datasource:
     url: ${DB_URL}

@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: checkin
+
+  config:
+    import: application-development.yml
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+cloud:
+  aws:
+    bucket: "${AWS_BUCKET}"
+    stack:
+      auto: false
+    region:
+      static: "${AWS_REGION}"
+    credentials:
+      accessKey: "${AWS_ACCESSKEY}"
+      secretKey: "${AWS_SECRETKEY}"
+
+jwt:
+  secretKey: "${JWT_SECRET_KEY}"

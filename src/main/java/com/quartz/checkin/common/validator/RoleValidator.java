@@ -1,4 +1,4 @@
-package com.quartz.checkin.utils.validator;
+package com.quartz.checkin.common.validator;
 
 import com.quartz.checkin.entity.Role;
 import jakarta.validation.ConstraintValidator;

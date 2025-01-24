@@ -1,12 +1,11 @@
 package com.quartz.checkin.service;
 
+import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.entity.Member;
-import com.quartz.checkin.exception.custom.EmailDuplicateException;
-import com.quartz.checkin.exception.custom.MemberNotFoundException;
-import com.quartz.checkin.exception.custom.UsernameDuplicateException;
 import com.quartz.checkin.repository.MemberRepository;
-import com.quartz.checkin.utils.PasswordGenerator;
+import com.quartz.checkin.common.PasswordGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,7 +25,7 @@ public class MemberService {
         return memberRepository.findById(id)
                 .orElseThrow(() -> {
                     log.error("존재하지 않는 사용자입니다.");
-                    return new MemberNotFoundException();
+                    return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
                 });
     }
 
@@ -54,14 +53,14 @@ public class MemberService {
     private void checkEmailDuplicate(String email) {
         if (memberRepository.findByEmail(email).isPresent()) {
             log.error("사용중인 이메일입니다. {}", email);
-            throw new EmailDuplicateException();
+            throw new ApiException(ErrorCode.DUPLICATE_EMAIL);
         }
     }
 
     private void checkUsernameDuplicate(String username) {
         if (memberRepository.findByUsername(username).isPresent()) {
             log.error("사용중인 사용자 이름입니다. {}", username);
-            throw new UsernameDuplicateException();
+            throw new ApiException(ErrorCode.DUPLICATE_USERNAME);
         }
     }
 

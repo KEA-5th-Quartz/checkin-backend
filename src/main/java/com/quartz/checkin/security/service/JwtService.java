@@ -4,7 +4,7 @@ package com.quartz.checkin.security.service;
 import com.quartz.checkin.dto.response.AuthenticationResponse;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.security.CustomUser;
-import com.quartz.checkin.utils.ServletResponseUtils;
+import com.quartz.checkin.common.ServletResponseUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

@@ -1,7 +1,7 @@
 package com.quartz.checkin.security.handler;
 
-import com.quartz.checkin.exception.ErrorCode;
-import com.quartz.checkin.utils.ServletResponseUtils;
+import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.common.ServletResponseUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,7 +20,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                          AuthenticationException authException) throws IOException, ServletException {
 
         log.warn("토큰 인증에 실패하였습니다.");
-        ServletResponseUtils.writeErrorResponse(response, ErrorCode.INVALID_ACCESS_TOKEN);
+        ServletResponseUtils.writeApiErrorResponse(response, ErrorCode.INVALID_ACCESS_TOKEN);
 
     }
 }

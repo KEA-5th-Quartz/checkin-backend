@@ -1,4 +1,4 @@
-package com.quartz.checkin.utils.validator;
+package com.quartz.checkin.common.validator;
 
 import jakarta.validation.Constraint;
 import java.lang.annotation.ElementType;

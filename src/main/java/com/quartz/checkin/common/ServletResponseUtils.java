@@ -1,13 +1,14 @@
-package com.quartz.checkin.utils;
+package com.quartz.checkin.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.response.ApiErrorResponse;
 import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.entity.ContentType;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 @Slf4j
 public class ServletResponseUtils {
@@ -23,13 +24,13 @@ public class ServletResponseUtils {
         write(response, apiResponse);
     }
 
-    public static void writeErrorResponse(HttpServletResponse response, ErrorCode errorCode) {
-        response.setStatus(errorCode.getStatus());
-        write(response, ErrorCode.toResponse(errorCode));
+    public static void writeApiErrorResponse(HttpServletResponse response, ErrorCode errorCode) {
+        response.setStatus(errorCode.getStatus().value());
+        write(response, ApiErrorResponse.createErrorResponse(errorCode));
     }
 
     private static void write(HttpServletResponse response, Object value) {
-        response.setContentType(ContentType.APPLICATION_JSON.getMimeType());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         try {
             response.getWriter().write(objectMapper.writeValueAsString(value));

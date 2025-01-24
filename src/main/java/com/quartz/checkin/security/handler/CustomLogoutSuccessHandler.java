@@ -1,6 +1,6 @@
 package com.quartz.checkin.security.handler;
 
-import com.quartz.checkin.utils.ServletResponseUtils;
+import com.quartz.checkin.common.ServletResponseUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

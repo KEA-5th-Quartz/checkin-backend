@@ -1,7 +1,7 @@
 package com.quartz.checkin.security.handler;
 
-import com.quartz.checkin.exception.ErrorCode;
-import com.quartz.checkin.utils.ServletResponseUtils;
+import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.common.ServletResponseUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,6 +29,6 @@ public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
             //TODO 로그인 실패 횟수 카운트
         }
 
-        ServletResponseUtils.writeErrorResponse(response, ErrorCode.WRONG_USERNAME_OR_PASSWORD);
+        ServletResponseUtils.writeApiErrorResponse(response, ErrorCode.INVALID_USERNAME_OR_PASSWORD);
     }
 }

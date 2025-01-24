@@ -1,8 +1,8 @@
 package com.quartz.checkin.security.service;
 
+import com.quartz.checkin.common.exception.InValidAccessTokenException;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
-import com.quartz.checkin.exception.custom.InvalidAccessTokenException;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
 import io.jsonwebtoken.Claims;
@@ -33,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 member.getRole(), Collections.singleton(new SimpleGrantedAuthority("ROLE_" + member.getRole().getValue())));
     }
 
-    public UserDetails loadUserByAccessToken(String accessToken) throws InvalidAccessTokenException {
+    public UserDetails loadUserByAccessToken(String accessToken) throws InValidAccessTokenException {
         try {
             log.info("accessToken으로부터 사용자 정보를 읽어옵니다.");
             Claims claims = jwtService.decodeToken(accessToken);
@@ -49,7 +49,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             );
         } catch (Exception e) {
             log.error("사용자 정보를 읽어오는데 실패하였습니다. {}", e.getMessage());
-            throw new InvalidAccessTokenException("");
+            throw new InValidAccessTokenException();
         }
     }
 }

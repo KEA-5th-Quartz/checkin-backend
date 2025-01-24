@@ -1,6 +1,8 @@
 package com.quartz.checkin.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quartz.checkin.common.ServletResponseUtils;
+import com.quartz.checkin.common.exception.ErrorCode;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -48,6 +50,12 @@ public class CustomUsernamePasswordAuthenticationFilter extends AbstractAuthenti
 
         String username = usernamePasswordMap.get(USERNAME);
         String password = usernamePasswordMap.get(PASSWORD);
+
+        if (username == null || password == null) {
+            log.warn("username 또는 password 값을 찾을 수 없습니다.");
+            ServletResponseUtils.writeApiErrorResponse(response, ErrorCode.INVALID_DATA);
+            return null;
+        }
 
         log.info("{}가 로그인을 시도합니다.", username);
 

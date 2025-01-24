@@ -1,10 +1,10 @@
 package com.quartz.checkin.security.filter;
 
-import com.quartz.checkin.exception.ErrorCode;
-import com.quartz.checkin.exception.custom.InvalidAccessTokenException;
+import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.common.exception.InValidAccessTokenException;
 import com.quartz.checkin.security.service.CustomUserDetailsService;
 import com.quartz.checkin.security.service.JwtService;
-import com.quartz.checkin.utils.ServletResponseUtils;
+import com.quartz.checkin.common.ServletResponseUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -25,8 +26,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String LOGIN_URL = "/auth/login";
-    private static final String REFRESH_URL = "/auth/refresh";
+    // 인증을 처리하지 않은 요청들
+    private static final AntPathRequestMatcher[] SKIP_PATHS = {
+            new AntPathRequestMatcher("/auth/login"),
+            new AntPathRequestMatcher("/auth/refresh"),
+            new AntPathRequestMatcher("/swagger-ui/**"),
+            new AntPathRequestMatcher("/v3/api-docs/**"),
+            new AntPathRequestMatcher("/swagger-ui.html")
+    };
 
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
@@ -37,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String requestURI = request.getRequestURI();
 
-        if (requestURI.equals(LOGIN_URL) || requestURI.equals(REFRESH_URL)) {
+        if (isSkipPath(request)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -48,12 +55,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (accessToken == null) {
             log.warn("accessToken이 누락되었습니다.");
-            ServletResponseUtils.writeErrorResponse(response, ErrorCode.UNAUTHENTICATED_ACCESS);
+            ServletResponseUtils.writeApiErrorResponse(response, ErrorCode.UNAUTHENTICATED);
             return;
         }
 
         if (!jwtService.isValidToken(accessToken)) {
-            throw new InvalidAccessTokenException("");
+            throw new InValidAccessTokenException();
         }
 
         UserDetails userDetails = customUserDetailsService.loadUserByAccessToken(accessToken);
@@ -64,4 +71,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+
+    private boolean isSkipPath(HttpServletRequest request) {
+        for (AntPathRequestMatcher matcher : SKIP_PATHS) {
+            if (matcher.matches(request)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

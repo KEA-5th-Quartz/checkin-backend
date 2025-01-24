@@ -1,9 +1,10 @@
 package com.quartz.checkin.service;
 
+import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.response.AuthenticationResponse;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
-import com.quartz.checkin.exception.custom.InvalidRefreshTokenException;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,13 +30,13 @@ public class AuthService {
         String refreshToken = jwtService.extractRefreshToken(request).orElse(null);
 
         if (refreshToken == null || !jwtService.isValidToken(refreshToken)) {
-            throw new InvalidRefreshTokenException();
+            throw new ApiException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
         Member member = memberRepository.findByRefreshToken(refreshToken)
                 .orElseThrow(() -> {
                     log.error("해당 refreshToken을 소유한 사용자는 없습니다.");
-                    return new InvalidRefreshTokenException();
+                    return new ApiException(ErrorCode.INVALID_REFRESH_TOKEN);
                 });
 
         Long memberId = member.getId();

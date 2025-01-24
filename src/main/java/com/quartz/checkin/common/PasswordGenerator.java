@@ -1,4 +1,4 @@
-package com.quartz.checkin.utils;
+package com.quartz.checkin.common;
 
 import java.security.SecureRandom;
 import lombok.extern.slf4j.Slf4j;

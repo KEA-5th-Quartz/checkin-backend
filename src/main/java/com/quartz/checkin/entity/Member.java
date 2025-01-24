@@ -1,5 +1,7 @@
 package com.quartz.checkin.entity;
 
+import com.quartz.checkin.config.MemberConfig;
+import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -7,10 +9,18 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Getter
 public class Member extends BaseEntity {
 
@@ -19,10 +29,10 @@ public class Member extends BaseEntity {
     @Column(name = "member_id")
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
@@ -35,7 +45,29 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private Role role;
 
+    private String refreshToken;
+
     private LocalDateTime passwordChangedAt;
 
     private LocalDateTime deleted_at;
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    @PrePersist
+    public void setDefaultProfileImage() {
+        if (this.profilePic == null) {
+            this.profilePic = MemberConfig.defaultProfileImage;
+        }
+    }
+
+    public static Member from(MemberRegistrationRequest memberRegistrationRequest, String password) {
+        return Member.builder()
+                .username(memberRegistrationRequest.getUsername())
+                .email(memberRegistrationRequest.getEmail())
+                .role(Role.valueOf(memberRegistrationRequest.getRole()))
+                .password(password)
+                .build();
+    }
 }

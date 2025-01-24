@@ -33,7 +33,6 @@
 
 ### 인프라
 
-<img src="https://img.shields.io/badge/CSS-239120?&style=for-the-badge&logo=css3&logoColor=white">
 
 #### 라이브러리
 
@@ -49,11 +48,9 @@
 
 ### 데이터 프로세싱
 
-<img src="https://img.shields.io/badge/AXIOS-5A29E4?style=for-the-badge&logo=axios&logoColor=white">
 
 #### 코드 포매터 및 검사 도구
 
-<img src="https://img.shields.io/badge/eslint-3A33D1?style=for-the-badge&logo=eslint&logoColor=white"> <img src="https://img.shields.io/badge/prettier-1A2C34?style=for-the-badge&logo=prettier&logoColor=F7BA3E"> 
 
 #### 협업툴
 

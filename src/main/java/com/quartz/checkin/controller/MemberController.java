@@ -2,6 +2,7 @@ package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
+import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class MemberController {
 
     private final MemberService memberService;
 
+    @Admin
     @PostMapping
     public ApiResponse<Void> memberRegistration(@RequestBody @Valid MemberRegistrationRequest memberRegistrationRequest) {
         memberService.register(memberRegistrationRequest);

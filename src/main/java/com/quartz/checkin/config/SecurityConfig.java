@@ -25,10 +25,17 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(
                         FrameOptionsConfig::disable
                 ))
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll());
+                .authorizeHttpRequests(auth -> auth
+                        // Swagger 관련 URL 접근 허용
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**"
+                        ).permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .anyRequest().authenticated()
+                );
 
         return http.build();
     }
-
 }

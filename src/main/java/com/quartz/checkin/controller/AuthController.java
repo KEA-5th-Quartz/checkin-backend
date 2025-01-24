@@ -1,0 +1,29 @@
+package com.quartz.checkin.controller;
+
+import com.quartz.checkin.dto.response.ApiResponse;
+import com.quartz.checkin.dto.response.AuthenticationResponse;
+import com.quartz.checkin.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Slf4j
+@RestController
+@RequestMapping("/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/refresh")
+    public ApiResponse<AuthenticationResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
+        AuthenticationResponse authenticationResponse = authService.refresh(request, response);
+
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), authenticationResponse);
+    }
+}

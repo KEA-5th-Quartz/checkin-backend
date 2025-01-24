@@ -1,8 +1,8 @@
 package com.quartz.checkin.service;
 
-import com.quartz.checkin.dto.request.TicketRequest;
-import com.quartz.checkin.dto.response.TicketResponse;
+import com.quartz.checkin.dto.request.TicketCreateRequest;
+import com.quartz.checkin.dto.response.TicketCreateResponse;
 
 public interface TicketService {
-    TicketResponse createTicket(Long memberId, TicketRequest request);
+    TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request);
 }

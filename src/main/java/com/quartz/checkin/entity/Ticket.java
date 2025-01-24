@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -51,9 +53,9 @@ public class Ticket extends BaseEntity {
     @Column(nullable = false)
     private LocalDate dueDate;
 
-    private LocalDateTime closed_at;
+    private LocalDateTime closedAt;
 
-    private LocalDateTime deleted_at;
+    private LocalDateTime deletedAt;
 
     @Builder
     public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content, Status status, LocalDate dueDate) {

@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
-public class TicketRequest {
+public class TicketCreateRequest {
 
     @NotBlank
     private String title;

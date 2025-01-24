@@ -4,7 +4,7 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 @Getter
-public enum ApiCode {
+public enum ErrorCode {
 
     // 공통 예외
     INVALID_DATA(HttpStatus.BAD_REQUEST, "COMMON_4000", "필수로 요구되는 데이터가 비어있거나 규칙에 맞지 않습니다."),
@@ -75,7 +75,7 @@ public enum ApiCode {
     private final String code;
     private final String message;
 
-    ApiCode(HttpStatus httpStatus, String code, String message) {
+    ErrorCode(HttpStatus httpStatus, String code, String message) {
         this.status= httpStatus;
         this.code = code;
         this.message = message;

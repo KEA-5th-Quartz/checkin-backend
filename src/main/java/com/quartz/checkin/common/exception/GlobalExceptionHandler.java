@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
 
 
@@ -30,7 +29,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // 커스텀 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> HandleCustomException(ApiException ex) {
-        return handleExceptionInternal(ex.getApiCode());
+        return handleExceptionInternal(ex.getErrorCode());
     }
 
     // @Valid 검증 예외 처리
@@ -49,7 +48,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             errors.add(error);
         }
 
-        return handleExceptionInternal(ApiCode.INVALID_DATA, errors);
+        return handleExceptionInternal(ErrorCode.INVALID_DATA, errors);
     }
 
     // @Validated 검증 예외 처리
@@ -72,25 +71,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             errors.add(error);
         }
 
-        return handleExceptionInternal(ApiCode.INVALID_DATA, errors);
+        return handleExceptionInternal(ErrorCode.INVALID_DATA, errors);
     }
 
     // API 인자 불일치 예외 처리
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Object> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
-        return handleExceptionInternal(ApiCode.METHOD_NOT_ALLOWED);
+        return handleExceptionInternal(ErrorCode.METHOD_NOT_ALLOWED);
     }
 
     // DB 유효성 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> HandleDataIntegrityViolationException(DataIntegrityViolationException e) {
-        return handleExceptionInternal(ApiCode.DB_ERROR);
+        return handleExceptionInternal(ErrorCode.DB_ERROR);
     }
 
     // S3 API 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> HandleAwsServiceException(SdkException e) {
-        return handleExceptionInternal(ApiCode.OBJECT_STORAGE_ERROR, e.getMessage());
+        return handleExceptionInternal(ErrorCode.OBJECT_STORAGE_ERROR, e.getMessage());
     }
 
     // 그 외 모든 예외 처리
@@ -98,15 +97,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleException(Exception e) {
         log.error(e.getMessage(), e);
 
-        return handleExceptionInternal(ApiCode.INTERNAL_SERVER_ERROR, e.getMessage());
+        return handleExceptionInternal(ErrorCode.INTERNAL_SERVER_ERROR, e.getMessage());
     }
 
-    private ResponseEntity<Object> handleExceptionInternal (ApiCode apiCode) {
-        return ResponseEntity.status(apiCode.getHttpStatus()).body(ApiResponse.onFailure(apiCode));
+    private ResponseEntity<Object> handleExceptionInternal (ErrorCode errorCode) {
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(ApiResponse.onFailure(errorCode));
     }
 
-    private ResponseEntity<Object> handleExceptionInternal (ApiCode apiCode, Object errors) {
-        return ResponseEntity.status(apiCode.getHttpStatus()).body(ApiResponse.onFailure(apiCode, errors));
+    private ResponseEntity<Object> handleExceptionInternal (ErrorCode errorCode, Object errors) {
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(ApiResponse.onFailure(errorCode, errors));
     }
 
     @Override

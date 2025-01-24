@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor
-public class TicketResponse {
+public class TicketCreateResponse {
     private Long ticketId;
     private LocalDateTime createdAt;
 }

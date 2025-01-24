@@ -25,12 +25,12 @@ public class ApiResponse<T> {
     }
 
     // 실패 응답
-    public static <T> ApiResponse<T> onFailure(ApiCode status) {
+    public static <T> ApiResponse<T> onFailure(ErrorCode status) {
         return new ApiResponse<>(false, status.getCode(), status.getMessage(), null);
     }
 
     // 실패 응답인데 errors가 필요한 경우
-    public static <T> ApiResponse<T> onFailure(ApiCode status, T errors) {
+    public static <T> ApiResponse<T> onFailure(ErrorCode status, T errors) {
         return new ApiResponse<>(false, status.getCode(), status.getMessage(), errors);
     }
 

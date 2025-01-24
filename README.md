@@ -23,19 +23,6 @@
 
 ## 🛠️ 기술 스택
 
-### 언어
-
-<img src="https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white">
-
-#### 프레임워크
-
-<img src="https://img.shields.io/badge/Spring-6DB33F?style=for-the-badge&logo=spring&logoColor=white">
-
-### 인프라
-
-
-#### 라이브러리
-
 - Spring Security	(인증 및 인가 관리)
 - Spring Data JPA	(ORM 기반 데이터베이스 접근)
 - MySQL (관계형 데이터베이스)
@@ -45,6 +32,14 @@
 - JWT (사용자 인증 및 토큰 기반 보안)
 - Slf4j & Logback	(로깅 프레임워크)
 - Spring AOP (로깅, 트랜잭션 관리)
+
+### 언어
+
+<img src="https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white">
+
+#### 프레임워크
+
+<img src="https://img.shields.io/badge/Spring-6DB33F?style=for-the-badge&logo=spring&logoColor=white">
 
 ### 데이터 프로세싱
 

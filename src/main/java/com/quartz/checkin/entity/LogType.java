@@ -3,7 +3,7 @@ package com.quartz.checkin.entity;
 import lombok.Getter;
 
 @Getter
-public enum Logtype {
+public enum LogType {
 
     STATUS("상태 변경"),
     CATEGORY("카테고리 변경"),
@@ -11,5 +11,5 @@ public enum Logtype {
     UPDATE("티켓 수정");
 
     private final String value;
-    Logtype(String value) { this.value = value; }
+    LogType(String value) { this.value = value; }
 }

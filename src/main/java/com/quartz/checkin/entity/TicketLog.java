@@ -18,7 +18,7 @@ public class TicketLog extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Logtype logtype;
+    private LogType logtype;
 
     @Column(nullable = false)
     private String content;

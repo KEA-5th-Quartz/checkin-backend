@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/tickets")
 @RequiredArgsConstructor
@@ -42,4 +44,16 @@ public class TicketLogController {
         TicketLogResponse response = ticketLogService.updateCategory(memberId, ticketId, request);
         return ResponseEntity.ok(ApiResponse.onSuccess(response));
     }
+
+    @PatchMapping("/{ticketId}/reassign")
+    public ResponseEntity<ApiResponse<TicketLogResponse>> reassignManager(
+            @RequestHeader("memberId") Long memberId,
+            @PathVariable Long ticketId,
+            @RequestBody Map<String, String> request) {
+
+        TicketLogResponse response = ticketLogService.reassignManager(memberId, ticketId, request.get("manager"));
+        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+    }
+
+
 }

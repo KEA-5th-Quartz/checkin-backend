@@ -82,7 +82,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         String objectParticle = getObjectParticle(ticket.getTitle());
 
         // 로그 기록 문구 생성
-        String logContent = String.format("%s%s '%s'%s 완료했습니다.",
+        String logContent = String.format("%s%s %s%s 완료했습니다.",
                 manager.getUsername(), subjectParticle, ticket.getTitle(), objectParticle);
 
         // 로그 저장
@@ -97,6 +97,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         return new TicketLogResponse(ticketLog);
     }
 
+    // 카테고리 변경
     @Transactional
     @Override
     public TicketLogResponse updateCategory(Long memberId, Long ticketId, CategoryUpdateRequest request) {
@@ -131,7 +132,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         if (isFirstCategoryChanged && isSecondCategoryChanged) {
             logContent = String.format(
-                    "%s%s 1차 및 2차 카테고리를 변경하였습니다. '%s' → '%s', '%s' → '%s'",
+                    "%s%s 1차 및 2차 카테고리를 변경하였습니다. %s → %s, %s → %s",
                     manager.getUsername(),
                     subjectParticle,
                     oldFirstCategory, newFirstCategory.getName(),
@@ -139,14 +140,14 @@ public class TicketLogServiceImpl implements TicketLogService {
             );
         } else if (isFirstCategoryChanged) {
             logContent = String.format(
-                    "%s%s 1차 카테고리를 변경하였습니다. '%s' → '%s'",
+                    "%s%s 1차 카테고리를 변경하였습니다. %s → %s",
                     manager.getUsername(),
                     subjectParticle,
                     oldFirstCategory, newFirstCategory.getName()
             );
         } else if (isSecondCategoryChanged) {
             logContent = String.format(
-                    "%s%s 2차 카테고리를 변경하였습니다. '%s' → '%s'",
+                    "%s%s 2차 카테고리를 변경하였습니다. %s → %s",
                     manager.getUsername(),
                     subjectParticle,
                     oldSecondCategory, newSecondCategory.getName()
@@ -167,6 +168,39 @@ public class TicketLogServiceImpl implements TicketLogService {
         return new TicketLogResponse(ticketLog);
     }
 
+    @Transactional
+    @Override
+    public TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername) {
+        // 티켓 & 기존 담당자 조회
+        Ticket ticket = getValidTicket(ticketId);
+        Member currentManager = ticket.getManager();
+        Member newManager = memberRepository.findByUsername(newManagerUsername)
+                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // 예외 검증
+        validateTicketForUpdate(ticket, newManager, false, false, true);
+
+        // 담당자 변경
+        ticket.reassignManager(newManager);
+        ticketRepository.save(ticket);
+
+        // 로그 기록
+        String logContent = String.format("담당자가 변경되었습니다. %s → %s",
+                currentManager != null ? currentManager.getUsername() : "없음",
+                newManager.getUsername());
+
+        TicketLog ticketLog = TicketLog.builder()
+                .ticket(ticket)
+                .logType(LogType.MANAGER)
+                .content(logContent)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        ticketLogRepository.save(ticketLog);
+        return new TicketLogResponse(ticketLog);
+    }
+
+
     // 특정 티켓 조회
     private Ticket getValidTicket(Long ticketId) {
         return ticketRepository.findById(ticketId)
@@ -176,6 +210,12 @@ public class TicketLogServiceImpl implements TicketLogService {
     // 특정 담당자 조회
     private Member getValidMember(Long memberId) {
         return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    // 특정 담당자 조회 (Username 기반)
+    private Member getValidMemberByUsername(String username) {
+        return memberRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
     }
 

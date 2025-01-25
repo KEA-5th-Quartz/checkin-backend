@@ -73,6 +73,12 @@ public class Ticket extends BaseEntity {
         this.status = Status.IN_PROGRESS;  // 담당자 배정 시 상태 변경
     }
 
+    // 담당자 변경 메서드
+    public void reassignManager(Member newManager) {
+        this.manager = newManager;
+        this.status = Status.IN_PROGRESS; // 담당자 변경 시 진행 중 상태 유지
+    }
+
     // 티켓 완료
     public void closeTicket() {
         this.status = Status.CLOSED;

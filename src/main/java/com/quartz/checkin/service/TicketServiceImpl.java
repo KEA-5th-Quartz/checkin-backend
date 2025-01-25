@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class TicketCrudServiceImpl implements TicketCrudService {
+public class TicketServiceImpl implements TicketService {
 
     private final TicketRepository ticketRepository;
     private final CategoryRepository categoryRepository;
@@ -34,6 +34,10 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         // 2차 카테고리 조회 (해당 1차 카테고리의 자식 카테고리)
         Category secondCategory = categoryRepository.findByNameAndParent(request.getSecondCategory(), firstCategory)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+
+        // created_at이 null이면 현재 시간으로 설정
+        LocalDateTime createdAt = request.getCreatedAt() != null ? request.getCreatedAt() : LocalDateTime.now();
+
         // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
                 .user(user)
@@ -46,6 +50,6 @@ public class TicketCrudServiceImpl implements TicketCrudService {
                 .build();
         ticketRepository.save(ticket);
 
-        return new TicketCreateResponse(ticket.getId());
+        return new TicketCreateResponse(ticket.getId(), createdAt);
     }
 }

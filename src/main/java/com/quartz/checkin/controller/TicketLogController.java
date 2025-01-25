@@ -2,6 +2,7 @@ package com.quartz.checkin.controller;
 
 import com.quartz.checkin.common.exception.ApiResponse;
 import com.quartz.checkin.dto.request.CategoryUpdateRequest;
+import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.service.TicketLogService;
 import jakarta.validation.Valid;
@@ -55,5 +56,14 @@ public class TicketLogController {
         return ResponseEntity.ok(ApiResponse.onSuccess(response));
     }
 
+    @PatchMapping("/{ticketId}/priority")
+    public ResponseEntity<ApiResponse<TicketLogResponse>> updateTicketPriority(
+            @RequestHeader("memberId") Long memberId,
+            @PathVariable Long ticketId,
+            @RequestBody @Valid PriorityUpdateRequest request) {
+
+        TicketLogResponse response = ticketLogService.updatePriority(memberId, ticketId, request);
+        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+    }
 
 }

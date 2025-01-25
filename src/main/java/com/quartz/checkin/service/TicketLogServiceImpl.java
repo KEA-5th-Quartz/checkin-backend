@@ -3,6 +3,7 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.CategoryUpdateRequest;
+import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.CategoryRepository;
@@ -166,6 +167,22 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         ticketLogRepository.save(ticketLog);
         return new TicketLogResponse(ticketLog);
+    }
+
+    @Transactional
+    @Override
+    public TicketLogResponse updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
+        // 티켓 & 담당자 조회
+        Ticket ticket = getValidTicket(ticketId);
+        Member manager = getValidMember(memberId);
+
+        // 예외 검증 (담당자 본인인지 확인)
+        validateTicketForUpdate(ticket, manager, false, false, false);
+
+        // 중요도 변경
+        ticket.updatePriority(request.getPriority());
+        ticketRepository.save(ticket);
+        return null;
     }
 
     @Transactional

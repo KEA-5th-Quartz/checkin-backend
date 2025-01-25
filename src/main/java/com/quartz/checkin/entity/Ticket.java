@@ -90,4 +90,9 @@ public class Ticket extends BaseEntity {
         this.firstCategory = newFirstCategory;
         this.secondCategory = newSecondCategory;
     }
+
+    // 중요도 변경
+    public void updatePriority(Priority newPriority) {
+        this.priority = newPriority;
+    }
 }

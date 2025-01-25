@@ -1,12 +1,13 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.common.exception.ApiResponse;
+import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.request.CategoryUpdateRequest;
 import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.service.TicketLogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,50 +21,50 @@ public class TicketLogController {
     private final TicketLogService ticketLogService;
 
     @PatchMapping("/{ticketId}/assign")
-    public ResponseEntity<ApiResponse<TicketLogResponse>> assignManager(
+    public ApiResponse<TicketLogResponse> assignManager(
             @RequestHeader("memberId") Long memberId, // 헤더에서 담당자 ID 받기
             @PathVariable Long ticketId
     ) {
         TicketLogResponse response = ticketLogService.assignManager(memberId, ticketId);
-        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @PatchMapping("/{ticketId}/close")
-    public ResponseEntity<ApiResponse<TicketLogResponse>> closeTicket(
+    public ApiResponse<TicketLogResponse> closeTicket(
             @RequestHeader("memberId") Long memberId,
             @PathVariable Long ticketId) {
         TicketLogResponse response = ticketLogService.closeTicket(memberId, ticketId);
-        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @PatchMapping("/{ticketId}/categories")
-    public ResponseEntity<ApiResponse<TicketLogResponse>> updateTicketCategory(
+    public ApiResponse<TicketLogResponse> updateTicketCategory(
             @RequestHeader("memberId") Long memberId,
             @PathVariable Long ticketId,
             @RequestBody @Valid CategoryUpdateRequest request) {
 
         TicketLogResponse response = ticketLogService.updateCategory(memberId, ticketId, request);
-        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @PatchMapping("/{ticketId}/reassign")
-    public ResponseEntity<ApiResponse<TicketLogResponse>> reassignManager(
+    public ApiResponse<TicketLogResponse> reassignManager(
             @RequestHeader("memberId") Long memberId,
             @PathVariable Long ticketId,
             @RequestBody Map<String, String> request) {
 
         TicketLogResponse response = ticketLogService.reassignManager(memberId, ticketId, request.get("manager"));
-        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @PatchMapping("/{ticketId}/priority")
-    public ResponseEntity<ApiResponse<TicketLogResponse>> updateTicketPriority(
+    public ApiResponse<TicketLogResponse> updateTicketPriority(
             @RequestHeader("memberId") Long memberId,
             @PathVariable Long ticketId,
             @RequestBody @Valid PriorityUpdateRequest request) {
 
-        TicketLogResponse response = ticketLogService.updatePriority(memberId, ticketId, request);
-        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+        ticketLogService.updatePriority(memberId, ticketId, request);
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
 }

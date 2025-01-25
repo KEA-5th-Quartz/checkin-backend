@@ -1,5 +1,6 @@
 package com.quartz.checkin.common.exception;
 
+import com.quartz.checkin.dto.response.ApiErrorResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
@@ -34,7 +35,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     // @Valid 검증 예외 처리
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+                                                                  HttpHeaders headers,
+                                                                  HttpStatusCode status, WebRequest request) {
 
         List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
 
@@ -100,29 +103,39 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ErrorCode.INTERNAL_SERVER_ERROR, e.getMessage());
     }
 
-    private ResponseEntity<Object> handleExceptionInternal (ErrorCode errorCode) {
-        return ResponseEntity.status(errorCode.getHttpStatus()).body(ApiResponse.onFailure(errorCode));
+    private ResponseEntity<Object> handleExceptionInternal(ErrorCode errorCode) {
+        return ResponseEntity.status(errorCode.getStatus()).body(ApiErrorResponse.createErrorResponse(errorCode));
     }
 
-    private ResponseEntity<Object> handleExceptionInternal (ErrorCode errorCode, Object errors) {
-        return ResponseEntity.status(errorCode.getHttpStatus()).body(ApiResponse.onFailure(errorCode, errors));
+    private ResponseEntity<Object> handleExceptionInternal(ErrorCode errorCode, Object errors) {
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ApiErrorResponse.createErrorResponseWithData(errorCode, errors));
     }
 
     @Override
-    protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+    protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers,
+                                                             HttpStatusCode statusCode, WebRequest request) {
         log.error(ex.getMessage(), ex);
 
         String message;
-        if (ex instanceof ErrorResponse errorResponse)
-            if (body == null)
-                message = errorResponse.updateAndGetBody(this.getMessageSource(), LocaleContextHolder.getLocale()).getDetail();
-            else
+        if (ex instanceof ErrorResponse errorResponse) {
+            if (body == null) {
+                message = errorResponse.updateAndGetBody(this.getMessageSource(), LocaleContextHolder.getLocale())
+                        .getDetail();
+            } else {
                 message = ((ErrorResponse) body).getDetailMessageCode();
-        else
+            }
+        } else {
             message = ex.getMessage();
+        }
 
-        body = ApiResponse.onFailure(statusCode.value(), message);
+        body = ApiErrorResponse.builder()
+                .status(statusCode.value())
+                .code("COMMON")
+                .data(null)
+                .message(message);
 
         return ResponseEntity.status(statusCode.value()).body(body);
     }
+
 }

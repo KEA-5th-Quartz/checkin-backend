@@ -52,6 +52,7 @@ public enum ErrorCode {
     TICKET_FILE_NOT_FOUND(HttpStatus.UNAUTHORIZED, "TICKET_4017", "파일이 존재하지 않습니다."),
     TICKET_NOT_FOUND(HttpStatus.NOT_FOUND, "TICKET_4040", "존재하지 않는 티켓입니다."),
     TICKET_KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "TICKET_4041", "해당 키워드를 가진 티켓이 존재하지 않습니다."),
+    TICKET_ALREADY_ASSIGNED_TO_SELF(HttpStatus.CONFLICT, "TICKET_4091", "이미 본인이 담당자로 할당된 상태입니다."),
 
     // 댓글 서비스 예외
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_4040", "존재하지 않는 댓글입니다."),

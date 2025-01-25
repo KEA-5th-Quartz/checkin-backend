@@ -25,7 +25,7 @@ public class TicketCreateRequest {
 
     @NotNull
     private LocalDate dueDate;
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
     private List<Long> ticketAttachmentIds; // 첨부파일 ID 리스트 (nullable)
 }
 

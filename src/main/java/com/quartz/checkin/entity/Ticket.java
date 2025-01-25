@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -66,5 +65,17 @@ public class Ticket extends BaseEntity {
         this.content = content;
         this.status = status;
         this.dueDate = dueDate;
+    }
+
+    public void updateStatus(Status newStatus) {
+        if (newStatus == Status.CLOSED) {
+            this.closedAt = LocalDateTime.now();
+        }
+    }
+
+    // 담당자 할당 메서드
+    public void assignManager(Member manager) {
+        this.manager = manager;
+        this.status = Status.IN_PROGRESS;  // 담당자 배정 시 상태 변경
     }
 }

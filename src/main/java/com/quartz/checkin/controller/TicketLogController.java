@@ -1,8 +1,10 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.common.exception.ApiResponse;
+import com.quartz.checkin.dto.request.CategoryUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.service.TicketLogService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +30,16 @@ public class TicketLogController {
             @RequestHeader("memberId") Long memberId,
             @PathVariable Long ticketId) {
         TicketLogResponse response = ticketLogService.closeTicket(memberId, ticketId);
+        return ResponseEntity.ok(ApiResponse.onSuccess(response));
+    }
+
+    @PatchMapping("/{ticketId}/categories")
+    public ResponseEntity<ApiResponse<TicketLogResponse>> updateTicketCategory(
+            @RequestHeader("memberId") Long memberId,
+            @PathVariable Long ticketId,
+            @RequestBody @Valid CategoryUpdateRequest request) {
+
+        TicketLogResponse response = ticketLogService.updateCategory(memberId, ticketId, request);
         return ResponseEntity.ok(ApiResponse.onSuccess(response));
     }
 }

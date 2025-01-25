@@ -1,5 +1,6 @@
 package com.quartz.checkin.common.exception;
 
+import com.quartz.checkin.dto.response.ApiErrorResponse;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
@@ -8,9 +9,10 @@ public enum ErrorCode {
 
     // 공통 예외
     INVALID_DATA(HttpStatus.BAD_REQUEST, "COMMON_4000", "필수로 요구되는 데이터가 비어있거나 규칙에 맞지 않습니다."),
-    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "COMMON_4010", "유효하지 않거나 만료된 토큰입니다."),
+    INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "COMMON_4010", "유효하지 않거나 만료된 accessToken입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "COMMON_4011", "유효하지 않거나 만료된 refreshToken입니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON_4030", "접근 권한이 없습니다."),
-    READ_ONLY_ACCESS(HttpStatus.FORBIDDEN, "COMMON_4031", "읽기 전용 권한만 있습니다."),
+    UNAUTHENTICATED(HttpStatus.FORBIDDEN, "COMMON_4031", "인증이 필요한 요청입니다."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_4041", "잘못된 API 엔드포인트입니다."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON_4050", "요청된 HTTP 메서드가 허용되지 않습니다."),
     CONFLICT(HttpStatus.CONFLICT, "COMMON_4090", "현재 서버의 리소스 상태와 충돌이 발생했습니다."),
@@ -24,9 +26,9 @@ public enum ErrorCode {
     USERNAME_MISSING(HttpStatus.BAD_REQUEST, "MEMBER_4005", "아이디 값이 누락되었습니다."),
     INVALID_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "MEMBER_4007", "페이지 번호가 유효하지 않습니다."),
     INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "MEMBER_4008", "페이지 크기가 유효하지 않습니다."),
-    MEMBER_NOT_FOUND(HttpStatus.UNAUTHORIZED, "MEMBER_4013", "일치하는 회원 정보가 없습니다. 아이디 혹은 비밀번호를 다시 확인해주세요."),
+    INVALID_USERNAME_OR_PASSWORD(HttpStatus.UNAUTHORIZED, "MEMBER_4013", "일치하는 회원 정보가 없습니다. 아이디 혹은 비밀번호를 다시 확인해주세요."),
     UNSUPPORTED_FILE_TYPE(HttpStatus.UNAUTHORIZED, "MEMBER_4015", "지원하지 않는 파일 형식입니다."),
-    MEMBER_DOES_NOT_EXIST(HttpStatus.NOT_FOUND, "MEMBER_4040", "존재하지 않는 회원입니다."),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_4040", "존재하지 않는 회원입니다."),
     NOT_REGISTERED(HttpStatus.NOT_FOUND, "MEMBER_4041", "가입하지 않은 아이디입니다."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "MEMBER_4090", "이미 사용 중인 아이디입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "MEMBER_4091", "이미 사용 중인 이메일 주소입니다."),
@@ -79,10 +81,6 @@ public enum ErrorCode {
         this.status= httpStatus;
         this.code = code;
         this.message = message;
-    }
-
-    public HttpStatus getHttpStatus() {
-        return this.status;
     }
 
 }

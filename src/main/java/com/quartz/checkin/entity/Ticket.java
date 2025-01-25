@@ -1,11 +1,17 @@
 package com.quartz.checkin.entity;
 
-import jakarta.persistence.*;
-
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,7 +64,8 @@ public class Ticket extends BaseEntity {
     private LocalDateTime deletedAt;
 
     @Builder
-    public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content, Status status, LocalDate dueDate) {
+    public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
+                  Status status, LocalDate dueDate) {
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;

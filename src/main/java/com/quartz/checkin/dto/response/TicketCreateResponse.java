@@ -1,14 +1,13 @@
 package com.quartz.checkin.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Getter
+@AllArgsConstructor
 public class TicketCreateResponse {
-    private final Long ticketId;
-
-    public TicketCreateResponse(Long ticketId) {
-        this.ticketId = ticketId;
-    }
+    private Long ticketId;
+    private LocalDateTime createdAt;
 }

@@ -10,14 +10,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.AccessLevel;
 
 @Entity
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TicketLog extends BaseEntity {
 
     @Id
@@ -35,11 +31,4 @@ public class TicketLog extends BaseEntity {
 
     @Column(nullable = false)
     private String content;
-
-    @Builder
-    public TicketLog(Ticket ticket, LogType logType, String content, LocalDateTime createdAt) {
-        this.ticket = ticket;
-        this.logtype = logType;
-        this.content = content;
-    }
 }

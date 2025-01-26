@@ -4,13 +4,12 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.TicketCreateResponse;
+import com.quartz.checkin.dto.response.TicketDetailResponse;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -47,5 +46,15 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         ticketRepository.save(ticket);
 
         return new TicketCreateResponse(ticket.getId());
+    }
+
+    @Transactional
+    @Override
+    public TicketDetailResponse getTicketDetail(Long memberId, Long ticketId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
+
+
+        return TicketDetailResponse.from(ticket);
     }
 }

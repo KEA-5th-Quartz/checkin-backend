@@ -24,7 +24,7 @@ public class TicketLogController {
     private final TicketLogService ticketLogService;
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 35", description = "티켓 완료 처리")
+    @Operation(summary = "API 명세서 v0.1 line 36", description = "티켓 완료 처리")
     @PatchMapping("/{ticketId}/close")
     public ApiResponse<TicketLogResponse> closeTicket(
             @PathVariable Long ticketId,
@@ -34,7 +34,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 36", description = "카테고리 수정")
+    @Operation(summary = "API 명세서 v0.1 line 37", description = "카테고리 수정")
     @PatchMapping("/{ticketId}/categories")
     public ApiResponse<TicketLogResponse> updateTicketCategory(
             @PathVariable Long ticketId,
@@ -46,7 +46,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 37", description = "담당자 변경")
+    @Operation(summary = "API 명세서 v0.1 line 38", description = "담당자 변경")
     @PatchMapping("/{ticketId}/reassign")
     public ApiResponse<TicketLogResponse> reassignManager(
             @PathVariable Long ticketId,
@@ -58,7 +58,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 38", description = "중요도 변경")
+    @Operation(summary = "API 명세서 v0.1 line 39", description = "중요도 변경")
     @PatchMapping("/{ticketId}/priority")
     public ApiResponse<Void> updateTicketPriority(
             @PathVariable Long ticketId,
@@ -70,7 +70,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 39", description = "담당자 할당")
+    @Operation(summary = "API 명세서 v0.1 line 40", description = "담당자 할당")
     @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> assignManager(
             @PathVariable Long ticketId,

@@ -13,6 +13,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import javax.crypto.SecretKey;
@@ -39,6 +40,7 @@ public class JwtService {
     public static final String ROLE_CLAIM = "role";
     public static final String PROFILE_PIC_CLAIM = "profilePic";
     public static final String USERNAME_CLAIM = "username";
+    public static final String PASSWORD_CHANGED_AT_CLAIM = "passwordChangedAt";
 
     @Value("${jwt.secretKey}")
     private String secretKey;
@@ -49,7 +51,7 @@ public class JwtService {
         key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createAccessToken(Long id, String username, String profilePic, Role role) {
+    public String createAccessToken(Long id, String username, String profilePic, Role role, LocalDateTime passwordChangedAt) {
         Date now = new Date();
 
         return Jwts
@@ -59,6 +61,7 @@ public class JwtService {
                 .claim(USERNAME_CLAIM, username)
                 .claim(PROFILE_PIC_CLAIM, profilePic)
                 .claim(ROLE_CLAIM, role)
+                .claim(PASSWORD_CHANGED_AT_CLAIM, passwordChangedAt)
                 .expiration(new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION_PERIOD))
                 .signWith(key)
                 .compact();

@@ -2,15 +2,20 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.common.PasswordGenerator;
+import com.quartz.checkin.security.CustomUser;
+import java.io.IOException;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -20,6 +25,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final S3UploadService s3UploadService;
 
     public Member getMemberByIdOrThrow(Long id) {
         return memberRepository.findById(id)
@@ -48,6 +54,37 @@ public class MemberService {
         Member member = getMemberByIdOrThrow(id);
 
         member.updateRefreshToken(refreshToken);
+    }
+
+    @Transactional
+    public String updateMemberProfilePic(Long id, CustomUser customUser, MultipartFile file) {
+        if (file.isEmpty() || !s3UploadService.isImageType(file.getContentType())) {
+            log.error("파일이 누락되었거나, 이미지 타입이 아닙니다.");
+            throw new ApiException(ErrorCode.INVALID_DATA);
+        }
+
+        long fileSize = file.getSize();
+        if (fileSize > S3Config.MAX_IMAGE_SIZE) {
+            log.error("파일이 최대 용량을 초과했습니다.");
+            throw new ApiException(ErrorCode.TOO_LARGE_FILE);
+        }
+
+        Member member = getMemberByIdOrThrow(id);
+
+        if (!Objects.equals(member.getId(), customUser.getId())) {
+            log.error("다른 사용자의 리소스에 접근하려고 합니다.");
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        try {
+            String profilePic = s3UploadService.uploadFile(file, S3Config.PROFILE_DIR);
+            member.updateProfilePic(profilePic);
+
+            return profilePic;
+        } catch (IOException exception) {
+            log.error("S3에 파일을 업로드할 수 없습니다. {}", exception.getMessage());
+            throw new ApiException(ErrorCode.OBJECT_STORAGE_ERROR);
+        }
     }
 
     private void checkEmailDuplicate(String email) {

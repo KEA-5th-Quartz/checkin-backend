@@ -71,7 +71,7 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketCrudService.searchTickets(user.getId(), keyword, page, size);
+        ManagerTicketListResponse response = ticketCrudService.searchManagerTickets(user.getId(), keyword, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -83,11 +83,14 @@ public class TicketController {
             @RequestParam(required = false) Status status,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String category,
+            @RequestParam(required = false) Boolean dueToday,
+            @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        UserTicketListResponse response = ticketCrudService.getUserTickets(user.getId(), status, username, category, page, size);
+        UserTicketListResponse response = ticketCrudService.getUserTickets(user.getId(), status, username,
+                category, dueToday, dueThisWeek, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 

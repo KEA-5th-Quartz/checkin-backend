@@ -19,21 +19,21 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "AND (:username IS NULL OR t.manager.username = :username OR (t.status = 'OPEN' AND t.manager IS NULL)) " +
             "AND (:dueToday = false OR t.dueDate = CAST(NOW() AS DATE)) " +
             "AND (:dueThisWeek = false OR (t.dueDate BETWEEN CAST(NOW() AS DATE) AND :endOfWeek))")
-    Page<Ticket> findTickets(
+    Page<Ticket> findManagerTickets(
             Status status, String username, String category, Priority priority,
             Boolean dueToday, Boolean dueThisWeek, LocalDate endOfWeek, Pageable pageable
     );
-
-    @Query("SELECT t FROM Ticket t")
-    Page<Ticket> findAllTickets(Pageable pageable);
 
     @Query("SELECT t FROM Ticket t " +
             "LEFT JOIN t.manager m " +
             "WHERE t.user.id = :userId " +
             "AND (:status IS NULL OR t.status = :status) " +
             "AND (:category IS NULL OR LOWER(TRIM(t.firstCategory.name)) = LOWER(TRIM(:category))) " +
-            "AND (:username IS NULL OR m.username = :username) ")
-    Page<Ticket> findUserTickets(Long userId, Status status, String username, String category, Pageable pageable);
+            "AND (:username IS NULL OR m.username = :username) " +
+            "AND (:dueToday = false OR t.dueDate = CAST(NOW() AS DATE)) " +
+            "AND (:dueThisWeek = false OR (t.dueDate BETWEEN CAST(NOW() AS DATE) AND :endOfWeek))")
+    Page<Ticket> findUserTickets(Long userId, Status status, String username, String category,
+                                 Boolean dueToday, Boolean dueThisWeek, LocalDate endOfWeek, Pageable pageable);
 
     @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
             "WHERE (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +

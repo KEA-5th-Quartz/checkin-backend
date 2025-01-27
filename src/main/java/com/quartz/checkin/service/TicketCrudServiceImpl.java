@@ -72,29 +72,8 @@ public class TicketCrudServiceImpl implements TicketCrudService {
             Long memberId, Status status, String username, String category, Priority priority,
             Boolean dueToday, Boolean dueThisWeek, int page, int size) {
 
-        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
-        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
-
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-
-        boolean isDueToday = Boolean.TRUE.equals(dueToday);
-        boolean isDueThisWeek = Boolean.TRUE.equals(dueThisWeek);
-
-        // 오늘 날짜와 이번 주 마지막 날 계산
-        LocalDate today = LocalDate.now();
-        LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
-
-        Page<Ticket> ticketPage;
-
-        if (status == null && category == null && username == null && priority == null && !isDueToday && !isDueThisWeek) {
-            // 전체 티켓 조회
-            ticketPage = ticketRepository.findAllTickets(pageable);
-        } else {
-            // 필터링된 티켓 조회
-            ticketPage = ticketRepository.findTickets(status, username, category, priority,
-                    isDueToday, isDueThisWeek, endOfWeek, pageable
-            );
-        }
+        Page<Ticket> ticketPage = getTickets(
+                null, status, username, category, priority, dueToday, dueThisWeek, page, size);
 
         List<ManagerTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
                 .map(ManagerTicketSummaryResponse::from)
@@ -111,21 +90,18 @@ public class TicketCrudServiceImpl implements TicketCrudService {
 
     @Transactional
     @Override
-    public UserTicketListResponse getUserTickets(Long memberId, Status status, String username, String category, int page, int size) {
-        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
-        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+    public UserTicketListResponse getUserTickets(Long memberId, Status status, String username, String category,
+                                                 Boolean dueToday, Boolean dueThisWeek, int page, int size) {
 
-        // page 0-based 처리
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-
-        Page<Ticket> ticketPage = ticketRepository.findUserTickets(memberId, status, username, category, pageable);
+        Page<Ticket> ticketPage = getTickets(
+                memberId, status, username, category, null, dueToday, dueThisWeek, page, size);
 
         List<UserTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
                 .map(UserTicketSummaryResponse::from)
                 .collect(Collectors.toList());
 
         return new UserTicketListResponse(
-                ticketPage.getNumber() + 1, // 1-based 반환
+                ticketPage.getNumber() + 1,
                 ticketPage.getSize(),
                 ticketPage.getTotalPages(),
                 (int) ticketPage.getTotalElements(),
@@ -133,9 +109,35 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         );
     }
 
+    private Page<Ticket> getTickets(Long memberId, Status status, String username, String category, Priority priority,
+                                    Boolean dueToday, Boolean dueThisWeek, int page, int size) {
+
+        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
+        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        boolean isDueToday = Boolean.TRUE.equals(dueToday);
+        boolean isDueThisWeek = Boolean.TRUE.equals(dueThisWeek);
+
+        // 오늘 날짜와 이번 주 마지막 날 계산
+        LocalDate today = LocalDate.now();
+        LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
+        if (memberId == null) {
+            // 관리자용 전체 티켓 조회
+            return ticketRepository.findManagerTickets(status, username, category, priority,
+                    isDueToday, isDueThisWeek, endOfWeek, pageable);
+        } else {
+            // 특정 사용자의 티켓 조회
+            return ticketRepository.findUserTickets(memberId, status, username, category,
+                    isDueToday, isDueThisWeek, endOfWeek, pageable);
+        }
+    }
+
     @Transactional(readOnly = true)
     @Override
-    public ManagerTicketListResponse searchTickets(Long memberId, String keyword, int page, int size) {
+    public ManagerTicketListResponse searchManagerTickets(Long memberId, String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         String searchKeyword = (keyword == null || keyword.isBlank()) ? "" : keyword.toLowerCase();
 
@@ -160,10 +162,7 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Ticket> ticketPage = ticketRepository.searchMyTickets(
-                memberId,
-                (keyword != null && !keyword.isBlank()) ? keyword : null,
-                pageable
-        );
+                memberId, (keyword != null && !keyword.isBlank()) ? keyword : null, pageable);
 
         List<UserTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
                 .map(UserTicketSummaryResponse::from)
@@ -177,5 +176,4 @@ public class TicketCrudServiceImpl implements TicketCrudService {
                 ticketList
         );
     }
-
 }

@@ -1,6 +1,5 @@
 package com.quartz.checkin.common.exception;
 
-import com.quartz.checkin.dto.response.ApiErrorResponse;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
@@ -15,6 +14,7 @@ public enum ErrorCode {
     UNAUTHENTICATED(HttpStatus.FORBIDDEN, "COMMON_4031", "인증이 필요한 요청입니다."),
     NOT_FOUND(HttpStatus.NOT_FOUND, "COMMON_4041", "잘못된 API 엔드포인트입니다."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON_4050", "요청된 HTTP 메서드가 허용되지 않습니다."),
+    TOO_LARGE_FILE(HttpStatus.PAYLOAD_TOO_LARGE, "COMMON_4060", "제한된 용량을 초과했습니다."),
     CONFLICT(HttpStatus.CONFLICT, "COMMON_4090", "현재 서버의 리소스 상태와 충돌이 발생했습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_5000", "서버 내부 오류가 발생했습니다."),
     DB_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_5001", "데이터베이스 오류가 발생했습니다."),

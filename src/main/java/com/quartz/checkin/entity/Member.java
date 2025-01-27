@@ -55,10 +55,14 @@ public class Member extends BaseEntity {
         this.refreshToken = refreshToken;
     }
 
+    public void updateProfilePic(String profilePic) {
+        this.profilePic = profilePic;
+    }
+
     @PrePersist
-    public void setDefaultProfileImage() {
+    public void setDefaultProfilePic() {
         if (this.profilePic == null) {
-            this.profilePic = MemberConfig.defaultProfileImage;
+            this.profilePic = MemberConfig.defaultProfilePic;
         }
     }
 

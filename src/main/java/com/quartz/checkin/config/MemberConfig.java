@@ -8,12 +8,12 @@ import org.springframework.context.annotation.Configuration;
 public class MemberConfig {
 
     @Value("${user.profile.defaultImageUrl}")
-    private String profileImageUrl;
+    private String profilePic;
 
-    public static String defaultProfileImage;
+    public static String defaultProfilePic;
 
     @PostConstruct
     public void init() {
-        defaultProfileImage = profileImageUrl;
+        defaultProfilePic = profilePic;
     }
 }

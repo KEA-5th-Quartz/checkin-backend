@@ -4,7 +4,10 @@ import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.TicketCreateResponse;
 import com.quartz.checkin.dto.response.TicketDetailResponse;
+import com.quartz.checkin.dto.response.TicketTotalListResponse;
+import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.security.CustomUser;
+import com.quartz.checkin.security.annotation.Manager;
 import com.quartz.checkin.security.annotation.ManagerOrUser;
 import com.quartz.checkin.security.annotation.User;
 import com.quartz.checkin.service.TicketCrudService;
@@ -39,6 +42,20 @@ public class TicketController {
             @AuthenticationPrincipal CustomUser user) {
 
         TicketDetailResponse response = ticketCrudService.getTicketDetail(user.getId(),ticketId);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @Manager
+    @GetMapping
+    public ApiResponse<TicketTotalListResponse> getTickets(
+            @RequestParam(required = false) Status status,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal CustomUser user) {
+
+        TicketTotalListResponse response = ticketCrudService.getTickets(user.getId(), status, username, category, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }

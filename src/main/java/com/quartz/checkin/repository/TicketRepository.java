@@ -20,4 +20,12 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     @Query("SELECT t FROM Ticket t")
     Page<Ticket> findAllTickets(Pageable pageable);
+
+    @Query("SELECT t FROM Ticket t " +
+            "LEFT JOIN t.manager m " +
+            "WHERE t.user.id = :userId " +
+            "AND (:status IS NULL OR t.status = :status) " +
+            "AND (:category IS NULL OR LOWER(TRIM(t.firstCategory.name)) = LOWER(TRIM(:category))) " +
+            "AND (:username IS NULL OR m.username = :username) ")
+    Page<Ticket> findUserTickets(Long userId, Status status, String username, String category, Pageable pageable);
 }

@@ -3,10 +3,7 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
-import com.quartz.checkin.dto.response.TicketCreateResponse;
-import com.quartz.checkin.dto.response.TicketDetailResponse;
-import com.quartz.checkin.dto.response.ManagerTicketSummaryResponse;
-import com.quartz.checkin.dto.response.TicketTotalListResponse;
+import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.*;
 import jakarta.transaction.Transactional;
@@ -68,7 +65,7 @@ public class TicketCrudServiceImpl implements TicketCrudService {
 
     @Transactional
     @Override
-    public TicketTotalListResponse getManagerTickets(Long memberId, Status status, String username, String category, Priority priority, int page, int size) {
+    public ManagerTicketListResponse getManagerTickets(Long memberId, Status status, String username, String category, Priority priority, int page, int size) {
         if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
         if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
 
@@ -87,7 +84,7 @@ public class TicketCrudServiceImpl implements TicketCrudService {
                 .map(ManagerTicketSummaryResponse::from)
                 .collect(Collectors.toList());
 
-        return new TicketTotalListResponse(
+        return new ManagerTicketListResponse(
                 ticketPage.getNumber() + 1,
                 ticketPage.getSize(),
                 ticketPage.getTotalPages(),
@@ -95,4 +92,29 @@ public class TicketCrudServiceImpl implements TicketCrudService {
                 ticketList
         );
     }
+
+    @Transactional
+    @Override
+    public UserTicketListResponse getUserTickets(Long memberId, Status status, String username, String category, int page, int size) {
+        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
+        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+
+        // page 0-based 처리
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<Ticket> ticketPage = ticketRepository.findUserTickets(memberId, status, username, category, pageable);
+
+        List<UserTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
+                .map(UserTicketSummaryResponse::from)
+                .collect(Collectors.toList());
+
+        return new UserTicketListResponse(
+                ticketPage.getNumber() + 1, // 1-based 반환
+                ticketPage.getSize(),
+                ticketPage.getTotalPages(),
+                (int) ticketPage.getTotalElements(),
+                ticketList
+        );
+    }
+
 }

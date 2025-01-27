@@ -9,10 +9,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TicketTotalListResponse {
+public class UserTicketListResponse {
     private int page;
     private int size;
     private int totalPages;
     private int totalTickets;
-    private List<ManagerTicketSummaryResponse> tickets;
+    private List<UserTicketSummaryResponse> tickets;
 }

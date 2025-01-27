@@ -1,10 +1,7 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.request.TicketCreateRequest;
-import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.dto.response.TicketCreateResponse;
-import com.quartz.checkin.dto.response.TicketDetailResponse;
-import com.quartz.checkin.dto.response.TicketTotalListResponse;
+import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.security.CustomUser;
@@ -49,7 +46,7 @@ public class TicketController {
     @Manager
     @Operation(summary = "API 명세서 v0.1 line 30", description = "담당자 전체 티켓 조회")
     @GetMapping
-    public ApiResponse<TicketTotalListResponse> getTickets(
+    public ApiResponse<ManagerTicketListResponse> getTickets(
             @RequestParam(required = false) Status status,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String category,
@@ -58,7 +55,21 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        TicketTotalListResponse response = ticketCrudService.getManagerTickets(user.getId(), status, username, category, priority, page, size);
+        ManagerTicketListResponse response = ticketCrudService.getManagerTickets(user.getId(), status, username, category, priority, page, size);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @User
+    @GetMapping("/my-tickets")
+    public ApiResponse<UserTicketListResponse> getUserTickets(
+            @RequestParam(required = false) Status status,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal CustomUser user) {
+
+        UserTicketListResponse response = ticketCrudService.getUserTickets(user.getId(), status, username, category, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }

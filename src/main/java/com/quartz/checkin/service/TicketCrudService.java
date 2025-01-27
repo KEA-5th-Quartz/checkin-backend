@@ -12,5 +12,6 @@ public interface TicketCrudService {
     TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request);
     TicketDetailResponse getTicketDetail(Long memberId, Long ticketId);
     ManagerTicketListResponse getManagerTickets(Long memberId, Status status, String username, String category, Priority priority, int page, int size);
+    ManagerTicketListResponse searchTickets(Long memberId, String keyword, int page, int size);
     UserTicketListResponse getUserTickets(Long memberId, Status status, String username, String category, int page, int size);
 }

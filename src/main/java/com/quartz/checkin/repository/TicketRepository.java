@@ -7,7 +7,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     @Query("SELECT t FROM Ticket t " +
@@ -28,4 +27,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "AND (:category IS NULL OR LOWER(TRIM(t.firstCategory.name)) = LOWER(TRIM(:category))) " +
             "AND (:username IS NULL OR m.username = :username) ")
     Page<Ticket> findUserTickets(Long userId, Status status, String username, String category, Pageable pageable);
+
+    @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
+            "WHERE (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    Page<Ticket> searchTickets(String keyword, Pageable pageable);
 }

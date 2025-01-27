@@ -59,6 +59,19 @@ public class TicketController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
+    @Manager
+    @GetMapping("/search")
+    public ApiResponse<ManagerTicketListResponse> searchTickets(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal CustomUser user) {
+
+        ManagerTicketListResponse response = ticketCrudService.searchTickets(user.getId(), keyword, page, size);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+
     @User
     @GetMapping("/my-tickets")
     public ApiResponse<UserTicketListResponse> getUserTickets(

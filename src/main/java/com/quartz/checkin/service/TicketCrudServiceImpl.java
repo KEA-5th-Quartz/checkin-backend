@@ -6,13 +6,13 @@ import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.*;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -117,4 +117,24 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         );
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public ManagerTicketListResponse searchTickets(Long memberId, String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        String searchKeyword = (keyword == null || keyword.isBlank()) ? "" : keyword.toLowerCase();
+
+        Page<Ticket> ticketPage = ticketRepository.searchTickets(searchKeyword, pageable);
+
+        List<ManagerTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
+                .map(ManagerTicketSummaryResponse::from)
+                .collect(Collectors.toList());
+
+        return new ManagerTicketListResponse(
+                ticketPage.getNumber(),
+                ticketPage.getSize(),
+                ticketPage.getTotalPages(),
+                (int) ticketPage.getTotalElements(),
+                ticketList
+        );
+    }
 }

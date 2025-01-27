@@ -5,7 +5,7 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.TicketCreateResponse;
 import com.quartz.checkin.dto.response.TicketDetailResponse;
-import com.quartz.checkin.dto.response.TicketSummaryResponse;
+import com.quartz.checkin.dto.response.ManagerTicketSummaryResponse;
 import com.quartz.checkin.dto.response.TicketTotalListResponse;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.*;
@@ -68,27 +68,27 @@ public class TicketCrudServiceImpl implements TicketCrudService {
 
     @Transactional
     @Override
-    public TicketTotalListResponse getTickets(Long memberId, Status status, String username, String category, int page, int size) {
-        if (page < 0) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
+    public TicketTotalListResponse getManagerTickets(Long memberId, Status status, String username, String category, Priority priority, int page, int size) {
+        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
         if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Ticket> ticketPage;
-        if (status == null && category == null && username == null) {
+        if (status == null && category == null && username == null && priority == null) {
             // 전체 티켓 조회
             ticketPage = ticketRepository.findAllTickets(pageable);
         } else {
             // 필터링된 티켓 조회
-            ticketPage = ticketRepository.findTickets(status, username, category, pageable);
+            ticketPage = ticketRepository.findTickets(status, username, category, priority, pageable);
         }
 
-        List<TicketSummaryResponse> ticketList = ticketPage.getContent().stream()
-                .map(TicketSummaryResponse::from)
+        List<ManagerTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
+                .map(ManagerTicketSummaryResponse::from)
                 .collect(Collectors.toList());
 
         return new TicketTotalListResponse(
-                ticketPage.getNumber(),
+                ticketPage.getNumber() + 1,
                 ticketPage.getSize(),
                 ticketPage.getTotalPages(),
                 (int) ticketPage.getTotalElements(),

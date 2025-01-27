@@ -46,16 +46,19 @@ public class TicketController {
     }
 
     @Manager
+    @Operation(summary = "API 명세서 v0.1 line 30", description = "담당자 전체 티켓 조회")
     @GetMapping
     public ApiResponse<TicketTotalListResponse> getTickets(
             @RequestParam(required = false) Status status,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Priority priority,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        TicketTotalListResponse response = ticketCrudService.getTickets(user.getId(), status, username, category, page, size);
+        TicketTotalListResponse response = ticketCrudService.getManagerTickets(user.getId(), status, username, category, priority, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }

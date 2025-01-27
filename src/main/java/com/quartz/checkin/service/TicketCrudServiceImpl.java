@@ -137,4 +137,29 @@ public class TicketCrudServiceImpl implements TicketCrudService {
                 ticketList
         );
     }
+
+    @Transactional(readOnly = true)
+    @Override
+    public UserTicketListResponse searchUserTickets(Long memberId, String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<Ticket> ticketPage = ticketRepository.searchMyTickets(
+                memberId,
+                (keyword != null && !keyword.isBlank()) ? keyword : null,
+                pageable
+        );
+
+        List<UserTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
+                .map(UserTicketSummaryResponse::from)
+                .collect(Collectors.toList());
+
+        return new UserTicketListResponse(
+                ticketPage.getNumber(),
+                ticketPage.getSize(),
+                ticketPage.getTotalPages(),
+                (int) ticketPage.getTotalElements(),
+                ticketList
+        );
+    }
+
 }

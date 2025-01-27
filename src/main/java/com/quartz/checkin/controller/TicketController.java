@@ -60,6 +60,7 @@ public class TicketController {
     }
 
     @Manager
+    @Operation(summary = "API 명세서 v0.1 line 33", description = "담당자 티켓 검색")
     @GetMapping("/search")
     public ApiResponse<ManagerTicketListResponse> searchTickets(
             @RequestParam(required = false) String keyword,
@@ -83,6 +84,19 @@ public class TicketController {
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketCrudService.getUserTickets(user.getId(), status, username, category, page, size);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @User
+    @Operation(summary = "API 명세서 v0.1 line 34", description = "사용자 티켓 검색")
+    @GetMapping("/my-tickets/search")
+    public ApiResponse<UserTicketListResponse> searchUserTickets(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal CustomUser user) {
+
+        UserTicketListResponse response = ticketCrudService.searchUserTickets(user.getId(), keyword, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }

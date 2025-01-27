@@ -5,6 +5,7 @@ import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.TicketCreateResponse;
 import com.quartz.checkin.dto.response.TicketDetailResponse;
 import com.quartz.checkin.dto.response.TicketTotalListResponse;
+import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Manager;
@@ -52,7 +53,6 @@ public class TicketController {
             @RequestParam(required = false) Status status,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String category,
-            @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) Priority priority,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,

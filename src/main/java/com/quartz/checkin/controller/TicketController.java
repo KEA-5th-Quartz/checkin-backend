@@ -51,11 +51,14 @@ public class TicketController {
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Priority priority,
+            @RequestParam(required = false) Boolean dueToday,
+            @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketCrudService.getManagerTickets(user.getId(), status, username, category, priority, page, size);
+        ManagerTicketListResponse response = ticketCrudService.getManagerTickets(user.getId(), status, username, category,
+                priority, dueToday, dueThisWeek, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -74,6 +77,7 @@ public class TicketController {
 
 
     @User
+    @Operation(summary = "API 명세서 v0.1 line 32", description = "사용자 전체 티켓 조회")
     @GetMapping("/my-tickets")
     public ApiResponse<UserTicketListResponse> getUserTickets(
             @RequestParam(required = false) Status status,

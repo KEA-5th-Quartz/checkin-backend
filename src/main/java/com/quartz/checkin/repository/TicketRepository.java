@@ -13,12 +13,16 @@ import java.time.LocalDate;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     @Query("SELECT t FROM Ticket t " +
-            "LEFT JOIN t.manager m " +
             "WHERE (:status IS NULL OR t.status = :status) " +
-            "AND (:category IS NULL OR LOWER(TRIM(t.firstCategory.name)) LIKE LOWER(CONCAT('%', :category, '%')))" +
-            "AND (:priority IS NULL OR t.priority = :priority)" +
-            "AND (:username IS NULL OR t.manager.username = :username OR (t.status = 'OPEN' AND t.manager IS NULL))")
-    Page<Ticket> findTickets(Status status, String username, String category, Priority priority, Pageable pageable);
+            "AND (:category IS NULL OR LOWER(TRIM(t.firstCategory.name)) LIKE LOWER(CONCAT('%', :category, '%'))) " +
+            "AND (:priority IS NULL OR t.priority = :priority) " +
+            "AND (:username IS NULL OR t.manager.username = :username OR (t.status = 'OPEN' AND t.manager IS NULL)) " +
+            "AND (:dueToday = false OR t.dueDate = CAST(NOW() AS DATE)) " +
+            "AND (:dueThisWeek = false OR (t.dueDate BETWEEN CAST(NOW() AS DATE) AND :endOfWeek))")
+    Page<Ticket> findTickets(
+            Status status, String username, String category, Priority priority,
+            Boolean dueToday, Boolean dueThisWeek, LocalDate endOfWeek, Pageable pageable
+    );
 
     @Query("SELECT t FROM Ticket t")
     Page<Ticket> findAllTickets(Pageable pageable);

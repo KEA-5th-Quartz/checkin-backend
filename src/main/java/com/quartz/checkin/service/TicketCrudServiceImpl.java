@@ -14,6 +14,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,19 +68,32 @@ public class TicketCrudServiceImpl implements TicketCrudService {
 
     @Transactional
     @Override
-    public ManagerTicketListResponse getManagerTickets(Long memberId, Status status, String username, String category, Priority priority, int page, int size) {
+    public ManagerTicketListResponse getManagerTickets(
+            Long memberId, Status status, String username, String category, Priority priority,
+            Boolean dueToday, Boolean dueThisWeek, int page, int size) {
+
         if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
         if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
 
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
+        boolean isDueToday = Boolean.TRUE.equals(dueToday);
+        boolean isDueThisWeek = Boolean.TRUE.equals(dueThisWeek);
+
+        // 오늘 날짜와 이번 주 마지막 날 계산
+        LocalDate today = LocalDate.now();
+        LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
         Page<Ticket> ticketPage;
-        if (status == null && category == null && username == null && priority == null) {
+
+        if (status == null && category == null && username == null && priority == null && !isDueToday && !isDueThisWeek) {
             // 전체 티켓 조회
             ticketPage = ticketRepository.findAllTickets(pageable);
         } else {
             // 필터링된 티켓 조회
-            ticketPage = ticketRepository.findTickets(status, username, category, priority, pageable);
+            ticketPage = ticketRepository.findTickets(status, username, category, priority,
+                    isDueToday, isDueThisWeek, endOfWeek, pageable
+            );
         }
 
         List<ManagerTicketSummaryResponse> ticketList = ticketPage.getContent().stream()

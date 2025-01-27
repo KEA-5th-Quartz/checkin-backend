@@ -5,6 +5,7 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.common.PasswordGenerator;
 import com.quartz.checkin.security.CustomUser;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class MemberService {
 
+    private final ApplicationEventPublisher eventPublisher;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3UploadService s3UploadService;
@@ -44,9 +47,11 @@ public class MemberService {
 
         checkEmailDuplicate(email);
 
-        String password = passwordEncoder.encode(PasswordGenerator.generateRandomPassword());
-         memberRepository.save(Member.from(memberRegistrationRequest, password));
+        String tempPassword = PasswordGenerator.generateRandomPassword();
+        String password = passwordEncoder.encode(tempPassword);
+        memberRepository.save(Member.from(memberRegistrationRequest, password));
 
+        eventPublisher.publishEvent(new MemberRegisteredEvent(email, tempPassword));
     }
 
     @Transactional

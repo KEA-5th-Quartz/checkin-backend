@@ -69,11 +69,12 @@ public class TicketCrudServiceImpl implements TicketCrudService {
     @Transactional
     @Override
     public ManagerTicketListResponse getManagerTickets(
-            Long memberId, Status status, String username, String category, Priority priority,
+            Long memberId, List<Status> statuses, List<String> usernames,
+            List<String> categories, List<Priority> priorities,
             Boolean dueToday, Boolean dueThisWeek, int page, int size) {
 
         Page<Ticket> ticketPage = getTickets(
-                null, status, username, category, priority, dueToday, dueThisWeek, page, size);
+                null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size);
 
         List<ManagerTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
                 .map(ManagerTicketSummaryResponse::from)
@@ -90,11 +91,12 @@ public class TicketCrudServiceImpl implements TicketCrudService {
 
     @Transactional
     @Override
-    public UserTicketListResponse getUserTickets(Long memberId, Status status, String username, String category,
+    public UserTicketListResponse getUserTickets(Long memberId, List<Status> statuses, List<String> usernames,
+                                                 List<String> categories, List<Priority> priorities,
                                                  Boolean dueToday, Boolean dueThisWeek, int page, int size) {
 
         Page<Ticket> ticketPage = getTickets(
-                memberId, status, username, category, null, dueToday, dueThisWeek, page, size);
+                memberId, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size);
 
         List<UserTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
                 .map(UserTicketSummaryResponse::from)
@@ -109,7 +111,9 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         );
     }
 
-    private Page<Ticket> getTickets(Long memberId, Status status, String username, String category, Priority priority,
+    
+    private Page<Ticket> getTickets(Long memberId, List<Status> statuses, List<String> usernames,
+                                    List<String> categories, List<Priority> priorities,
                                     Boolean dueToday, Boolean dueThisWeek, int page, int size) {
 
         if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
@@ -126,14 +130,15 @@ public class TicketCrudServiceImpl implements TicketCrudService {
 
         if (memberId == null) {
             // 관리자용 전체 티켓 조회
-            return ticketRepository.findManagerTickets(status, username, category, priority,
+            return ticketRepository.findManagerTickets(statuses, usernames, categories, priorities,
                     isDueToday, isDueThisWeek, endOfWeek, pageable);
         } else {
             // 특정 사용자의 티켓 조회
-            return ticketRepository.findUserTickets(memberId, status, username, category,
+            return ticketRepository.findUserTickets(memberId, statuses, usernames, categories, priorities,
                     isDueToday, isDueThisWeek, endOfWeek, pageable);
         }
     }
+
 
     @Transactional(readOnly = true)
     @Override

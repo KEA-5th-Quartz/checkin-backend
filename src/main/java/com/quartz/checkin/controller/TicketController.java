@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/tickets")
 @RequiredArgsConstructor
@@ -47,18 +49,20 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.1 line 30", description = "담당자 전체 티켓 조회")
     @GetMapping
     public ApiResponse<ManagerTicketListResponse> getTickets(
-            @RequestParam(required = false) Status status,
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) Priority priority,
+            @RequestParam(required = false) List<Status> statuses,
+            @RequestParam(required = false) List<String> usernames,
+            @RequestParam(required = false) List<String> categories,
+            @RequestParam(required = false) List<Priority> priorities,
             @RequestParam(required = false) Boolean dueToday,
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketCrudService.getManagerTickets(user.getId(), status, username, category,
-                priority, dueToday, dueThisWeek, page, size);
+        ManagerTicketListResponse response = ticketCrudService.getManagerTickets(
+                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
+        );
+
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -80,19 +84,23 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.1 line 32", description = "사용자 전체 티켓 조회")
     @GetMapping("/my-tickets")
     public ApiResponse<UserTicketListResponse> getUserTickets(
-            @RequestParam(required = false) Status status,
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false) List<Status> statuses,
+            @RequestParam(required = false) List<String> usernames,
+            @RequestParam(required = false) List<String> categories,
+            @RequestParam(required = false) List<Priority> priorities,
             @RequestParam(required = false) Boolean dueToday,
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        UserTicketListResponse response = ticketCrudService.getUserTickets(user.getId(), status, username,
-                category, dueToday, dueThisWeek, page, size);
+        UserTicketListResponse response = ticketCrudService.getUserTickets(
+                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
+        );
+
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
+
 
     @User
     @Operation(summary = "API 명세서 v0.1 line 34", description = "사용자 티켓 검색")

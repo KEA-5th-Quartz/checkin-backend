@@ -37,13 +37,13 @@ public class TicketLogController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
-    @PatchMapping("/{ticketId}/categories")
-    public ApiResponse<TicketLogResponse> updateTicketCategory(
-            @RequestHeader("memberId") Long memberId,
+    @PatchMapping("/{ticketId}/category")
+    public ApiResponse<TicketLogResponse> updateFirstCategory(
             @PathVariable Long ticketId,
-            @RequestBody @Valid CategoryUpdateRequest request) {
+            @AuthenticationPrincipal CustomUser user,
+            @RequestBody @Valid FirstCategoryUpdateRequest request) {
 
-        TicketLogResponse response = ticketLogService.updateCategory(memberId, ticketId, request);
+        TicketLogResponse response = ticketLogService.updateFirstCategory(user.getId(), ticketId, request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 

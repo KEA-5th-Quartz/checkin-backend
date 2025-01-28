@@ -2,7 +2,7 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.request.CategoryUpdateRequest;
+import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.entity.*;
@@ -11,6 +11,7 @@ import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketLogRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import jakarta.transaction.Transactional;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -98,10 +99,10 @@ public class TicketLogServiceImpl implements TicketLogService {
         return new TicketLogResponse(ticketLog);
     }
 
-    // 카테고리 변경
+    // 1차 카테고리 변경
     @Transactional
     @Override
-    public TicketLogResponse updateCategory(Long memberId, Long ticketId, CategoryUpdateRequest request) {
+    public TicketLogResponse updateFirstCategory(Long memberId, Long ticketId, FirstCategoryUpdateRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -110,52 +111,31 @@ public class TicketLogServiceImpl implements TicketLogService {
         // 예외 검증
         validateTicketForUpdate(ticket, manager, false, false, false);
 
-        // 새로운 카테고리 조회
+        // 기존 카테고리 정보 저장
+        String oldFirstCategory = ticket.getFirstCategory().getName();
         Category newFirstCategory = categoryRepository.findByNameAndParentIsNull(request.getFirstCategory())
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
 
-        Category newSecondCategory = categoryRepository.findByNameAndParent(request.getSecondCategory(), newFirstCategory)
-                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
-
-        // 기존 카테고리 저장
-        String oldFirstCategory = ticket.getFirstCategory().getName();
-        String oldSecondCategory = ticket.getSecondCategory().getName();
-        boolean isFirstCategoryChanged = !oldFirstCategory.equals(newFirstCategory.getName());
-        boolean isSecondCategoryChanged = !oldSecondCategory.equals(newSecondCategory.getName());
+        List<Category> secondCategories = categoryRepository.findByParentOrderByIdAsc(newFirstCategory);
+        if (secondCategories.isEmpty()) {
+            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND);
+        }
+        Category newSecondCategory = secondCategories.get(0); // 가장 첫 번째 2차 카테고리 선택
 
         // 카테고리 업데이트
         ticket.updateCategory(newFirstCategory, newSecondCategory);
-        ticketRepository.save(ticket); // 변경 감지
+        ticketRepository.save(ticket);
 
         // 이/가 조사 적용
         String subjectParticle = getSubjectParticle(manager.getUsername());
-        String logContent;
-
-        if (isFirstCategoryChanged && isSecondCategoryChanged) {
-            logContent = String.format(
-                    "%s%s 1차 및 2차 카테고리를 변경하였습니다. %s → %s, %s → %s",
-                    manager.getUsername(),
-                    subjectParticle,
-                    oldFirstCategory, newFirstCategory.getName(),
-                    oldSecondCategory, newSecondCategory.getName()
-            );
-        } else if (isFirstCategoryChanged) {
-            logContent = String.format(
-                    "%s%s 1차 카테고리를 변경하였습니다. %s → %s",
-                    manager.getUsername(),
-                    subjectParticle,
-                    oldFirstCategory, newFirstCategory.getName()
-            );
-        } else if (isSecondCategoryChanged) {
-            logContent = String.format(
-                    "%s%s 2차 카테고리를 변경하였습니다. %s → %s",
-                    manager.getUsername(),
-                    subjectParticle,
-                    oldSecondCategory, newSecondCategory.getName()
-            );
-        } else {
-            throw new ApiException(ErrorCode.INVALID_TICKET_CATEGORY);
-        }
+        String logContent = String.format(
+                "%s%s 1차 카테고리를 변경하였습니다. '%s' → '%s'. (2차 카테고리 기본값: %s)",
+                manager.getUsername(),
+                subjectParticle,
+                oldFirstCategory,
+                newFirstCategory.getName(),
+                newSecondCategory.getName()
+        );
 
         // 로그 저장
         TicketLog ticketLog = TicketLog.builder()
@@ -216,7 +196,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         ticketLogRepository.save(ticketLog);
         return new TicketLogResponse(ticketLog);
     }
-
 
     // 특정 티켓 조회
     private Ticket getValidTicket(Long ticketId) {

@@ -4,6 +4,7 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.request.PriorityUpdateRequest;
+import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.CategoryRepository;
@@ -151,6 +152,58 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     @Transactional
     @Override
+    public TicketLogResponse updateSecondCategory(Long memberId, Long ticketId, Long firstCategoryId, SecondCategoryUpdateRequest request) {
+
+        // 티켓 & 담당자 조회
+        Ticket ticket = getValidTicket(ticketId);
+        Member manager = getValidMember(memberId);
+
+        // 예외 검증 (수정 가능 여부 확인)
+        validateTicketForUpdate(ticket, manager, false, false, false);
+
+        // 현재 1차 카테고리가 맞는지 확인
+        Category firstCategory = ticket.getFirstCategory();
+        if (!firstCategory.getId().equals(firstCategoryId)) {
+            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST);
+        }
+
+        // 기존 2차 카테고리 저장
+        String oldSecondCategory = ticket.getSecondCategory().getName();
+
+        // 새로운 2차 카테고리 조회 (해당 1차 카테고리에 속하는지 확인)
+        Category newSecondCategory = categoryRepository.findByNameAndParent(request.getSecondCategory(), firstCategory)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+
+        // 카테고리 업데이트
+        ticket.updateCategory(firstCategory, newSecondCategory);
+        ticketRepository.save(ticket); // 변경 감지
+
+        // 이/가 조사 적용
+        String subjectParticle = getSubjectParticle(manager.getUsername());
+
+        // 로그 메시지 생성
+        String logContent = String.format(
+                "%s%s 2차 카테고리를 변경하였습니다. '%s' → '%s'",
+                manager.getUsername(),
+                subjectParticle,
+                oldSecondCategory,
+                newSecondCategory.getName()
+        );
+
+        // 로그 저장
+        TicketLog ticketLog = TicketLog.builder()
+                .ticket(ticket)
+                .logType(LogType.CATEGORY)
+                .content(logContent)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        ticketLogRepository.save(ticketLog);
+        return new TicketLogResponse(ticketLog);
+    }
+
+    @Transactional
+    @Override
     public TicketLogResponse updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -253,7 +306,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         // 한글 받침 여부에 따라 "이" 또는 "가"
         return (lastChar >= '가' && lastChar <= '힣' && (lastChar - '가') % 28 != 0) ? "이" : "가";
     }
-
 
     // 목적격 조사 검증 로직
     public static String getObjectParticle(String word) {

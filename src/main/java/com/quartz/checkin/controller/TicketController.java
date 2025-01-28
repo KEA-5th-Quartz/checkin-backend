@@ -8,7 +8,8 @@ import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Manager;
 import com.quartz.checkin.security.annotation.ManagerOrUser;
 import com.quartz.checkin.security.annotation.User;
-import com.quartz.checkin.service.TicketCrudService;
+import com.quartz.checkin.service.TicketCudService;
+import com.quartz.checkin.service.TicketQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,14 +24,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TicketController {
 
-    private final TicketCrudService ticketCrudService;
+    private final TicketCudService ticketCudService;
+    private final TicketQueryService ticketQueryService;
 
     @User
     @PostMapping
     public ApiResponse<TicketCreateResponse> createTicket(
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketCreateRequest request) {
-        TicketCreateResponse response = ticketCrudService.createTicket(user.getId(), request);
+        TicketCreateResponse response = ticketCudService.createTicket(user.getId(), request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -42,6 +44,17 @@ public class TicketController {
             @AuthenticationPrincipal CustomUser user) {
 
         TicketDetailResponse response = ticketCrudService.getTicketDetail(user.getId(),ticketId);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @ManagerOrUser
+    @Operation(summary = "API 명세서 v0.1 line 29", description = "티켓 상세 조회")
+    @GetMapping("/{ticketId}")
+    public ApiResponse<TicketDetailResponse> getTicketDetail(
+            @PathVariable Long ticketId,
+            @AuthenticationPrincipal CustomUser user) {
+
+        TicketDetailResponse response = ticketQueryService.getTicketDetail(user.getId(),ticketId);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -59,7 +72,7 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketCrudService.getManagerTickets(
+        ManagerTicketListResponse response = ticketQueryService.getManagerTickets(
                 user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
         );
 
@@ -75,7 +88,7 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketCrudService.searchManagerTickets(user.getId(), keyword, page, size);
+        ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -94,7 +107,7 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        UserTicketListResponse response = ticketCrudService.getUserTickets(
+        UserTicketListResponse response = ticketQueryService.getUserTickets(
                 user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
         );
 
@@ -111,7 +124,7 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        UserTicketListResponse response = ticketCrudService.searchUserTickets(user.getId(), keyword, page, size);
+        UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }

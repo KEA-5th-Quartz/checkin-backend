@@ -22,7 +22,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class TicketCrudServiceImpl implements TicketCrudService {
+public class TicketCudServiceImpl implements TicketCudService {
 
     private final TicketRepository ticketRepository;
     private final CategoryRepository categoryRepository;
@@ -137,21 +137,5 @@ public class TicketCrudServiceImpl implements TicketCrudService {
 
         Page<Ticket> ticketPage = ticketRepository.searchTickets(searchKeyword, pageable);
         return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public UserTicketListResponse searchUserTickets(Long memberId, String keyword, int page, int size) {
-
-        validatePagination(page, size);
-
-        Pageable pageable = PageRequest.of(page - 1, size,
-                Sort.by(Sort.Direction.ASC, "dueDate")  // 마감기한 임박한 순
-                        .and(Sort.by(Sort.Direction.ASC, "title"))); // 같은 마감기한일 경우 제목 가나다 순 정렬
-
-        Page<Ticket> ticketPage = ticketRepository.searchMyTickets(
-                memberId, (keyword != null && !keyword.isBlank()) ? keyword : null, pageable);
-
-        return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 }

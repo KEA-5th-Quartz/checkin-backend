@@ -25,7 +25,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             @Param("usernames") List<String> usernames,
             @Param("categories") List<String> categories,
             @Param("priorities") List<Priority> priorities,
-            Boolean dueToday, Boolean dueThisWeek, LocalDate endOfWeek, Pageable pageable
+            @Param("dueToday") Boolean dueToday,
+            @Param("dueThisWeek") Boolean dueThisWeek,
+            @Param("endOfWeek") LocalDate endOfWeek, Pageable pageable
     );
 
 
@@ -44,13 +46,15 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             @Param("usernames") List<String> usernames,
             @Param("categories") List<String> categories,
             @Param("priorities") List<Priority> priorities,
-            Boolean dueToday, Boolean dueThisWeek, LocalDate endOfWeek, Pageable pageable
+            @Param("dueToday") Boolean dueToday,
+            @Param("dueThisWeek") Boolean dueThisWeek,
+            @Param("endOfWeek") LocalDate endOfWeek, Pageable pageable
     );
 
     @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
             "WHERE (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Ticket> searchTickets(String keyword, Pageable pageable);
+    Page<Ticket> searchTickets(@Param("keyword") String keyword, Pageable pageable);
 
     @Query("SELECT t FROM Ticket t " +
             "WHERE t.user.id = :memberId " +

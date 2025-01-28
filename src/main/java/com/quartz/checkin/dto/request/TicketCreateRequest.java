@@ -6,8 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
 import lombok.NoArgsConstructor;
 
 @Getter
@@ -29,7 +27,4 @@ public class TicketCreateRequest {
 
     @NotNull
     private LocalDate dueDate;
-    private LocalDateTime createdAt = LocalDateTime.now();
-    private List<Long> ticketAttachmentIds; // 첨부파일 ID 리스트 (nullable)
 }
-

@@ -34,12 +34,11 @@ public class TicketDetailResponse {
 
     private String priority;
     private String status;
-    private List<Long> ticketAttachmentIds;
+    private List<String> ticketAttachmentUrls;
 
-    public static TicketDetailResponse from(Ticket ticket, TicketAttachmentRepository attachmentRepository) {
-        List<Long> attachmentIds = attachmentRepository.findByTicketId(ticket.getId())
-                .stream()
-                .map(TicketAttachment::getId)
+    public static TicketDetailResponse from(Ticket ticket, List<TicketAttachment> attachments) {
+        List<String> attachmentUrls = attachments.stream()
+                .map(TicketAttachment::getUrl)
                 .collect(Collectors.toList());
 
         return TicketDetailResponse.builder()
@@ -54,7 +53,7 @@ public class TicketDetailResponse {
                 .createdAt(ticket.getCreatedAt())
                 .priority(ticket.getPriority() != null ? ticket.getPriority().name() : null)
                 .status(ticket.getStatus().name())
-                .ticketAttachmentIds(attachmentIds)
+                .ticketAttachmentUrls(attachmentUrls)
                 .build();
     }
 }

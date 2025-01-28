@@ -171,7 +171,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     @Transactional
     @Override
-    public TicketLogResponse updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
+    public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
         Member manager = getValidMember(memberId);
@@ -182,7 +182,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         // 중요도 변경
         ticket.updatePriority(request.getPriority());
         ticketRepository.save(ticket);
-        return null;
     }
 
     @Transactional

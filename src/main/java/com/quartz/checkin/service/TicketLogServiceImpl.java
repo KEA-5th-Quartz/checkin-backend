@@ -28,7 +28,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',
             'A', 'E', 'I', 'O', 'U');
-
+    // Todo: 담당자 배정 시, 자동으로 중요도 보통으로 설정
     // 담당자 배정
     @Transactional
     @Override
@@ -169,6 +169,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         return new TicketLogResponse(ticketLog);
     }
 
+    // Todo: TicketCudService로 이동
     @Transactional
     @Override
     public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {

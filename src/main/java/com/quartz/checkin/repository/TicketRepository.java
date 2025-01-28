@@ -14,6 +14,7 @@ import java.util.List;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // Todo: Manager 프로필도 같이 조회하기, QueryDSL로 구현
     @Query("SELECT t FROM Ticket t " +
+            "LEFT JOIN t.manager m " +
             "WHERE (:statuses IS NULL OR t.status IN :statuses) " +
             "AND (:categories IS NULL OR LOWER(TRIM(t.firstCategory.name)) IN :categories) " +
             "AND (:priorities IS NULL OR t.priority IN :priorities) " +

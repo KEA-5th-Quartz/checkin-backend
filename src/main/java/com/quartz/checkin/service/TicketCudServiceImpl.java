@@ -7,18 +7,12 @@ import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.*;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
-import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -27,11 +21,8 @@ public class TicketCudServiceImpl implements TicketCudService {
     private final TicketRepository ticketRepository;
     private final CategoryRepository categoryRepository;
     private final MemberRepository memberRepository;
-
-    private void validatePagination(int page, int size) {
-        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
-        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
-    }
+    private final TicketAttachmentRepository ticketAttachmentRepository;
+    private final S3UploadService s3UploadService;
 
     @Transactional
     @Override
@@ -64,78 +55,20 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     @Transactional
     @Override
-    public TicketDetailResponse getTicketDetail(Long memberId, Long ticketId) {
+    public TicketAttachmentResponse uploadAttachment(Long ticketId, MultipartFile file) throws IOException {
+        // 티켓 존재 여부 확인
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
 
-        return TicketDetailResponse.from(ticket);
-    }
+        // S3에 파일 업로드
+        String fileUrl = s3UploadService.uploadFile(file, "attachments");
 
-    @Transactional(readOnly = true)
-    @Override
-    public ManagerTicketListResponse getManagerTickets(
-            Long memberId, List<Status> statuses, List<String> usernames,
-            List<String> categories, List<Priority> priorities,
-            Boolean dueToday, Boolean dueThisWeek, int page, int size) {
+        // 첨부파일 엔티티 저장
+        TicketAttachment attachment = ticketAttachmentRepository.save(TicketAttachment.builder()
+                .ticket(ticket)
+                .url(fileUrl)
+                .build());
 
-        Page<Ticket> ticketPage = getTickets(
-                null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size);
-
-        return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public UserTicketListResponse getUserTickets(Long memberId, List<Status> statuses, List<String> usernames,
-                                                 List<String> categories, List<Priority> priorities,
-                                                 Boolean dueToday, Boolean dueThisWeek, int page, int size) {
-
-        Page<Ticket> ticketPage = getTickets(
-                memberId, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size);
-
-        return TicketResponseConverter.toUserTicketListResponse(ticketPage);
-    }
-
-    private Page<Ticket> getTickets(Long memberId, List<Status> statuses, List<String> usernames,
-                                    List<String> categories, List<Priority> priorities,
-                                    Boolean dueToday, Boolean dueThisWeek, int page, int size) {
-
-        validatePagination(page, size);
-
-        Pageable pageable = PageRequest.of(page - 1, size,
-                Sort.by(Sort.Direction.ASC, "dueDate")  // 마감기한 임박한 순
-                        .and(Sort.by(Sort.Direction.ASC, "title"))); // 같은 마감기한일 경우 제목 가나다 순 정렬
-
-        boolean isDueToday = Boolean.TRUE.equals(dueToday);
-        boolean isDueThisWeek = Boolean.TRUE.equals(dueThisWeek);
-
-        // 오늘 날짜와 이번 주 마지막 날 계산
-        LocalDate today = LocalDate.now();
-        LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
-
-        if (memberId == null) {
-            // 관리자용 전체 티켓 조회
-            return ticketRepository.findManagerTickets(statuses, usernames, categories, priorities,
-                    isDueToday, isDueThisWeek, endOfWeek, pageable);
-        } else {
-            // 특정 사용자의 티켓 조회
-            return ticketRepository.findUserTickets(memberId, statuses, usernames, categories, priorities,
-                    isDueToday, isDueThisWeek, endOfWeek, pageable);
-        }
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public ManagerTicketListResponse searchManagerTickets(Long memberId, String keyword, int page, int size) {
-
-        validatePagination(page, size);
-
-        Pageable pageable = PageRequest.of(page - 1, size,
-                Sort.by(Sort.Direction.ASC, "dueDate")  // 마감기한 임박한 순
-                        .and(Sort.by(Sort.Direction.ASC, "title"))); // 같은 마감기한일 경우 제목 가나다 순 정렬
-        String searchKeyword = (keyword == null || keyword.isBlank()) ? "" : keyword.toLowerCase();
-
-        Page<Ticket> ticketPage = ticketRepository.searchTickets(searchKeyword, pageable);
-        return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
+        return TicketAttachmentResponse.from(attachment);
     }
 }

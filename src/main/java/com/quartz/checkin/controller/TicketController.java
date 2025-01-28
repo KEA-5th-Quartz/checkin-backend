@@ -12,12 +12,14 @@ import com.quartz.checkin.service.TicketCudService;
 import com.quartz.checkin.service.TicketQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/tickets")
@@ -35,15 +37,14 @@ public class TicketController {
         TicketCreateResponse response = ticketCudService.createTicket(user.getId(), request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
-
-    @ManagerOrUser
-    @Operation(summary = "API 명세서 v0.1 line 29", description = "티켓 상세 조회")
-    @GetMapping("/{ticketId}")
-    public ApiResponse<TicketDetailResponse> getTicketDetail(
+    @User
+    @Operation(summary = "API 명세서 v0.1 line 41", description = "티켓에 첨부파일 업로드")
+    @PostMapping("/{ticketId}/attachment")
+    public ApiResponse<TicketAttachmentResponse> uploadAttachment(
             @PathVariable Long ticketId,
-            @AuthenticationPrincipal CustomUser user) {
+            @RequestParam("file") MultipartFile file) throws IOException {
 
-        TicketDetailResponse response = ticketCrudService.getTicketDetail(user.getId(),ticketId);
+        TicketAttachmentResponse response = ticketCudService.uploadAttachment(ticketId, file);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 

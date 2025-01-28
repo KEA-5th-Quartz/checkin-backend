@@ -68,10 +68,6 @@ public class Ticket extends BaseEntity {
 
     private LocalDateTime deletedAt;
 
-    @Getter
-    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TicketAttachment> attachments;
-
     @Builder
     public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
                   Status status, LocalDate dueDate) {

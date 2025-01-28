@@ -8,6 +8,7 @@ import com.quartz.checkin.dto.response.UserTicketListResponse;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import com.quartz.checkin.converter.TicketResponseConverter;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +29,14 @@ import java.util.List;
 public class TicketQueryServiceImpl implements TicketQueryService {
 
     private final TicketRepository ticketRepository;
+    private final TicketAttachmentRepository ticketAttachmentRepository;
 
     @Transactional(readOnly = true)
     @Override
     public TicketDetailResponse getTicketDetail(Long memberId, Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
-        return TicketDetailResponse.from(ticket);
+        return TicketDetailResponse.from(ticket, ticketAttachmentRepository);
     }
 
     @Transactional(readOnly = true)

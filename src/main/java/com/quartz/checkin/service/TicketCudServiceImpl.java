@@ -2,12 +2,12 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.exception.ApiException;
-import com.quartz.checkin.converter.TicketResponseConverter;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.*;
 import java.io.IOException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -26,9 +26,9 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     @Transactional
     @Override
-    public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) {
+    public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request, List<MultipartFile> files) throws IOException {
         // 사용자 조회
-        Member user = memberRepository.findById(memberId)
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
 
         // 1차 카테고리 조회 (parent_id가 NULL인 경우)
@@ -40,7 +40,7 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
         // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
-                .user(user)
+                .user(member)
                 .firstCategory(firstCategory)
                 .secondCategory(secondCategory)
                 .title(request.getTitle())
@@ -50,6 +50,15 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .build();
         ticketRepository.save(ticket);
 
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                if (!file.isEmpty()) {
+                    String fileUrl = s3UploadService.uploadFile(file, "attachments");
+                    TicketAttachment attachment = new TicketAttachment(ticket, fileUrl);
+                    ticketAttachmentRepository.save(attachment);
+                }
+            }
+        }
         return new TicketCreateResponse(ticket.getId());
     }
 

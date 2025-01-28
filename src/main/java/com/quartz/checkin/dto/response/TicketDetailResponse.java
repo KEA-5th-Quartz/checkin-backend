@@ -3,6 +3,8 @@ package com.quartz.checkin.dto.response;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
+import com.quartz.checkin.repository.TicketAttachmentRepository;
+import java.util.stream.Collectors;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -34,10 +36,11 @@ public class TicketDetailResponse {
     private String status;
     private List<Long> ticketAttachmentIds;
 
-    public static TicketDetailResponse from(Ticket ticket) {
-        List<Long> attachmentIds = ticket.getAttachments() != null
-                ? ticket.getAttachments().stream().map(TicketAttachment::getId).toList()
-                : List.of();
+    public static TicketDetailResponse from(Ticket ticket, TicketAttachmentRepository attachmentRepository) {
+        List<Long> attachmentIds = attachmentRepository.findByTicketId(ticket.getId())
+                .stream()
+                .map(TicketAttachment::getId)
+                .collect(Collectors.toList());
 
         return TicketDetailResponse.builder()
                 .ticketId(ticket.getId())

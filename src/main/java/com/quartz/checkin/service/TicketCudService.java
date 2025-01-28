@@ -9,6 +9,6 @@ import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface TicketCudService {
-    TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request);
+    TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request, List<MultipartFile> files) throws IOException;
     TicketAttachmentResponse uploadAttachment(Long ticketId, MultipartFile file) throws IOException;
 }

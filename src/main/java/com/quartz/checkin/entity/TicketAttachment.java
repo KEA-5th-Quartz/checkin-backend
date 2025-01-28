@@ -15,9 +15,9 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class TicketAttachment {
 
     @Id
@@ -31,4 +31,9 @@ public class TicketAttachment {
 
     @Column(nullable = false)
     private String url;
+
+    public TicketAttachment(Ticket ticket, String url) {
+        this.ticket = ticket;
+        this.url = url;
+    }
 }

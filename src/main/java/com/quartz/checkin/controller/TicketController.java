@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,11 +31,14 @@ public class TicketController {
     private final TicketQueryService ticketQueryService;
 
     @User
-    @PostMapping
+    @Operation(summary = "API 명세서 v0.1 line 25", description = "티켓 생성")
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ApiResponse<TicketCreateResponse> createTicket(
             @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid TicketCreateRequest request) {
-        TicketCreateResponse response = ticketCudService.createTicket(user.getId(), request);
+            @RequestPart("request") @Valid TicketCreateRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) throws IOException {
+
+        TicketCreateResponse response = ticketCudService.createTicket(user.getId(), request, files);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
     @User

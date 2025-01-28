@@ -71,7 +71,7 @@ public class TicketController {
     @GetMapping("/search")
     public ApiResponse<ManagerTicketListResponse> searchTickets(
             @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
@@ -107,7 +107,7 @@ public class TicketController {
     @GetMapping("/my-tickets/search")
     public ApiResponse<UserTicketListResponse> searchUserTickets(
             @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 

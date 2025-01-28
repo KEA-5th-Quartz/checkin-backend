@@ -2,6 +2,7 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.converter.TicketResponseConverter;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.*;
@@ -18,7 +19,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +27,11 @@ public class TicketCrudServiceImpl implements TicketCrudService {
     private final TicketRepository ticketRepository;
     private final CategoryRepository categoryRepository;
     private final MemberRepository memberRepository;
+
+    private void validatePagination(int page, int size) {
+        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
+        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+    }
 
     @Transactional
     @Override
@@ -66,7 +71,7 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         return TicketDetailResponse.from(ticket);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public ManagerTicketListResponse getManagerTickets(
             Long memberId, List<Status> statuses, List<String> usernames,
@@ -76,20 +81,10 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         Page<Ticket> ticketPage = getTickets(
                 null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size);
 
-        List<ManagerTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
-                .map(ManagerTicketSummaryResponse::from)
-                .collect(Collectors.toList());
-
-        return new ManagerTicketListResponse(
-                ticketPage.getNumber() + 1,
-                ticketPage.getSize(),
-                ticketPage.getTotalPages(),
-                (int) ticketPage.getTotalElements(),
-                ticketList
-        );
+        return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public UserTicketListResponse getUserTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                                  List<String> categories, List<Priority> priorities,
@@ -98,28 +93,18 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         Page<Ticket> ticketPage = getTickets(
                 memberId, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size);
 
-        List<UserTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
-                .map(UserTicketSummaryResponse::from)
-                .collect(Collectors.toList());
-
-        return new UserTicketListResponse(
-                ticketPage.getNumber() + 1,
-                ticketPage.getSize(),
-                ticketPage.getTotalPages(),
-                (int) ticketPage.getTotalElements(),
-                ticketList
-        );
+        return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 
-    
     private Page<Ticket> getTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                     List<String> categories, List<Priority> priorities,
                                     Boolean dueToday, Boolean dueThisWeek, int page, int size) {
 
-        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
-        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+        validatePagination(page, size);
 
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page - 1, size,
+                Sort.by(Sort.Direction.ASC, "dueDate")  // 마감기한 임박한 순
+                        .and(Sort.by(Sort.Direction.ASC, "title"))); // 같은 마감기한일 경우 제목 가나다 순 정렬
 
         boolean isDueToday = Boolean.TRUE.equals(dueToday);
         boolean isDueThisWeek = Boolean.TRUE.equals(dueThisWeek);
@@ -139,46 +124,34 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         }
     }
 
-
     @Transactional(readOnly = true)
     @Override
     public ManagerTicketListResponse searchManagerTickets(Long memberId, String keyword, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+
+        validatePagination(page, size);
+
+        Pageable pageable = PageRequest.of(page - 1, size,
+                Sort.by(Sort.Direction.ASC, "dueDate")  // 마감기한 임박한 순
+                        .and(Sort.by(Sort.Direction.ASC, "title"))); // 같은 마감기한일 경우 제목 가나다 순 정렬
         String searchKeyword = (keyword == null || keyword.isBlank()) ? "" : keyword.toLowerCase();
 
         Page<Ticket> ticketPage = ticketRepository.searchTickets(searchKeyword, pageable);
-
-        List<ManagerTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
-                .map(ManagerTicketSummaryResponse::from)
-                .collect(Collectors.toList());
-
-        return new ManagerTicketListResponse(
-                ticketPage.getNumber(),
-                ticketPage.getSize(),
-                ticketPage.getTotalPages(),
-                (int) ticketPage.getTotalElements(),
-                ticketList
-        );
+        return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
     @Transactional(readOnly = true)
     @Override
     public UserTicketListResponse searchUserTickets(Long memberId, String keyword, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        validatePagination(page, size);
+
+        Pageable pageable = PageRequest.of(page - 1, size,
+                Sort.by(Sort.Direction.ASC, "dueDate")  // 마감기한 임박한 순
+                        .and(Sort.by(Sort.Direction.ASC, "title"))); // 같은 마감기한일 경우 제목 가나다 순 정렬
 
         Page<Ticket> ticketPage = ticketRepository.searchMyTickets(
                 memberId, (keyword != null && !keyword.isBlank()) ? keyword : null, pageable);
 
-        List<UserTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
-                .map(UserTicketSummaryResponse::from)
-                .collect(Collectors.toList());
-
-        return new UserTicketListResponse(
-                ticketPage.getNumber(),
-                ticketPage.getSize(),
-                ticketPage.getTotalPages(),
-                (int) ticketPage.getTotalElements(),
-                ticketList
-        );
+        return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 }

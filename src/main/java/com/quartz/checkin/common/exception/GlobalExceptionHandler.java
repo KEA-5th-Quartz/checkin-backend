@@ -4,12 +4,18 @@ import com.quartz.checkin.dto.response.ApiErrorResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,9 +26,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import software.amazon.awssdk.core.exception.SdkException;
-
-
-import java.util.*;
 
 @Slf4j
 @RestControllerAdvice
@@ -102,6 +105,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                                                                           HttpHeaders headers, HttpStatusCode status,
                                                                           WebRequest request) {
         return handleExceptionInternal(ErrorCode.TOO_LARGE_FILE);
+    }
+
+    // 메서드 기반 인가 예외 처리
+    @ExceptionHandler
+    public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException e) {
+        log.error("권한이 부족합니다.");
+        return handleExceptionInternal(ErrorCode.FORBIDDEN);
     }
 
     // 그 외 모든 예외 처리

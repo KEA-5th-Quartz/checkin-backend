@@ -4,6 +4,7 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
+import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.repository.MemberRepository;
@@ -36,6 +37,12 @@ public class MemberService {
                     log.error("존재하지 않는 사용자입니다.");
                     return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
                 });
+    }
+
+    public MemberInfoResponse getMemberInfo(Long id) {
+        Member member = getMemberByIdOrThrow(id);
+
+        return MemberInfoResponse.from(member);
     }
 
     @Transactional

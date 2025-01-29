@@ -141,14 +141,14 @@ public class MemberService {
         }
     }
 
-    private void checkEmailDuplicate(String email) {
+    public void checkEmailDuplicate(String email) {
         if (memberRepository.findByEmail(email).isPresent()) {
             log.error("사용중인 이메일입니다. {}", email);
             throw new ApiException(ErrorCode.DUPLICATE_EMAIL);
         }
     }
 
-    private void checkUsernameDuplicate(String username) {
+    public void checkUsernameDuplicate(String username) {
         if (memberRepository.findByUsername(username).isPresent()) {
             log.error("사용중인 사용자 이름입니다. {}", username);
             throw new ApiException(ErrorCode.DUPLICATE_USERNAME);

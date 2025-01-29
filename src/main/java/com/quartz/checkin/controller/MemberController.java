@@ -3,6 +3,7 @@ package com.quartz.checkin.controller;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.request.RoleUpdateRequest;
+import com.quartz.checkin.dto.request.UsernameCheckRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.dto.response.ProfilePicUpdateResponse;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -47,6 +49,14 @@ public class MemberController {
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
+
+    @GetMapping("/check-username")
+    public ApiResponse<Void> checkUsernameDuplicate(@ModelAttribute @Valid UsernameCheckRequest usernameCheckRequest) {
+        memberService.checkUsernameDuplicate(usernameCheckRequest.getUsername());
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
 
     @PutMapping("/{memberId}/password")
     public ApiResponse<Void> updatePassword(@PathVariable(name = "memberId") Long memberId,

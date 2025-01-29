@@ -1,5 +1,6 @@
 package com.quartz.checkin.controller;
 
+import com.quartz.checkin.dto.request.EmailCheckRequest;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.request.RoleUpdateRequest;
@@ -57,6 +58,12 @@ public class MemberController {
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
+    @GetMapping("/check-email")
+    public ApiResponse<Void> checkUsernameDuplicate(@ModelAttribute @Valid EmailCheckRequest emailCheckRequest) {
+        memberService.checkEmailDuplicate(emailCheckRequest.getEmail());
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
 
     @PutMapping("/{memberId}/password")
     public ApiResponse<Void> updatePassword(@PathVariable(name = "memberId") Long memberId,

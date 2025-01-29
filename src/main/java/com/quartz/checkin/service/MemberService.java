@@ -6,6 +6,7 @@ import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.request.PasswordResetRequest;
 import com.quartz.checkin.dto.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.response.MemberInfoResponse;
@@ -15,6 +16,7 @@ import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.common.PasswordGenerator;
 import com.quartz.checkin.security.CustomUser;
+import com.quartz.checkin.security.service.JwtService;
 import java.io.IOException;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3UploadService s3UploadService;
+    private final JwtService jwtService;
 
     public Member getMemberByIdOrThrow(Long id) {
         return memberRepository.findById(id)
@@ -109,6 +112,24 @@ public class MemberService {
         }
 
         member.updatePassword(passwordEncoder.encode(newPassword));
+    }
+
+    @Transactional
+    public void resetMemberPassword(Long id, PasswordResetRequest passwordResetRequest) {
+        Member member = getMemberByIdOrThrow(id);
+
+        String passwordResetToken = passwordResetRequest.getPasswordResetToken();
+        if (!jwtService.isValidToken(passwordResetToken)) {
+            log.error("유효하지 않은 비밀번호 초기화 토큰입니다.");
+            throw new ApiException(ErrorCode.INVALID_PASSWORD_RESET_TOKEN);
+        }
+
+        if (!jwtService.getMemberIdFromPasswordResetToken(passwordResetToken).equals(id)) {
+            log.error("다른 사용자의 리소스에 접근하려고 합니다.");
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        member.updatePassword(passwordEncoder.encode(passwordResetRequest.getNewPassword()));
     }
 
     @Transactional

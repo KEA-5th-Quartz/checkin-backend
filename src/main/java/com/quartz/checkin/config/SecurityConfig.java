@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/auth/login", "/auth/refresh").permitAll()
                         .requestMatchers("/members/check-*").permitAll()
+                        .requestMatchers( "/members/*/password-reset").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

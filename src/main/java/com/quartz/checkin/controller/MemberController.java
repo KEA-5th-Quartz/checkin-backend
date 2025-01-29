@@ -4,6 +4,7 @@ import com.quartz.checkin.dto.request.EmailCheckRequest;
 import com.quartz.checkin.dto.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.request.PasswordResetRequest;
 import com.quartz.checkin.dto.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.request.UsernameCheckRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
@@ -85,6 +86,15 @@ public class MemberController {
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
+
+    @PutMapping("/{memberId}/password-reset")
+    public ApiResponse<Void> resetPassword(@PathVariable(name = "memberId") Long memberId,
+                                           @RequestBody @Valid PasswordResetRequest passwordResetRequest) {
+        memberService.resetMemberPassword(memberId, passwordResetRequest);
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
 
     @PutMapping("/{memberId}/profile-pic")
     public ApiResponse<ProfilePicUpdateResponse> updateProfilePic(@PathVariable(name = "memberId") Long memberId,

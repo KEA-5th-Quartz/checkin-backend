@@ -1,6 +1,8 @@
 package com.quartz.checkin.security.service;
 
 
+import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.response.AuthenticationResponse;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.security.CustomUser;
@@ -13,7 +15,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Optional;
 import javax.crypto.SecretKey;
@@ -124,6 +125,20 @@ public class JwtService {
         }
 
         return Optional.empty();
+    }
+
+    public Long getMemberIdFromPasswordResetToken(String passwordResetToken) {
+        try {
+            Claims claims = decodeToken(passwordResetToken);
+            String subject = claims.getSubject();
+            if (!subject.equals(PASSWORD_RESET_TOKEN_SUBJECT)) {
+                throw new Exception("비밀번호 초기화 토큰이 아닙니다.");
+            }
+            return claims.get(ID_CLAIM, Long.class);
+        } catch (Exception e) {
+            log.error("비밀번호 초기화 토큰 해독 중 문제가 발생했습니다. {}", e.getMessage());
+            throw new ApiException(ErrorCode.INVALID_PASSWORD_RESET_TOKEN);
+        }
     }
 
     public void setAuthenticationResponse(HttpServletResponse response, CustomUser customUser) {

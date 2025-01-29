@@ -59,6 +59,10 @@ public class Member extends BaseEntity {
         this.refreshToken = refreshToken;
     }
 
+    public void updateRole(Role role) {
+        this.role = role;
+    }
+
     public void updateProfilePic(String profilePic) {
         this.profilePic = profilePic;
     }

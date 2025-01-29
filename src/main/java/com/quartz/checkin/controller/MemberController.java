@@ -2,6 +2,7 @@ package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.dto.response.ProfilePicUpdateResponse;
@@ -64,6 +65,15 @@ public class MemberController {
                 memberService.updateMemberProfilePic(memberId, customUser, file));
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @Admin
+    @PutMapping("/{memberId}/role")
+    public ApiResponse<Void> updateRole(@PathVariable(name = "memberId") Long memberId,
+                                        @RequestBody @Valid RoleUpdateRequest roleUpdateRequest) {
+        memberService.updateMemberRole(memberId, roleUpdateRequest);
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
 }

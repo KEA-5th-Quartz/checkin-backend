@@ -5,8 +5,10 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.common.PasswordGenerator;
@@ -65,7 +67,7 @@ public class MemberService {
     @Transactional
     public void changeMemberPassword(Long id, CustomUser customUser, PasswordChangeRequest passwordChangeRequest) {
         Member member = getMemberByIdOrThrow(id);
-        
+
         checkMemberOwnsResource(member, customUser);
 
         String originalPassword = passwordChangeRequest.getOriginalPassword();
@@ -117,6 +119,19 @@ public class MemberService {
             log.error("S3에 파일을 업로드할 수 없습니다. {}", exception.getMessage());
             throw new ApiException(ErrorCode.OBJECT_STORAGE_ERROR);
         }
+    }
+
+    @Transactional
+    public void updateMemberRole(Long id, RoleUpdateRequest roleUpdateRequest) {
+        Member member = getMemberByIdOrThrow(id);
+
+        Role newRole = Role.fromValue(roleUpdateRequest.getRole());
+        if (member.getRole().equals(newRole)) {
+            log.error("기존 권한과 동일합니다.");
+            throw new ApiException(ErrorCode.INVALID_NEW_ROLE);
+        }
+
+        member.updateRole(newRole);
     }
 
     private void checkMemberOwnsResource(Member member, CustomUser customUser) {

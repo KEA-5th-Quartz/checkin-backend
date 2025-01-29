@@ -23,7 +23,7 @@ public enum ErrorCode {
     // 회원 서비스 예외
     INVALID_ORIGINAL_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4003", "현재 비밀번호가 일치하지 않습니다."),
     INVALID_NEW_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4004", "새 비밀번호가 기존 비밀번호와 동일합니다."),
-    USERNAME_MISSING(HttpStatus.BAD_REQUEST, "MEMBER_4005", "아이디 값이 누락되었습니다."),
+    INVALID_NEW_ROLE(HttpStatus.BAD_REQUEST, "MEMBER_4005", "기존 권한과 동일합니다."),
     INVALID_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "MEMBER_4007", "페이지 번호가 유효하지 않습니다."),
     INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "MEMBER_4008", "페이지 크기가 유효하지 않습니다."),
     INVALID_USERNAME_OR_PASSWORD(HttpStatus.UNAUTHORIZED, "MEMBER_4013", "일치하는 회원 정보가 없습니다. 아이디 혹은 비밀번호를 다시 확인해주세요."),

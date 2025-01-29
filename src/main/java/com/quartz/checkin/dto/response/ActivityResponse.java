@@ -2,6 +2,7 @@ package com.quartz.checkin.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({"type", "log_id", "log_content", "comment_id", "member_id", "comment_content", "attachment_url", "created_at"})
 public class ActivityResponse {
     private ActivityType type;
 

@@ -1,7 +1,6 @@
 package com.quartz.checkin.dto.request;
 
 
-import jakarta.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

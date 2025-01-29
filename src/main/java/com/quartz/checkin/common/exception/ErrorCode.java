@@ -21,15 +21,14 @@ public enum ErrorCode {
     OBJECT_STORAGE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON_5002", "오브젝트 스토리지 오류가 발생했습니다."),
 
     // 회원 서비스 예외
-    INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "MEMBER_4003", "비밀번호 형식이 올바르지 않습니다."),
-    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "MEMBER_4004", "비밀번호가 일치하지 않습니다."),
+    INVALID_ORIGINAL_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4003", "현재 비밀번호가 일치하지 않습니다."),
+    INVALID_NEW_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4004", "새 비밀번호가 기존 비밀번호와 동일합니다."),
     USERNAME_MISSING(HttpStatus.BAD_REQUEST, "MEMBER_4005", "아이디 값이 누락되었습니다."),
     INVALID_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "MEMBER_4007", "페이지 번호가 유효하지 않습니다."),
     INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "MEMBER_4008", "페이지 크기가 유효하지 않습니다."),
     INVALID_USERNAME_OR_PASSWORD(HttpStatus.UNAUTHORIZED, "MEMBER_4013", "일치하는 회원 정보가 없습니다. 아이디 혹은 비밀번호를 다시 확인해주세요."),
     UNSUPPORTED_FILE_TYPE(HttpStatus.UNAUTHORIZED, "MEMBER_4015", "지원하지 않는 파일 형식입니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_4040", "존재하지 않는 회원입니다."),
-    NOT_REGISTERED(HttpStatus.NOT_FOUND, "MEMBER_4041", "가입하지 않은 아이디입니다."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "MEMBER_4090", "이미 사용 중인 아이디입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "MEMBER_4091", "이미 사용 중인 이메일 주소입니다."),
     ADMIN_PERMISSION_REQUIRED(HttpStatus.CONFLICT, "MEMBER_4093", "관리자 권한이 없는 회원에게 최고 관리자 권한을 줄 수 없습니다."),

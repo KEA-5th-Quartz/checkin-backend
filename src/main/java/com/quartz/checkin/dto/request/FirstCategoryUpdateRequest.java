@@ -6,10 +6,8 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class CategoryUpdateRequest {
+public class FirstCategoryUpdateRequest {
 
     @NotBlank
     private String firstCategory;
-    @NotBlank
-    private String secondCategory;
 }

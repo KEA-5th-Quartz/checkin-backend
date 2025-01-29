@@ -3,9 +3,11 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
+import com.quartz.checkin.dto.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.request.RoleUpdateRequest;
+import com.quartz.checkin.dto.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
@@ -18,6 +20,10 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +52,25 @@ public class MemberService {
         Member member = getMemberByIdOrThrow(id);
 
         return MemberInfoResponse.from(member);
+    }
+
+    public MemberInfoListResponse getMemberInfoList(MemberInfoListRequest memberInfoListRequest) {
+
+        Role role = Role.fromValue(memberInfoListRequest.getRole());
+        int page = memberInfoListRequest.getPage();
+        int size = memberInfoListRequest.getSize();
+        String username = memberInfoListRequest.getUsername();
+
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").ascending());
+
+        Page<Member> memberPage = null;
+        if (username == null || username.isBlank()) {
+            memberPage = memberRepository.findByRole(role, pageable);
+        } else {
+            memberPage = memberRepository.findByRoleAndUsernameContaining(role, username, pageable);
+        }
+
+        return MemberInfoListResponse.from(memberPage);
     }
 
     @Transactional

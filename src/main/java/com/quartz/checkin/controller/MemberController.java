@@ -1,15 +1,18 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.request.EmailCheckRequest;
+import com.quartz.checkin.dto.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.request.UsernameCheckRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
+import com.quartz.checkin.dto.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.dto.response.ProfilePicUpdateResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Admin;
+import com.quartz.checkin.security.annotation.AdminOrManager;
 import com.quartz.checkin.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +45,15 @@ public class MemberController {
         memberService.register(memberRegistrationRequest);
 
         return ApiResponse.createSuccessResponse(HttpStatus.CREATED.value());
+    }
+
+    @AdminOrManager
+    @GetMapping
+    public ApiResponse<MemberInfoListResponse> memberInfoList(
+            @ModelAttribute @Valid MemberInfoListRequest memberInfoListRequest) {
+        MemberInfoListResponse response = memberService.getMemberInfoList(memberInfoListRequest);
+
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @GetMapping("/{memberId}")

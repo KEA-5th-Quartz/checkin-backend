@@ -57,7 +57,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchTickets(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT t FROM Ticket t " +
+    @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
             "WHERE t.user.id = :memberId " +
             "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")

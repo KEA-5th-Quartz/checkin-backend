@@ -4,6 +4,7 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
+import com.quartz.checkin.dto.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.event.MemberRegisteredEvent;
@@ -62,6 +63,28 @@ public class MemberService {
     }
 
     @Transactional
+    public void changeMemberPassword(Long id, CustomUser customUser, PasswordChangeRequest passwordChangeRequest) {
+        Member member = getMemberByIdOrThrow(id);
+        
+        checkMemberOwnsResource(member, customUser);
+
+        String originalPassword = passwordChangeRequest.getOriginalPassword();
+        String newPassword = passwordChangeRequest.getNewPassword();
+
+        if (!passwordEncoder.matches(originalPassword, member.getPassword())) {
+            log.error("기존 비밀번호와 일치하지 않습니다.");
+            throw new ApiException(ErrorCode.INVALID_ORIGINAL_PASSWORD);
+        }
+
+        if (originalPassword.equals(newPassword)) {
+            log.error("새 비밀번호가 기존 비밀번호와 일치합니다.");
+            throw new ApiException(ErrorCode.INVALID_NEW_PASSWORD);
+        }
+
+        member.updatePassword(passwordEncoder.encode(newPassword));
+    }
+
+    @Transactional
     public void updateMemberRefreshToken(Long id, String refreshToken) {
         Member member = getMemberByIdOrThrow(id);
 
@@ -83,10 +106,7 @@ public class MemberService {
 
         Member member = getMemberByIdOrThrow(id);
 
-        if (!Objects.equals(member.getId(), customUser.getId())) {
-            log.error("다른 사용자의 리소스에 접근하려고 합니다.");
-            throw new ApiException(ErrorCode.FORBIDDEN);
-        }
+        checkMemberOwnsResource(member, customUser);
 
         try {
             String profilePic = s3UploadService.uploadFile(file, S3Config.PROFILE_DIR);
@@ -96,6 +116,13 @@ public class MemberService {
         } catch (IOException exception) {
             log.error("S3에 파일을 업로드할 수 없습니다. {}", exception.getMessage());
             throw new ApiException(ErrorCode.OBJECT_STORAGE_ERROR);
+        }
+    }
+
+    private void checkMemberOwnsResource(Member member, CustomUser customUser) {
+        if (!Objects.equals(member.getId(), customUser.getId())) {
+            log.error("다른 사용자의 리소스에 접근하려고 합니다.");
+            throw new ApiException(ErrorCode.FORBIDDEN);
         }
     }
 

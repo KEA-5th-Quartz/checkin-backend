@@ -1,6 +1,7 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
+import com.quartz.checkin.dto.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.dto.response.ProfilePicUpdateResponse;
@@ -44,6 +45,15 @@ public class MemberController {
         MemberInfoResponse response = memberService.getMemberInfo(memberId);
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @PutMapping("/{memberId}/password")
+    public ApiResponse<Void> updatePassword(@PathVariable(name = "memberId") Long memberId,
+                                            @RequestBody @Valid PasswordChangeRequest passwordChangeRequest,
+                                            @AuthenticationPrincipal CustomUser customUser) {
+        memberService.changeMemberPassword(memberId, customUser, passwordChangeRequest);
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
     @PutMapping("/{memberId}/profile-pic")

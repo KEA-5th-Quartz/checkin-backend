@@ -4,6 +4,7 @@ import com.quartz.checkin.dto.request.EmailCheckRequest;
 import com.quartz.checkin.dto.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.request.PasswordResetRequest;
 import com.quartz.checkin.dto.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.request.UsernameCheckRequest;
@@ -83,6 +84,14 @@ public class MemberController {
                                             @RequestBody @Valid PasswordChangeRequest passwordChangeRequest,
                                             @AuthenticationPrincipal CustomUser customUser) {
         memberService.changeMemberPassword(memberId, customUser, passwordChangeRequest);
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @PostMapping("/password-reset")
+    public ApiResponse<Void> sendPasswordResetMail(
+            @RequestBody @Valid PasswordResetEmailRequest passwordResetEmailRequest) {
+        memberService.sendPasswordResetMail(passwordResetEmailRequest);
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }

@@ -6,6 +6,7 @@ import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.request.PasswordResetRequest;
 import com.quartz.checkin.dto.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.response.MemberInfoListResponse;
@@ -13,6 +14,7 @@ import com.quartz.checkin.dto.response.MemberInfoResponse;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
+import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.common.PasswordGenerator;
 import com.quartz.checkin.security.CustomUser;
@@ -130,6 +132,18 @@ public class MemberService {
         }
 
         member.updatePassword(passwordEncoder.encode(passwordResetRequest.getNewPassword()));
+    }
+
+    public void sendPasswordResetMail(PasswordResetEmailRequest passwordResetEmailRequest) {
+        Member member = memberRepository.findByUsername(passwordResetEmailRequest.getUsername())
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 사용자입니다.");
+                    return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
+                });
+
+        String passwordResetToken = jwtService.createPasswordResetToken(member.getId());
+
+        eventPublisher.publishEvent(new PasswordResetMailEvent(member.getId(), member.getEmail(), passwordResetToken));
     }
 
     @Transactional

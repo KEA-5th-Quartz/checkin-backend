@@ -47,8 +47,10 @@ public class AuthService {
         Role role = member.getRole();
         LocalDateTime passwordChangedAt = member.getPasswordChangedAt();
 
-        String accessToken = jwtService.createAccessToken(memberId, username, profilePic, role, passwordChangedAt);
+        String accessToken = jwtService.createAccessToken(memberId, username, profilePic, role);
         refreshToken = jwtService.createRefreshToken();
+        String passwordResetToken =
+                passwordChangedAt == null ? jwtService.createPasswordResetToken(memberId) : null;
 
         member.updateRefreshToken(refreshToken);
         jwtService.setRefreshToken(response, refreshToken);
@@ -58,7 +60,7 @@ public class AuthService {
                 .username(username)
                 .role(role.getValue())
                 .profilePic(profilePic)
-                .passwordChangedAt(passwordChangedAt)
+                .passwordResetToken(passwordResetToken)
                 .accessToken(accessToken)
                 .build();
     }

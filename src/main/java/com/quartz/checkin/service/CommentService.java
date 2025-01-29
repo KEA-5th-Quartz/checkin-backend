@@ -12,6 +12,7 @@ import com.quartz.checkin.dto.response.TicketActivityResponse;
 import com.quartz.checkin.entity.Comment;
 import com.quartz.checkin.entity.Like;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketLog;
 import com.quartz.checkin.repository.CommentRepository;
@@ -19,6 +20,7 @@ import com.quartz.checkin.repository.LikeRepository;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketLogRepository;
 import com.quartz.checkin.repository.TicketRepository;
+import com.quartz.checkin.security.CustomUser;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,17 +48,23 @@ public class CommentService {
      * @param content  댓글 내용
      * @return 댓글 ID
      */
-    public CommentResponse writeComment(Long ticketId, String content) {
+    public CommentResponse writeComment(CustomUser user, Long ticketId, String content) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> {
                     log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
                     return new ApiException(ErrorCode.TICKET_NOT_FOUND);
                 });
-        Member member = memberRepository.findById(1L)
+        Member member = memberRepository.findById(user.getId())
                 .orElseThrow(() -> {
                     log.error(ErrorCode.MEMBER_NOT_FOUND.getMessage());
                     return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
                 });
+
+        // 해당 "사용자"가 생성한 티켓이 아닌 경우 댓글 작성 불가
+        if (user.getRole() == Role.USER && !ticket.getUser().getId().equals(user.getId())) {
+            log.error(ErrorCode.FORBIDDEN.getMessage());
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
 
         Comment comment = new Comment();
         comment.setTicket(ticket);
@@ -76,8 +84,13 @@ public class CommentService {
      * @return 댓글과 로그
      */
     public TicketActivityResponse getCommentsAndLogs(Long ticketId) {
-        List<TicketLog> logs = ticketLogRepository.findByTicketId(ticketId);
-        List<Comment> comments = commentRepository.findByTicketId(ticketId);
+        if (!ticketRepository.existsById(ticketId)) {
+            log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
+            throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
+        }
+
+        List<TicketLog> logs = ticketLogRepository.findByTicketId(ticketId).orElseThrow(null);
+        List<Comment> comments = commentRepository.findByTicketId(ticketId).orElseThrow(null);
 
         List<ActivityResponse> activities = Stream.concat(
                         logs.stream().map(this::convertLogToActivity),
@@ -124,7 +137,7 @@ public class CommentService {
     }
 
     /**
-     * 댓글에 좋아요를 토글한다.
+     * 댓글에 좋아요를 토글한다.<br>
      * 이미 좋아요를 누른 경우 좋아요를 취소한다.
      *
      * @param ticketId  티켓 ID
@@ -132,25 +145,31 @@ public class CommentService {
      * @return 좋아요 ID, 댓글 ID
      */
     @Transactional
-    public CommentLikeResponse toggleLike(Long ticketId, Long commentId) {
+    public CommentLikeResponse toggleLike(CustomUser user, Long ticketId, Long commentId) {
+        if (!ticketRepository.existsById(ticketId)) {
+            log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
+            throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
+        }
+
+        // 이미 좋아요를 "누른" 경우 좋아요를 "취소"함
+        if (likeRepository.existsByComment_IdAndMember_Id(commentId, user.getId())) {
+            likeRepository.deleteByComment_Id(commentId);
+            return CommentLikeResponse.builder()
+                    .isLiked(false)
+                    .commentId(commentId)
+                    .build();
+        }
+
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> {
                     log.error(ErrorCode.COMMENT_NOT_FOUND.getMessage());
                     return new ApiException(ErrorCode.COMMENT_NOT_FOUND);
                 });
-        Member member = memberRepository.findById(1L)
+        Member member = memberRepository.findById(user.getId())
                 .orElseThrow(() -> {
                     log.error(ErrorCode.MEMBER_NOT_FOUND.getMessage());
                     return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
                 });
-
-        // 이미 좋아요를 누른 경우 좋아요를 취소함
-        if (likeRepository.existsByComment_IdAndMember_Id(commentId, member.getId())) {
-            likeRepository.deleteByComment_Id(commentId);
-            return CommentLikeResponse.builder()
-                    .commentId(commentId)
-                    .build();
-        }
 
         Like like = new Like();
         like.setComment(comment);
@@ -158,6 +177,7 @@ public class CommentService {
 
         Like savedLike = likeRepository.save(like);
         return CommentLikeResponse.builder()
+                .isLiked(true)
                 .id(savedLike.getId())
                 .commentId(commentId)
                 .build();
@@ -171,11 +191,15 @@ public class CommentService {
      * @return 좋아요 누른 회원 목록
      */
     public CommentLikeListResponse getLikingMembersList(Long ticketId, Long commentId) {
-        Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> {
-                    log.error(ErrorCode.COMMENT_NOT_FOUND.getMessage());
-                    return new ApiException(ErrorCode.COMMENT_NOT_FOUND);
-                });
+        if (!ticketRepository.existsById(ticketId)) {
+            log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
+            throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
+        }
+
+        if (!commentRepository.existsById(commentId)) {
+            log.error(ErrorCode.COMMENT_NOT_FOUND.getMessage());
+            throw new ApiException(ErrorCode.COMMENT_NOT_FOUND);
+        }
 
         List<LikesUserList> likes = likeRepository.getLikesByComment_Id(commentId).stream().map(like -> LikesUserList.builder()
                 .memberId(like.getMember().getId())
@@ -186,7 +210,8 @@ public class CommentService {
                 .ticketId(ticketId)
                 .commentId(commentId)
                 .totalLikes(likes.size())
-                .likes(likes).build();
+                .likes(likes)
+                .build();
     }
 
     public void uploadCommentAttachment() {

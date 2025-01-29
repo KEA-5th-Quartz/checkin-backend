@@ -19,6 +19,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -110,8 +111,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     // 메서드 기반 인가 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException e) {
-        log.error("권한이 부족합니다.");
+        log.error("권한이 부족합니다. {}", e.getMessage());
         return handleExceptionInternal(ErrorCode.FORBIDDEN);
+    }
+
+
+    // 요청 파라미터 누락 예외 처리
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex,
+                                                                          HttpHeaders headers, HttpStatusCode status,
+                                                                          WebRequest request) {
+        log.error("요청에 필요한 파라미터가 누락되었습니다. {}", ex.getMessage());
+        return handleExceptionInternal(ErrorCode.INVALID_DATA);
     }
 
     // 그 외 모든 예외 처리

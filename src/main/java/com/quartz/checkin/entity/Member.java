@@ -53,6 +53,7 @@ public class Member extends BaseEntity {
 
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+        this.passwordChangedAt = LocalDateTime.now();
     }
 
     public void updateRefreshToken(String refreshToken) {

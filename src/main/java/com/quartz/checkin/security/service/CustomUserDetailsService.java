@@ -47,7 +47,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     "",
                     claims.get(JwtService.PROFILE_PIC_CLAIM, String.class),
                     role,
-                    claims.get(JwtService.PASSWORD_CHANGED_AT_CLAIM, LocalDateTime.class),
+                    null,
                     Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role.getValue()))
             );
         } catch (Exception e) {

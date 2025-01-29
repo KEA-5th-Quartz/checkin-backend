@@ -22,12 +22,10 @@ public class AuthenticationResponse {
     private String profilePic;
     private String role;
     private String accessToken;
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    private LocalDateTime passwordChangedAt;
+    private String passwordResetToken;
 
 
-    public static AuthenticationResponse from(CustomUser user, String accessToken) {
+    public static AuthenticationResponse from(CustomUser user, String accessToken, String passwordResetToken) {
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
@@ -35,7 +33,7 @@ public class AuthenticationResponse {
                 .username(user.getUsername())
                 .role(user.getRole().getValue())
                 .profilePic(user.getProfilePic())
-                .passwordChangedAt(user.getPasswordChangedAt())
+                .passwordResetToken(passwordResetToken)
                 .build();
     }
 

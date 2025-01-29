@@ -27,8 +27,10 @@ import org.springframework.stereotype.Service;
 public class JwtService {
 
     private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
+    private static final String PASSWORD_RESET_TOKEN_SUBJECT = "PasswordReset";
     private static final String REFRESH_TOKEN_SUBJECT = "RefreshToken";
     private static final Long ACCESS_TOKEN_EXPIRATION_PERIOD = 3600000L;
+    private static final Long PASSWORD_RESET_TOKEN_EXPIRATION_PERIOD = 300000L;
     private static final Long REFRESH_TOKEN_EXPIRATION_PERIOD = 604800000L;
     private static final int REFRESH_TOKEN_COOKIE_MAX_AGE = 604800;
 
@@ -40,7 +42,6 @@ public class JwtService {
     public static final String ROLE_CLAIM = "role";
     public static final String PROFILE_PIC_CLAIM = "profilePic";
     public static final String USERNAME_CLAIM = "username";
-    public static final String PASSWORD_CHANGED_AT_CLAIM = "passwordChangedAt";
 
     @Value("${jwt.secretKey}")
     private String secretKey;
@@ -51,7 +52,7 @@ public class JwtService {
         key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createAccessToken(Long id, String username, String profilePic, Role role, LocalDateTime passwordChangedAt) {
+    public String createAccessToken(Long id, String username, String profilePic, Role role) {
         Date now = new Date();
 
         return Jwts
@@ -61,7 +62,6 @@ public class JwtService {
                 .claim(USERNAME_CLAIM, username)
                 .claim(PROFILE_PIC_CLAIM, profilePic)
                 .claim(ROLE_CLAIM, role)
-                .claim(PASSWORD_CHANGED_AT_CLAIM, passwordChangedAt)
                 .expiration(new Date(now.getTime() + ACCESS_TOKEN_EXPIRATION_PERIOD))
                 .signWith(key)
                 .compact();
@@ -93,6 +93,18 @@ public class JwtService {
                 .compact();
     }
 
+    public String createPasswordResetToken(Long id) {
+        Date now = new Date();
+
+        return Jwts
+                .builder()
+                .subject(PASSWORD_RESET_TOKEN_SUBJECT)
+                .claim(ID_CLAIM, id)
+                .expiration(new Date(now.getTime() + PASSWORD_RESET_TOKEN_EXPIRATION_PERIOD))
+                .signWith(key)
+                .compact();
+    }
+
     public Optional<String> extractAccessTokenFromRequest(HttpServletRequest request) {
         return Optional.ofNullable(request.getHeader(ACCESS_TOKEN_HEADER))
                 .filter(token -> token.startsWith(BEARER))
@@ -116,7 +128,10 @@ public class JwtService {
 
     public void setAuthenticationResponse(HttpServletResponse response, CustomUser customUser) {
         String accessToken = createAccessToken(customUser);
-        ServletResponseUtils.writeApiResponseWithData(response, AuthenticationResponse.from(customUser, accessToken));
+        String passwordResetToken =
+                customUser.getPasswordChangedAt() == null ? createPasswordResetToken(customUser.getId()) : null;
+        ServletResponseUtils.writeApiResponseWithData(response,
+                AuthenticationResponse.from(customUser, accessToken, passwordResetToken));
     }
 
     public void setRefreshToken(HttpServletResponse response, String refreshToken) {
@@ -151,7 +166,7 @@ public class JwtService {
             }
             return true;
         } catch (Exception e) {
-            log.error("해독할 수 없는 토큰입니다. {}",e.getMessage());
+            log.error("해독할 수 없는 토큰입니다. {}", e.getMessage());
             return false;
         }
     }

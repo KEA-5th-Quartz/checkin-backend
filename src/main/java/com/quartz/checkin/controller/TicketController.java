@@ -1,5 +1,6 @@
 package com.quartz.checkin.controller;
 
+import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.Priority;
@@ -131,6 +132,18 @@ public class TicketController {
 
         UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @Manager
+    @Operation(summary = "API 명세서 v0.1 line 38", description = "중요도 변경")
+    @PatchMapping("/{ticketId}/priority")
+    public ApiResponse<Void> updateTicketPriority(
+            @PathVariable Long ticketId,
+            @AuthenticationPrincipal CustomUser user,
+            @RequestBody @Valid PriorityUpdateRequest request) {
+
+        ticketCudService.updatePriority(user.getId(), ticketId, request);
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 }
 

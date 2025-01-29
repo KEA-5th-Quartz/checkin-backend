@@ -9,5 +9,4 @@ public interface TicketLogService {
     TicketLogResponse closeTicket(Long memberId, Long ticketId);
     TicketLogResponse updateCategory(Long memberId, Long ticketId, CategoryUpdateRequest request);
     TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername);
-    void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request);
 }

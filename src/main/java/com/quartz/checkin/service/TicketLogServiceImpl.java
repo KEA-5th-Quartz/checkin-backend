@@ -169,22 +169,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         return new TicketLogResponse(ticketLog);
     }
 
-    // Todo: TicketCudService로 이동
-    @Transactional
-    @Override
-    public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
-        // 티켓 & 담당자 조회
-        Ticket ticket = getValidTicket(ticketId);
-        Member manager = getValidMember(memberId);
-
-        // 예외 검증 (담당자 본인인지 확인)
-        validateTicketForUpdate(ticket, manager, false, false, false);
-
-        // 중요도 변경
-        ticket.updatePriority(request.getPriority());
-        ticketRepository.save(ticket);
-    }
-
     @Transactional
     @Override
     public TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername) {
@@ -227,12 +211,6 @@ public class TicketLogServiceImpl implements TicketLogService {
     // 특정 담당자 조회
     private Member getValidMember(Long memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
-    }
-
-    // 특정 담당자 조회 (Username 기반)
-    private Member getValidMemberByUsername(String username) {
-        return memberRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
     }
 

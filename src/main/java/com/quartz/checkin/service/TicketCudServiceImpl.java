@@ -2,6 +2,7 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.*;
@@ -79,5 +80,38 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .build());
 
         return TicketAttachmentResponse.from(attachment);
+    }
+
+    @Transactional
+    public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
+        // 담당자 검증
+        Member manager = getValidMember(memberId);
+
+        // 티켓 검증 및 중요도 업데이트
+        Ticket ticket = getValidTicket(ticketId);
+
+        // 담당자 권한 검증
+        validateTicketManager(ticket, manager);
+
+        // 중요도 변경
+        ticket.updatePriority(request.getPriority());
+        ticketRepository.save(ticket); // 안전하게 변경 사항 저장
+    }
+
+    private Ticket getValidTicket(Long ticketId) {
+        return ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
+    }
+
+    private Member getValidMember(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    private void validateTicketManager(Ticket ticket, Member manager) {
+        // 담당자가 본인이 맞는지 검증
+        if (ticket.getManager() == null || !ticket.getManager().getId().equals(manager.getId())) {
+            throw new ApiException(ErrorCode.INVALID_TICKET_MANAGER);
+        }
     }
 }

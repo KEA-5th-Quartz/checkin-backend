@@ -29,4 +29,11 @@ public class Like {
     @JoinColumn(name = "comment_id")
     private Comment comment;
 
+    public void setComment(Comment comment) {
+        this.comment = comment;
+    }
+
+    public void setMember(Member member) {
+        this.member = member;
+    }
 }

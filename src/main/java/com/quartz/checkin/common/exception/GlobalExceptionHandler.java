@@ -4,24 +4,29 @@ import com.quartz.checkin.dto.response.ApiErrorResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import software.amazon.awssdk.core.exception.SdkException;
-
-
-import java.util.*;
 
 @Slf4j
 @RestControllerAdvice
@@ -85,14 +90,39 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     // DB 유효성 예외 처리
     @ExceptionHandler
-    public ResponseEntity<Object> HandleDataIntegrityViolationException(DataIntegrityViolationException e) {
+    public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
         return handleExceptionInternal(ErrorCode.DB_ERROR);
     }
 
     // S3 API 예외 처리
     @ExceptionHandler
-    public ResponseEntity<Object> HandleAwsServiceException(SdkException e) {
+    public ResponseEntity<Object> handleAwsServiceException(SdkException e) {
         return handleExceptionInternal(ErrorCode.OBJECT_STORAGE_ERROR, e.getMessage());
+    }
+
+    // 파일 업로드 용량 초과 예외 처리
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex,
+                                                                          HttpHeaders headers, HttpStatusCode status,
+                                                                          WebRequest request) {
+        return handleExceptionInternal(ErrorCode.TOO_LARGE_FILE);
+    }
+
+    // 메서드 기반 인가 예외 처리
+    @ExceptionHandler
+    public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException e) {
+        log.error("권한이 부족합니다. {}", e.getMessage());
+        return handleExceptionInternal(ErrorCode.FORBIDDEN);
+    }
+
+
+    // 요청 파라미터 누락 예외 처리
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex,
+                                                                          HttpHeaders headers, HttpStatusCode status,
+                                                                          WebRequest request) {
+        log.error("요청에 필요한 파라미터가 누락되었습니다. {}", ex.getMessage());
+        return handleExceptionInternal(ErrorCode.INVALID_DATA);
     }
 
     // 그 외 모든 예외 처리

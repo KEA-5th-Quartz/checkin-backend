@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -43,9 +45,12 @@ public class AuthService {
         String username = member.getUsername();
         String profilePic = member.getProfilePic();
         Role role = member.getRole();
+        LocalDateTime passwordChangedAt = member.getPasswordChangedAt();
 
         String accessToken = jwtService.createAccessToken(memberId, username, profilePic, role);
         refreshToken = jwtService.createRefreshToken();
+        String passwordResetToken =
+                passwordChangedAt == null ? jwtService.createPasswordResetToken(memberId) : null;
 
         member.updateRefreshToken(refreshToken);
         jwtService.setRefreshToken(response, refreshToken);
@@ -55,6 +60,7 @@ public class AuthService {
                 .username(username)
                 .role(role.getValue())
                 .profilePic(profilePic)
+                .passwordResetToken(passwordResetToken)
                 .accessToken(accessToken)
                 .build();
     }

@@ -6,6 +6,8 @@ import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
 import io.jsonwebtoken.Claims;
+
+import java.time.LocalDateTime;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +32,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 사용자입니다."));
 
         return new CustomUser(member.getId(), member.getUsername(), member.getPassword(), member.getProfilePic(),
-                member.getRole(), Collections.singleton(new SimpleGrantedAuthority("ROLE_" + member.getRole().getValue())));
+                member.getRole(), member.getPasswordChangedAt(), Collections.singleton(new SimpleGrantedAuthority("ROLE_" + member.getRole().getValue())));
     }
 
     public UserDetails loadUserByAccessToken(String accessToken) throws InValidAccessTokenException {
@@ -45,6 +47,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     "",
                     claims.get(JwtService.PROFILE_PIC_CLAIM, String.class),
                     role,
+                    null,
                     Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role.getValue()))
             );
         } catch (Exception e) {

@@ -51,23 +51,36 @@ public class Member extends BaseEntity {
 
     private LocalDateTime deleted_at;
 
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+        this.passwordChangedAt = LocalDateTime.now();
+    }
+
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
 
+    public void updateRole(Role role) {
+        this.role = role;
+    }
+
+    public void updateProfilePic(String profilePic) {
+        this.profilePic = profilePic;
+    }
+
     @PrePersist
-    public void setDefaultProfileImage() {
+    public void setDefaultProfilePic() {
         if (this.profilePic == null) {
-            this.profilePic = MemberConfig.defaultProfileImage;
+            this.profilePic = MemberConfig.defaultProfilePic;
         }
     }
 
-    public static Member from(MemberRegistrationRequest memberRegistrationRequest, String password) {
+    public static Member from(MemberRegistrationRequest memberRegistrationRequest, String encodedPassword) {
         return Member.builder()
                 .username(memberRegistrationRequest.getUsername())
                 .email(memberRegistrationRequest.getEmail())
                 .role(Role.valueOf(memberRegistrationRequest.getRole()))
-                .password(password)
+                .password(encodedPassword)
                 .build();
     }
 }

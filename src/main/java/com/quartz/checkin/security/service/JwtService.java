@@ -1,6 +1,8 @@
 package com.quartz.checkin.security.service;
 
 
+import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.response.AuthenticationResponse;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.security.CustomUser;
@@ -26,8 +28,10 @@ import org.springframework.stereotype.Service;
 public class JwtService {
 
     private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
+    private static final String PASSWORD_RESET_TOKEN_SUBJECT = "PasswordReset";
     private static final String REFRESH_TOKEN_SUBJECT = "RefreshToken";
     private static final Long ACCESS_TOKEN_EXPIRATION_PERIOD = 3600000L;
+    private static final Long PASSWORD_RESET_TOKEN_EXPIRATION_PERIOD = 300000L;
     private static final Long REFRESH_TOKEN_EXPIRATION_PERIOD = 604800000L;
     private static final int REFRESH_TOKEN_COOKIE_MAX_AGE = 604800;
 
@@ -90,6 +94,18 @@ public class JwtService {
                 .compact();
     }
 
+    public String createPasswordResetToken(Long id) {
+        Date now = new Date();
+
+        return Jwts
+                .builder()
+                .subject(PASSWORD_RESET_TOKEN_SUBJECT)
+                .claim(ID_CLAIM, id)
+                .expiration(new Date(now.getTime() + PASSWORD_RESET_TOKEN_EXPIRATION_PERIOD))
+                .signWith(key)
+                .compact();
+    }
+
     public Optional<String> extractAccessTokenFromRequest(HttpServletRequest request) {
         return Optional.ofNullable(request.getHeader(ACCESS_TOKEN_HEADER))
                 .filter(token -> token.startsWith(BEARER))
@@ -111,9 +127,26 @@ public class JwtService {
         return Optional.empty();
     }
 
+    public Long getMemberIdFromPasswordResetToken(String passwordResetToken) {
+        try {
+            Claims claims = decodeToken(passwordResetToken);
+            String subject = claims.getSubject();
+            if (!subject.equals(PASSWORD_RESET_TOKEN_SUBJECT)) {
+                throw new Exception("비밀번호 초기화 토큰이 아닙니다.");
+            }
+            return claims.get(ID_CLAIM, Long.class);
+        } catch (Exception e) {
+            log.error("비밀번호 초기화 토큰 해독 중 문제가 발생했습니다. {}", e.getMessage());
+            throw new ApiException(ErrorCode.INVALID_PASSWORD_RESET_TOKEN);
+        }
+    }
+
     public void setAuthenticationResponse(HttpServletResponse response, CustomUser customUser) {
         String accessToken = createAccessToken(customUser);
-        ServletResponseUtils.writeApiResponseWithData(response, AuthenticationResponse.from(customUser, accessToken));
+        String passwordResetToken =
+                customUser.getPasswordChangedAt() == null ? createPasswordResetToken(customUser.getId()) : null;
+        ServletResponseUtils.writeApiResponseWithData(response,
+                AuthenticationResponse.from(customUser, accessToken, passwordResetToken));
     }
 
     public void setRefreshToken(HttpServletResponse response, String refreshToken) {
@@ -148,7 +181,7 @@ public class JwtService {
             }
             return true;
         } catch (Exception e) {
-            log.error("해독할 수 없는 토큰입니다. {}",e.getMessage());
+            log.error("해독할 수 없는 토큰입니다. {}", e.getMessage());
             return false;
         }
     }

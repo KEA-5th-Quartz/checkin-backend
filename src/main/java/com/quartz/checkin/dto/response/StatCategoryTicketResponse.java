@@ -1,11 +1,11 @@
 package com.quartz.checkin.dto.response;
 
-public class CategoryTicketStatsResponse {
+public class StatCategoryTicketResponse {
     private String categoryName;
     private Long ticketCount;
 
     // Constructor
-    public CategoryTicketStatsResponse(String categoryName, Long ticketCount) {
+    public StatCategoryTicketResponse(String categoryName, Long ticketCount) {
         this.categoryName = categoryName;
         this.ticketCount = ticketCount;
     }

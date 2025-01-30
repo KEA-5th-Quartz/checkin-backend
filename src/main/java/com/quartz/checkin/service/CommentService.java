@@ -73,7 +73,7 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
         return CommentResponse.builder()
-                .id(savedComment.getId())
+                .commentId(savedComment.getId())
                 .build();
     }
 
@@ -132,7 +132,7 @@ public class CommentService {
                 .commentId(comment.getId())
                 .memberId(comment.getMember().getId())
                 .commentContent(comment.getContent())
-                .attachment(comment.getAttachment())
+                .attachmentUrl(comment.getAttachment())
                 .build();
     }
 
@@ -152,8 +152,8 @@ public class CommentService {
         }
 
         // 이미 좋아요를 "누른" 경우 좋아요를 "취소"함
-        if (likeRepository.existsByComment_IdAndMember_Id(commentId, user.getId())) {
-            likeRepository.deleteByComment_Id(commentId);
+        if (likeRepository.existsByCommentIdAndMemberId(commentId, user.getId())) {
+            likeRepository.deleteByCommentId(commentId);
             return CommentLikeResponse.builder()
                     .isLiked(false)
                     .commentId(commentId)
@@ -178,7 +178,7 @@ public class CommentService {
         Like savedLike = likeRepository.save(like);
         return CommentLikeResponse.builder()
                 .isLiked(true)
-                .id(savedLike.getId())
+                .likeId(savedLike.getId())
                 .commentId(commentId)
                 .build();
     }
@@ -201,7 +201,7 @@ public class CommentService {
             throw new ApiException(ErrorCode.COMMENT_NOT_FOUND);
         }
 
-        List<LikesUserList> likes = likeRepository.getLikesByComment_Id(commentId).stream().map(like -> LikesUserList.builder()
+        List<LikesUserList> likes = likeRepository.getLikesByCommentId(commentId).stream().map(like -> LikesUserList.builder()
                 .memberId(like.getMember().getId())
                 .memberName(like.getMember().getUsername())
                 .build()).toList();

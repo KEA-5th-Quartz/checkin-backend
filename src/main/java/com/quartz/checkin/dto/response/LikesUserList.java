@@ -8,5 +8,5 @@ import lombok.Getter;
 public class LikesUserList {
     private Long memberId;
 
-    private String memberName;
+    private String username;
 }

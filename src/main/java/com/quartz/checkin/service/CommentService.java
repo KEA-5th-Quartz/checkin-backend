@@ -89,8 +89,8 @@ public class CommentService {
             throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
         }
 
-        List<TicketLog> logs = ticketLogRepository.findByTicketId(ticketId).orElseThrow(null);
-        List<Comment> comments = commentRepository.findByTicketId(ticketId).orElseThrow(null);
+        List<TicketLog> logs = ticketLogRepository.findByTicketId(ticketId);
+        List<Comment> comments = commentRepository.findByTicketId(ticketId);
 
         List<ActivityResponse> activities = Stream.concat(
                         logs.stream().map(this::convertLogToActivity),

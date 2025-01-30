@@ -203,7 +203,7 @@ public class CommentService {
 
         List<LikesUserList> likes = likeRepository.getLikesByCommentId(commentId).stream().map(like -> LikesUserList.builder()
                 .memberId(like.getMember().getId())
-                .memberName(like.getMember().getUsername())
+                .username(like.getMember().getUsername())
                 .build()).toList();
 
         return CommentLikeListResponse.builder()

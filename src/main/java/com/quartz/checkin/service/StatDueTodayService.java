@@ -2,19 +2,28 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.dto.response.StatDueTodayResponse;
 import com.quartz.checkin.repository.StatDueTodayRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.NoSuchElementException;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class StatDueTodayService {
 
-    private final StatDueTodayRepository statDueTodayRepository;
+    @Autowired
+    private StatDueTodayRepository memberRepository;
 
-    public StatDueTodayResponse getDueTodayTickets(Long managerId) {
-        return (StatDueTodayResponse) statDueTodayRepository.findDueTodayTickets(managerId)
-                .orElseThrow(() -> new NoSuchElementException("해당 담당자의 진행중인 티켓이 없습니다."));
+    public StatDueTodayResponse getTicketCountByManagerId(Long managerId) {
+        List<Map<String, Object>> result = memberRepository.findTicketCountByManagerId(managerId);
+
+        if (result.isEmpty()) {
+            return new StatDueTodayResponse("담당자 없음", 0);
+        }
+
+        Map<String, Object> data = result.get(0);
+        String username = (String) data.get("username");
+        int ticketCount = ((Number) data.get("ticket_count")).intValue();
+
+        return new StatDueTodayResponse(username, ticketCount);
     }
 }

@@ -2,23 +2,23 @@ package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.response.StatDueTodayResponse;
 import com.quartz.checkin.service.StatDueTodayService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
 
 @RestController
 @RequestMapping("/stats")
-@RequiredArgsConstructor
 public class StatDueTodayController {
 
-    private final StatDueTodayService statDueTodayService;
+    @Autowired
+    private StatDueTodayService StatDueTodayService;
 
     @GetMapping("/{managerId}/due-today")
-    public ResponseEntity<StatDueTodayResponse> getDueTodayStats(@PathVariable Long managerId) {
-        StatDueTodayResponse stats = statDueTodayService.getDueTodayTickets(managerId);
-        return ResponseEntity.ok(stats);
+    public StatDueTodayResponse getTicketCount(
+            @RequestParam Long managerId) {  // 쿼리 파라미터 ?managerId=3
+        // managerId와 managerIdParam 중 어떤 것을 사용할지 결정
+        // 예: managerIdParam을 사용
+        return StatDueTodayService.getTicketCountByManagerId(managerId);
     }
 }

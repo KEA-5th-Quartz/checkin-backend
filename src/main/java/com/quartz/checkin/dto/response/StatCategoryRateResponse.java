@@ -1,20 +1,21 @@
 package com.quartz.checkin.dto.response;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
+@Setter
 @Getter
-@AllArgsConstructor
 public class StatCategoryRateResponse {
-    private String username;
-    private List<CategoryState> state;
+    // Getters and Setters
+    private String username;                // 담당자 이름
+    private List<StatCategoryCount> state;  // 카테고리별 티켓 수
 
-    @Getter
-    @AllArgsConstructor
-    public static class CategoryState {
-        private String name;
-        private int ticketCount;
+    // 생성자
+    public StatCategoryRateResponse(String username, List<StatCategoryCount> state) {
+        this.username = username;
+        this.state = state;
     }
+
 }

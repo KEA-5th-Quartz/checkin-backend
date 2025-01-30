@@ -1,8 +1,11 @@
 package com.quartz.checkin.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quartz.checkin.dto.response.StatCategoryCount;
 import com.quartz.checkin.dto.response.StatCategoryRateResponse;
 import com.quartz.checkin.repository.StatCategoryRateRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -10,37 +13,36 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class StatCategoryRateService {
 
-    private final StatCategoryRateRepository statCategoryRateRepository;
+    @Autowired
+    private StatCategoryRateRepository statCategoryRateRepository;
 
-    public List<StatCategoryRateResponse> getStatCategoryRates() {
-        List<Object[]> results = statCategoryRateRepository.getStatCategoryRate();
-        List<StatCategoryRateResponse> responseList = new ArrayList<>();
+    @Autowired
+    private ObjectMapper objectMapper;
 
-        for (Object[] row : results) {
-            String username = (String) row[0];
-            String jsonArray = (String) row[1];
+    public List<StatCategoryRateResponse> getStatsByCategory() {
+        List<Map<String, Object>> result = statCategoryRateRepository.findStatsByCategory();
+        List<StatCategoryRateResponse> response = new ArrayList<>();
 
-            List<StatCategoryRateResponse.CategoryState> categoryStates = new ArrayList<>();
-            List<Map<String, Object>> parsedList = parseJsonArray(jsonArray);
+        for (Map<String, Object> row : result) {
+            String username = (String) row.get("username");
+            String stateJson = (String) row.get("state");
 
-            for (Map<String, Object> map : parsedList) {
-                categoryStates.add(new StatCategoryRateResponse.CategoryState(
-                        (String) map.get("name"),
-                        ((Number) map.get("ticket_count")).intValue()
-                ));
+            try {
+                // JSON 문자열을 List<StatCategoryCount>로 변환
+                List<StatCategoryCount> state = objectMapper.readValue(
+                        stateJson,
+                        new TypeReference<List<StatCategoryCount>>() {}
+                );
+
+                // StatCategoryRateResponse 객체 생성
+                response.add(new StatCategoryRateResponse(username, state));
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
-            responseList.add(new StatCategoryRateResponse(username, categoryStates));
         }
 
-        return responseList;
-    }
-
-    private List<Map<String, Object>> parseJsonArray(String jsonArray) {
-        // JSON을 파싱하여 List<Map<String, Object>> 형태로 변환 (Jackson 또는 Gson 사용)
-        return List.of(); // JSON 파싱 로직을 구현해야 함
+        return response;
     }
 }

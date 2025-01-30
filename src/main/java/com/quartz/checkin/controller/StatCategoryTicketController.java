@@ -1,6 +1,7 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.response.StatCategoryTicketResponse;
+import com.quartz.checkin.security.annotation.AdminOrManager;
 import com.quartz.checkin.service.StatCategoryTicketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ public class StatCategoryTicketController {
     @Autowired
     private StatCategoryTicketService statCategoryTicketService;
 
+    @AdminOrManager
     @GetMapping("/categories") // "/categories" 경로로 매핑
     public ResponseEntity<List<StatCategoryTicketResponse>> getCategoryTicketStats() {
         // Service 호출

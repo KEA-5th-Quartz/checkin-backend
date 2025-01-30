@@ -1,6 +1,12 @@
 package com.quartz.checkin.dto.response;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class StatCategoryTicketResponse {
+    // Getters and Setters
     private String categoryName;
     private Long ticketCount;
 
@@ -10,20 +16,4 @@ public class StatCategoryTicketResponse {
         this.ticketCount = ticketCount;
     }
 
-    // Getters and Setters
-    public String getCategoryName() {
-        return categoryName;
-    }
-
-    public void setCategoryName(String categoryName) {
-        this.categoryName = categoryName;
-    }
-
-    public Long getTicketCount() {
-        return ticketCount;
-    }
-
-    public void setTicketCount(Long ticketCount) {
-        this.ticketCount = ticketCount;
-    }
 }

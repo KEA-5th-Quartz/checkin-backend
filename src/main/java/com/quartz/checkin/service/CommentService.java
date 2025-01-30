@@ -48,6 +48,7 @@ public class CommentService {
      * @param content  댓글 내용
      * @return 댓글 ID
      */
+    @Transactional
     public CommentResponse writeComment(CustomUser user, Long ticketId, String content) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> {

@@ -7,13 +7,13 @@ import com.quartz.checkin.dto.response.CommentLikeResponse;
 import com.quartz.checkin.dto.response.CommentResponse;
 import com.quartz.checkin.dto.response.TicketActivityResponse;
 import com.quartz.checkin.security.CustomUser;
+import com.quartz.checkin.security.annotation.ManagerOrUser;
 import com.quartz.checkin.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,7 +31,7 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MANAGER')")
+    @ManagerOrUser
     @PostMapping("/{ticketId}/comments")
     @Operation(summary = "댓글 작성", description = "특정 티켓에 댓글을 작성합니다.")
     public ApiResponse<CommentResponse> writeComment(
@@ -41,7 +41,6 @@ public class CommentController {
         return ApiResponse.createSuccessResponseWithData(200, commentService.writeComment(customUser, ticketId, request.getContent()));
     }
 
-    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MANAGER', 'ROLE_ADMIN')")
     @GetMapping("/{ticketId}/comments")
     @Operation(summary = "티켓의 댓글 및 로그 전체 조회", description = "특정 티켓의 댓글 및 로그를 전부 조회합니다.")
     public ApiResponse<TicketActivityResponse> getCommentsAndLogs(
@@ -49,7 +48,7 @@ public class CommentController {
         return ApiResponse.createSuccessResponseWithData(200, commentService.getCommentsAndLogs(ticketId));
     }
 
-    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MANAGER')")
+    @ManagerOrUser
     @PutMapping("/{ticketId}/comments/{commentId}/likes")
     @Operation(summary = "댓글 좋아요 토글", description = "특정 댓글에 좋아요를 토글합니다.")
     public ApiResponse<CommentLikeResponse> toggleLike(
@@ -59,7 +58,6 @@ public class CommentController {
         return ApiResponse.createSuccessResponseWithData(200, commentService.toggleLike(customUser, ticketId, commentId));
     }
 
-    @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_MANAGER', 'ROLE_ADMIN')")
     @GetMapping("/{ticketId}/comments/{commentId}/likes")
     @Operation(summary = "댓글 좋아요 누른 멤버 조회", description = "특정 댓글에 좋아요를 누른 멤버를 조회합니다.")
     public ApiResponse<CommentLikeListResponse> getLikingMembersList(

@@ -3,6 +3,7 @@ package com.quartz.checkin.controller;
 import com.quartz.checkin.dto.request.FirstCategoryCreateRequest;
 import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.request.SecondCategoryCreateRequest;
+import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.CategoryResponse;
 import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
@@ -65,6 +66,16 @@ public class CategoryController {
     }
 
     @Admin
+    @Operation(summary = "API 명세서 v0.2 line 54", description = "관리자가 1차 카테고리 삭제")
+    @DeleteMapping("/{firstCategoryId}")
+    public ApiResponse<Void> deleteFirstCategory(
+            @PathVariable Long firstCategoryId,
+            @AuthenticationPrincipal CustomUser user) {
+        categoryService.deleteFirstCategory(user.getId(), firstCategoryId);
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @Admin
     @Operation(summary = "API 명세서 v0.2 line 55", description = "관리자가 2차 카테고리 작성")
     @PostMapping("/{firstCategoryId}/second-categories")
     public ApiResponse<SecondCategoryCreateResponse> createSecondCategory(
@@ -77,12 +88,15 @@ public class CategoryController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.2 line 54", description = "관리자가 1차 카테고리 삭제")
-    @DeleteMapping("/{firstCategoryId}")
-    public ApiResponse<Void> deleteFirstCategory(
+    @Operation(summary = "API 명세서 v0.2 line 56", description = "관리자가 2차 카테고리 수정")
+    @PutMapping("/{firstCategoryId}/second-categories/{secondCategoryId}")
+    public ApiResponse<Void> updateSecondCategory(
             @PathVariable Long firstCategoryId,
+            @PathVariable Long secondCategoryId,
+            @RequestBody @Valid SecondCategoryUpdateRequest request,
             @AuthenticationPrincipal CustomUser user) {
-        categoryService.deleteFirstCategory(user.getId(), firstCategoryId);
+
+        categoryService.updateSecondCategory(user.getId(), firstCategoryId, secondCategoryId, request);
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 }

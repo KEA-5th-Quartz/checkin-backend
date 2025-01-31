@@ -5,6 +5,7 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.FirstCategoryCreateRequest;
 import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.request.SecondCategoryCreateRequest;
+import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.response.CategoryResponse;
 import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
 import com.quartz.checkin.dto.response.SecondCategoryCreateResponse;
@@ -64,23 +65,6 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Transactional
-    public SecondCategoryCreateResponse createSecondCategory(Long memberId, Long firstCategoryId, SecondCategoryCreateRequest request) {
-        // 존재하지 않는 1차 카테고리일 경우 예외 발생
-        Category firstCategory = categoryRepository.findById(firstCategoryId)
-                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
-
-        if (categoryRepository.existsByNameAndParent(request.getName(),firstCategory)) {
-            throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_SECOND);
-        }
-
-        // 2차 카테고리 생성 (부모 없음)
-        Category secondCategory = new Category(firstCategory, request.getName());
-        categoryRepository.save(secondCategory);
-
-        return new SecondCategoryCreateResponse(secondCategory.getId());
-    }
-
-    @Transactional
     public void updateFirstCategory(Long memberId, Long firstCategoryId, FirstCategoryUpdateRequest request) {
         // 존재하지 않는 1차 카테고리 예외 처리
         Category firstCategory = categoryRepository.findById(firstCategoryId)
@@ -107,7 +91,45 @@ public class CategoryServiceImpl implements CategoryService {
             throw new ApiException(ErrorCode.CATEGORY_HAS_SUBCATEGORIES);
         }
 
-        // ✅ 1차 카테고리 삭제
+        // 1차 카테고리 삭제
         categoryRepository.delete(firstCategory);
+    }
+
+    @Transactional
+    public SecondCategoryCreateResponse createSecondCategory(Long memberId, Long firstCategoryId, SecondCategoryCreateRequest request) {
+        // 존재하지 않는 1차 카테고리일 경우 예외 발생
+        Category firstCategory = categoryRepository.findById(firstCategoryId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+
+        if (categoryRepository.existsByNameAndParent(request.getName(),firstCategory)) {
+            throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_SECOND);
+        }
+
+        // 2차 카테고리 생성 (부모 없음)
+        Category secondCategory = new Category(firstCategory, request.getName());
+        categoryRepository.save(secondCategory);
+
+        return new SecondCategoryCreateResponse(secondCategory.getId());
+    }
+
+    @Transactional
+    public void updateSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId, SecondCategoryUpdateRequest request) {
+        // 존재하지 않는 2차 카테고리 예외 처리
+        Category secondCategory = categoryRepository.findById(secondCategoryId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+
+        // 2차 카테고리의 부모가 요청된 1차 카테고리인지 검증
+        if (secondCategory.getParent() == null || !secondCategory.getParent().getId().equals(firstCategoryId)) {
+            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST);
+        }
+
+        // 동일한 이름의 2차 카테고리 존재 여부 확인 (자기 자신은 제외)
+        if (categoryRepository.existsByNameAndParent(request.getSecondCategory(), secondCategory.getParent()) &&
+                !secondCategory.getName().equals(request.getSecondCategory())) {
+            throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_SECOND);
+        }
+
+        // 2차 카테고리 이름 변경
+        secondCategory.updateName(request.getSecondCategory());
     }
 }

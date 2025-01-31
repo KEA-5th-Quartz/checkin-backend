@@ -41,7 +41,7 @@ public class TicketDetailResponse {
     public static TicketDetailResponse from(Ticket ticket, List<TicketAttachment> attachments) {
         List<String> attachmentUrls = attachments.stream()
                 .map(TicketAttachment::getUrl)
-                .collect(Collectors.toList());
+                .toList();
 
         return TicketDetailResponse.builder()
                 .ticketId(ticket.getId())
@@ -50,7 +50,7 @@ public class TicketDetailResponse {
                 .secondCategory(ticket.getSecondCategory().getName())
                 .username(ticket.getUser().getUsername())
                 .manager(ticket.getManager() != null ? ticket.getManager().getUsername() : null)
-                .managerProfilePic(ticket.getManager().getProfilePic())
+                .managerProfilePic(ticket.getManager() != null ? ticket.getManager().getProfilePic() : null)
                 .content(ticket.getContent())
                 .dueDate(ticket.getDueDate())
                 .createdAt(ticket.getCreatedAt())

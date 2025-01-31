@@ -1,9 +1,9 @@
 package com.quartz.checkin.converter;
 
-import com.quartz.checkin.dto.response.ManagerTicketListResponse;
-import com.quartz.checkin.dto.response.ManagerTicketSummaryResponse;
-import com.quartz.checkin.dto.response.UserTicketListResponse;
-import com.quartz.checkin.dto.response.UserTicketSummaryResponse;
+import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
+import com.quartz.checkin.dto.ticket.response.ManagerTicketSummaryResponse;
+import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
+import com.quartz.checkin.dto.ticket.response.UserTicketSummaryResponse;
 import com.quartz.checkin.entity.Ticket;
 import org.springframework.data.domain.Page;
 

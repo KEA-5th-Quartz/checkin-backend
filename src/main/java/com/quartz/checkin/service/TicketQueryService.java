@@ -1,8 +1,8 @@
 package com.quartz.checkin.service;
 
-import com.quartz.checkin.dto.response.ManagerTicketListResponse;
-import com.quartz.checkin.dto.response.TicketDetailResponse;
-import com.quartz.checkin.dto.response.UserTicketListResponse;
+import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
+import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
+import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import java.util.List;

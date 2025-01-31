@@ -1,10 +1,9 @@
 package com.quartz.checkin.service;
 
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
-import com.quartz.checkin.dto.request.TicketCreateRequest;
-import com.quartz.checkin.dto.response.TicketAttachmentResponse;
-import com.quartz.checkin.dto.response.TicketCreateResponse;
-
+import com.quartz.checkin.dto.ticket.response.TicketAttachmentResponse;
+import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
+import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
+import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;

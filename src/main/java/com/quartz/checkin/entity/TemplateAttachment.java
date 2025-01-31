@@ -23,6 +23,7 @@ public class TemplateAttachment {
     @JoinColumn(name = "template_id")
     private Template template;
 
-    @Column(nullable = false)
-    private String url;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "attachment_id")
+    private Attachment attachment;
 }

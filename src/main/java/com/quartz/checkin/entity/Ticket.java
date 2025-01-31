@@ -51,7 +51,7 @@ public class Ticket extends BaseEntity {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column
+    @Column(nullable = false)
     private Priority priority;
 
     @Enumerated(EnumType.STRING)
@@ -67,12 +67,13 @@ public class Ticket extends BaseEntity {
 
     @Builder
     public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
-                  Status status, LocalDate dueDate) {
+                  Priority priority, Status status, LocalDate dueDate) {
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;
         this.title = title;
         this.content = content;
+        this.priority = priority;
         this.status = status;
         this.dueDate = dueDate;
     }

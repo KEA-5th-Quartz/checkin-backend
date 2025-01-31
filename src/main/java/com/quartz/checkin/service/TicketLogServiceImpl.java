@@ -46,6 +46,9 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 담당자 배정 처리
         ticket.assignManager(manager);
+
+        // 중요도를 보통으로 설정
+        ticket.updatePriority(Priority.MEDIUM);
         ticketRepository.save(ticket);
 
         // 로그 기록

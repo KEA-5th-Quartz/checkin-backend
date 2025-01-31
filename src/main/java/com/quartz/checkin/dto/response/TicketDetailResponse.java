@@ -3,7 +3,6 @@ package com.quartz.checkin.dto.response;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
-import java.util.stream.Collectors;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;

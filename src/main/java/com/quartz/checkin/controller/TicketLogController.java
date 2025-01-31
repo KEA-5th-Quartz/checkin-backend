@@ -3,7 +3,6 @@ package com.quartz.checkin.controller;
 import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Manager;

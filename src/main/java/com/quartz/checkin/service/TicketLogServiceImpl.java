@@ -3,7 +3,6 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.entity.*;

@@ -141,9 +141,10 @@ public class CommentService {
      * 댓글에 좋아요를 토글한다.<br>
      * 이미 좋아요를 누른 경우 좋아요를 취소한다.
      *
+     * @param user      사용자 정보
      * @param ticketId  티켓 ID
      * @param commentId 댓글 ID
-     * @return 좋아요 ID, 댓글 ID
+     * @return 좋아요 여부, 좋아요 ID, 댓글 ID
      */
     @Transactional
     public CommentLikeResponse toggleLike(CustomUser user, Long ticketId, Long commentId) {
@@ -154,7 +155,7 @@ public class CommentService {
 
         // 이미 좋아요를 "누른" 경우 좋아요를 "취소"함
         if (likeRepository.existsByCommentIdAndMemberId(commentId, user.getId())) {
-            likeRepository.deleteByCommentId(commentId);
+            likeRepository.deleteLikeById(likeRepository.getLikeByCommentIdAndMemberId(commentId, user.getId()).getId());
             return CommentLikeResponse.builder()
                     .isLiked(false)
                     .commentId(commentId)

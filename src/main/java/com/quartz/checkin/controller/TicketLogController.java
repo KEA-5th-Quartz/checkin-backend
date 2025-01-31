@@ -3,7 +3,6 @@ package com.quartz.checkin.controller;
 import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.response.TicketLogResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Manager;
@@ -69,18 +68,6 @@ public class TicketLogController {
 
         TicketLogResponse response = ticketLogService.reassignManager(user.getId(), ticketId, request.get("manager"));
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
-    }
-
-    @Manager
-    @Operation(summary = "API 명세서 v0.1 line 39", description = "중요도 변경")
-    @PatchMapping("/{ticketId}/priority")
-    public ApiResponse<Void> updateTicketPriority(
-            @PathVariable Long ticketId,
-            @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid PriorityUpdateRequest request) {
-
-        ticketLogService.updatePriority(user.getId(), ticketId, request);
-        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
     @Manager

@@ -1,5 +1,6 @@
 package com.quartz.checkin.controller;
 
+import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.Priority;
@@ -8,29 +9,47 @@ import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Manager;
 import com.quartz.checkin.security.annotation.ManagerOrUser;
 import com.quartz.checkin.security.annotation.User;
-import com.quartz.checkin.service.TicketCrudService;
+import com.quartz.checkin.service.TicketCudService;
+import com.quartz.checkin.service.TicketQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/tickets")
 @RequiredArgsConstructor
 public class TicketController {
 
-    private final TicketCrudService ticketCrudService;
+    private final TicketCudService ticketCudService;
+    private final TicketQueryService ticketQueryService;
 
     @User
-    @PostMapping
+    @Operation(summary = "API 명세서 v0.1 line 25", description = "티켓 생성")
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ApiResponse<TicketCreateResponse> createTicket(
             @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid TicketCreateRequest request) {
-        TicketCreateResponse response = ticketCrudService.createTicket(user.getId(), request);
+            @RequestPart("request") @Valid TicketCreateRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) throws IOException {
+
+        TicketCreateResponse response = ticketCudService.createTicket(user.getId(), request, files);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+    @User
+    @Operation(summary = "API 명세서 v0.1 line 41", description = "티켓에 첨부파일 업로드")
+    @PostMapping("/{ticketId}/attachment")
+    public ApiResponse<TicketAttachmentResponse> uploadAttachment(
+            @PathVariable Long ticketId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+
+        TicketAttachmentResponse response = ticketCudService.uploadAttachment(ticketId, file);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -41,7 +60,7 @@ public class TicketController {
             @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user) {
 
-        TicketDetailResponse response = ticketCrudService.getTicketDetail(user.getId(),ticketId);
+        TicketDetailResponse response = ticketQueryService.getTicketDetail(user.getId(),ticketId);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -59,7 +78,7 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketCrudService.getManagerTickets(
+        ManagerTicketListResponse response = ticketQueryService.getManagerTickets(
                 user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
         );
 
@@ -75,7 +94,7 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketCrudService.searchManagerTickets(user.getId(), keyword, page, size);
+        ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -94,7 +113,7 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        UserTicketListResponse response = ticketCrudService.getUserTickets(
+        UserTicketListResponse response = ticketQueryService.getUserTickets(
                 user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
         );
 
@@ -111,8 +130,20 @@ public class TicketController {
             @RequestParam(defaultValue = "10") int size,
             @AuthenticationPrincipal CustomUser user) {
 
-        UserTicketListResponse response = ticketCrudService.searchUserTickets(user.getId(), keyword, page, size);
+        UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @Manager
+    @Operation(summary = "API 명세서 v0.1 line 38", description = "중요도 변경")
+    @PatchMapping("/{ticketId}/priority")
+    public ApiResponse<Void> updateTicketPriority(
+            @PathVariable Long ticketId,
+            @AuthenticationPrincipal CustomUser user,
+            @RequestBody @Valid PriorityUpdateRequest request) {
+
+        ticketCudService.updatePriority(user.getId(), ticketId, request);
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 }
 

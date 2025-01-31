@@ -8,14 +8,13 @@ import com.quartz.checkin.entity.Ticket;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class TicketResponseConverter {
 
     public static ManagerTicketListResponse toManagerTicketListResponse(Page<Ticket> ticketPage) {
         List<ManagerTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
                 .map(ManagerTicketSummaryResponse::from)
-                .collect(Collectors.toList());
+                .toList();
 
         return new ManagerTicketListResponse(
                 ticketPage.getNumber() + 1,
@@ -29,7 +28,7 @@ public class TicketResponseConverter {
     public static UserTicketListResponse toUserTicketListResponse(Page<Ticket> ticketPage) {
         List<UserTicketSummaryResponse> ticketList = ticketPage.getContent().stream()
                 .map(UserTicketSummaryResponse::from)
-                .collect(Collectors.toList());
+                .toList();
 
         return new UserTicketListResponse(
                 ticketPage.getNumber() + 1,

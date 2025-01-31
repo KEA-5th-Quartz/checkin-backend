@@ -1,8 +1,8 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.request.CategoryCreateRequest;
+import com.quartz.checkin.dto.request.SecondCategoryCreateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.dto.response.CategoryCreateResponse;
 import com.quartz.checkin.dto.response.CategoryResponse;
 import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
 import com.quartz.checkin.dto.response.SecondCategoryCreateResponse;
@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,6 +49,15 @@ public class CategoryController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.CREATED.value(), response);
     }
 
+    @Admin
+    @Operation(summary = "API 명세서 v0.2 line 55", description = "관리자가 2차 카테고리 작성")
+    @PostMapping("/{firstCategoryId}/second-categories")
+    public ApiResponse<SecondCategoryCreateResponse> createSecondCategory(
+            @PathVariable Long firstCategoryId,
+            @RequestBody @Valid SecondCategoryCreateRequest request,
+            @AuthenticationPrincipal CustomUser user) {
 
-
+        SecondCategoryCreateResponse response = categoryService.createSecondCategory(user.getId(),firstCategoryId,request);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.CREATED.value(), response);
+    }
 }

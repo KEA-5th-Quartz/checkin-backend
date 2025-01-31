@@ -22,6 +22,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Object[]> findAllCategoriesWithSecondCategories();
 
     boolean existsByNameAndParentIsNull(String name);
+    boolean existsByNameAndParent(String name, Category parent);
 
 }
 

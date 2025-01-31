@@ -3,7 +3,7 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.CategoryCreateRequest;
-import com.quartz.checkin.dto.response.CategoryCreateResponse;
+import com.quartz.checkin.dto.request.SecondCategoryCreateRequest;
 import com.quartz.checkin.dto.response.CategoryResponse;
 import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
 import com.quartz.checkin.dto.response.SecondCategoryCreateResponse;
@@ -62,4 +62,20 @@ public class CategoryServiceImpl implements CategoryService {
         return new FirstCategoryCreateResponse(firstCategory.getId());
     }
 
+    @Transactional
+    public SecondCategoryCreateResponse createSecondCategory(Long memberId, Long firstCategoryId, SecondCategoryCreateRequest request) {
+        // 존재하지 않는 1차 카테고리일 경우 예외 발생
+        Category firstCategory = categoryRepository.findById(firstCategoryId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+
+        if (categoryRepository.existsByNameAndParent(request.getName(),firstCategory)) {
+            throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_SECOND);
+        }
+
+        // 2차 카테고리 생성 (부모 없음)
+        Category secondCategory = new Category(firstCategory, request.getName());
+        categoryRepository.save(secondCategory);
+
+        return new SecondCategoryCreateResponse(secondCategory.getId());
+    }
 }

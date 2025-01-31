@@ -2,8 +2,10 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.response.ActivityResponse;
 import com.quartz.checkin.dto.response.ActivityType;
+import com.quartz.checkin.dto.response.CommentAttachmentResponse;
 import com.quartz.checkin.dto.response.CommentLikeListResponse;
 import com.quartz.checkin.dto.response.CommentLikeResponse;
 import com.quartz.checkin.dto.response.CommentResponse;
@@ -29,6 +31,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -41,9 +44,12 @@ public class CommentService {
     private final LikeRepository likeRepository;
     private final MemberRepository memberRepository;
 
+    private final S3UploadService s3UploadService;
+
     /**
      * 회원이 작성한 댓글을 저장한다.
      *
+     * @param user     사용자 정보
      * @param ticketId 티켓 ID
      * @param content  댓글 내용
      * @return 댓글 ID
@@ -127,14 +133,24 @@ public class CommentService {
      * @return 변환된 ActivityResponse
      */
     private ActivityResponse convertCommentToActivity(Comment comment) {
-        return ActivityResponse.builder()
-                .type(ActivityType.COMMENT)
-                .createdAt(comment.getCreatedAt())
-                .commentId(comment.getId())
-                .memberId(comment.getMember().getId())
-                .commentContent(comment.getContent())
-                .attachmentUrl(comment.getAttachment())
-                .build();
+        if (comment.getAttachment() != null) {
+            return ActivityResponse.builder()
+                    .type(ActivityType.COMMENT)
+                    .createdAt(comment.getCreatedAt())
+                    .commentId(comment.getId())
+                    .memberId(comment.getMember().getId())
+                    .isImage(s3UploadService.isImageType(comment.getContent()))
+                    .attachmentUrl(comment.getAttachment())
+                    .build();
+        } else {
+            return ActivityResponse.builder()
+                    .type(ActivityType.COMMENT)
+                    .createdAt(comment.getCreatedAt())
+                    .commentId(comment.getId())
+                    .memberId(comment.getMember().getId())
+                    .commentContent(comment.getContent())
+                    .build();
+        }
     }
 
     /**
@@ -216,8 +232,42 @@ public class CommentService {
                 .build();
     }
 
-    public void uploadCommentAttachment() {
-        // TBD
+    @Transactional
+    public CommentAttachmentResponse uploadCommentAttachment(CustomUser user, Long ticketId, MultipartFile file) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> {
+                    log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
+                    return new ApiException(ErrorCode.TICKET_NOT_FOUND);
+                });
+
+        Member member = memberRepository.findById(user.getId())
+                .orElseThrow(() -> {
+                    log.error(ErrorCode.MEMBER_NOT_FOUND.getMessage());
+                    return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
+                });
+
+
+
+        Comment comment = new Comment();
+        comment.setTicket(ticket);
+        comment.setMember(member);
+        comment.writeContent(file.getContentType());
+
+        try {
+            String attachmentUrl = s3UploadService.uploadFile(file, S3Config.COMMENT_DIR);
+            comment.addAttachment(attachmentUrl);
+            Comment savedComment = commentRepository.save(comment);
+
+            return CommentAttachmentResponse.builder()
+                    .commentId(savedComment.getId())
+                    .isImage(s3UploadService.isImageType(file.getContentType()))
+                    .attachmentUrl(attachmentUrl)
+                    .build();
+        } catch (Exception e) {
+            log.error("S3에 댓글용 첨부파일을 업로드할 수 없습니다. {}", e.getMessage());
+            throw new ApiException(ErrorCode.OBJECT_STORAGE_ERROR);
+        }
+
     }
 
 }

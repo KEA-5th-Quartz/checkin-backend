@@ -43,4 +43,8 @@ public class Comment extends BaseEntity {
     public void writeContent(String content) {
         this.content = content;
     }
+
+    public void addAttachment(String attachment) {
+        this.attachment = attachment;
+    }
 }

@@ -3,6 +3,7 @@ package com.quartz.checkin.dto.response;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
+import java.util.stream.Collectors;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,7 @@ public class TicketDetailResponse {
     private String firstCategory;
     private String secondCategory;
     private String username;
+    private String managerProfilePic;
     private String manager;
     private String content;
 
@@ -35,12 +37,12 @@ public class TicketDetailResponse {
 
     private String priority;
     private String status;
-    private List<Long> ticketAttachmentIds;
+    private List<String> ticketAttachmentUrls;
 
-    public static TicketDetailResponse from(Ticket ticket) {
-        List<Long> attachmentIds = ticket.getAttachments() != null
-                ? ticket.getAttachments().stream().map(TicketAttachment::getId).toList()
-                : List.of();
+    public static TicketDetailResponse from(Ticket ticket, List<TicketAttachment> attachments) {
+        List<String> attachmentUrls = attachments.stream()
+                .map(TicketAttachment::getUrl)
+                .collect(Collectors.toList());
 
         return TicketDetailResponse.builder()
                 .ticketId(ticket.getId())
@@ -49,12 +51,13 @@ public class TicketDetailResponse {
                 .secondCategory(ticket.getSecondCategory().getName())
                 .username(ticket.getUser().getUsername())
                 .manager(ticket.getManager() != null ? ticket.getManager().getUsername() : null)
+                .managerProfilePic(ticket.getManager().getProfilePic())
                 .content(ticket.getContent())
                 .dueDate(ticket.getDueDate())
                 .createdAt(ticket.getCreatedAt())
                 .priority(ticket.getPriority() != null ? ticket.getPriority().name() : null)
                 .status(ticket.getStatus().name())
-                .ticketAttachmentIds(attachmentIds)
+                .ticketAttachmentUrls(attachmentUrls)
                 .build();
     }
 }

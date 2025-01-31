@@ -30,7 +30,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',
             'A', 'E', 'I', 'O', 'U');
-
+    // Todo: 담당자 배정 시, 자동으로 중요도 보통으로 설정
     // 담당자 배정
     @Transactional
     @Override
@@ -48,6 +48,9 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 담당자 배정 처리
         ticket.assignManager(manager);
+
+        // 중요도를 보통으로 설정
+        ticket.updatePriority(Priority.MEDIUM);
         ticketRepository.save(ticket);
 
         // 로그 기록
@@ -204,21 +207,6 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     @Transactional
     @Override
-    public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
-        // 티켓 & 담당자 조회
-        Ticket ticket = getValidTicket(ticketId);
-        Member manager = getValidMember(memberId);
-
-        // 예외 검증 (담당자 본인인지 확인)
-        validateTicketForUpdate(ticket, manager, false, false, false);
-
-        // 중요도 변경
-        ticket.updatePriority(request.getPriority());
-        ticketRepository.save(ticket);
-    }
-
-    @Transactional
-    @Override
     public TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername) {
         // 티켓 & 기존 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -258,12 +246,6 @@ public class TicketLogServiceImpl implements TicketLogService {
     // 특정 담당자 조회
     private Member getValidMember(Long memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
-    }
-
-    // 특정 담당자 조회 (Username 기반)
-    private Member getValidMemberByUsername(String username) {
-        return memberRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
     }
 

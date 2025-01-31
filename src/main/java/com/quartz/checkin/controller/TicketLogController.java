@@ -72,18 +72,6 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 39", description = "중요도 변경")
-    @PatchMapping("/{ticketId}/priority")
-    public ApiResponse<Void> updateTicketPriority(
-            @PathVariable Long ticketId,
-            @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid PriorityUpdateRequest request) {
-
-        ticketLogService.updatePriority(user.getId(), ticketId, request);
-        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
-    }
-
-    @Manager
     @Operation(summary = "API 명세서 v0.1 line 40", description = "담당자 할당")
     @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> assignManager(

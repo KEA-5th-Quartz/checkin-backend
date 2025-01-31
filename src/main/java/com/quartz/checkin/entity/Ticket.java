@@ -10,12 +10,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.CascadeType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -54,7 +51,7 @@ public class Ticket extends BaseEntity {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column
+    @Column(nullable = false)
     private Priority priority;
 
     @Enumerated(EnumType.STRING)
@@ -68,18 +65,15 @@ public class Ticket extends BaseEntity {
 
     private LocalDateTime deletedAt;
 
-    @Getter
-    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TicketAttachment> attachments;
-
     @Builder
     public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
-                  Status status, LocalDate dueDate) {
+                  Priority priority, Status status, LocalDate dueDate) {
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;
         this.title = title;
         this.content = content;
+        this.priority = priority;
         this.status = status;
         this.dueDate = dueDate;
     }

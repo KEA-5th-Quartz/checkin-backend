@@ -11,5 +11,4 @@ public interface TicketLogService {
     TicketLogResponse updateFirstCategory(Long memberId, Long ticketId, FirstCategoryUpdateRequest request);
     TicketLogResponse updateSecondCategory(Long memberId, Long ticketId, Long firstCategoryId, SecondCategoryUpdateRequest request);
     TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername);
-    void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request);
 }

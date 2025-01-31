@@ -9,7 +9,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"type", "logId", "logContent", "commentId", "memberId", "commentContent", "attachmentUrl", "createdAt"})
+@JsonPropertyOrder({"type", "logId", "logContent", "commentId", "memberId", "commentContent", "isImage", "attachmentUrl", "createdAt"})
 public class ActivityResponse {
     private ActivityType type;
 
@@ -26,6 +26,8 @@ public class ActivityResponse {
     private Long memberId;
 
     private String commentContent;
+
+    private Boolean isImage;
 
     private String attachmentUrl;
 }

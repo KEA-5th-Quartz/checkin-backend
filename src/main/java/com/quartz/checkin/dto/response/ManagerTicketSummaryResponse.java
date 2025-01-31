@@ -36,7 +36,7 @@ public class ManagerTicketSummaryResponse {
                 .firstCategory(ticket.getFirstCategory().getName())
                 .secondCategory(ticket.getSecondCategory().getName())
                 .manager(ticket.getManager() != null ? ticket.getManager().getUsername() : null)
-                .managerProfilePic(ticket.getManager().getProfilePic())
+                .managerProfilePic(ticket.getManager() != null ? ticket.getManager().getProfilePic() : null)
                 .content(ticket.getContent())
                 .dueDate(ticket.getDueDate())
                 .priority(ticket.getPriority())

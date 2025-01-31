@@ -8,9 +8,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class TemplateAttachment {
 
@@ -26,4 +29,9 @@ public class TemplateAttachment {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "attachment_id")
     private Attachment attachment;
+
+    public TemplateAttachment(Template template, Attachment attachment) {
+        this.template = template;
+        this.attachment = attachment;
+    }
 }

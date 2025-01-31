@@ -1,13 +1,13 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.request.FirstCategoryCreateRequest;
-import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.request.SecondCategoryCreateRequest;
-import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
-import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.dto.response.CategoryResponse;
-import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
-import com.quartz.checkin.dto.response.SecondCategoryCreateResponse;
+import com.quartz.checkin.dto.category.request.FirstCategoryCreateRequest;
+import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryCreateRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.category.response.CategoryResponse;
+import com.quartz.checkin.dto.category.response.FirstCategoryCreateResponse;
+import com.quartz.checkin.dto.category.response.SecondCategoryCreateResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.service.CategoryService;

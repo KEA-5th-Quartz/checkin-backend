@@ -1,9 +1,9 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
-import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.dto.response.TicketLogResponse;
+import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Manager;
 import com.quartz.checkin.service.TicketLogService;

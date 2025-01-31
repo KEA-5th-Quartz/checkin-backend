@@ -2,19 +2,18 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.response.AuthenticationResponse;
+import com.quartz.checkin.dto.auth.response.AuthenticationResponse;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @Slf4j
 @Service

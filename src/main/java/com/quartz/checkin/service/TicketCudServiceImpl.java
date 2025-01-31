@@ -1,23 +1,25 @@
 package com.quartz.checkin.service;
 
-import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
-import com.quartz.checkin.dto.request.TicketCreateRequest;
-import com.quartz.checkin.dto.response.TicketAttachmentResponse;
-import com.quartz.checkin.dto.response.TicketCreateResponse;
+import com.quartz.checkin.dto.ticket.response.TicketAttachmentResponse;
+import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
+import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
+import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
-import com.quartz.checkin.repository.*;
+import com.quartz.checkin.repository.CategoryRepository;
+import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.repository.TicketAttachmentRepository;
+import com.quartz.checkin.repository.TicketRepository;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;

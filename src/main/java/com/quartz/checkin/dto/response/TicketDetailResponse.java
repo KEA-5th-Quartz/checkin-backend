@@ -3,7 +3,6 @@ package com.quartz.checkin.dto.response;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
-import java.util.stream.Collectors;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,7 +41,7 @@ public class TicketDetailResponse {
     public static TicketDetailResponse from(Ticket ticket, List<TicketAttachment> attachments) {
         List<String> attachmentUrls = attachments.stream()
                 .map(TicketAttachment::getUrl)
-                .collect(Collectors.toList());
+                .toList();
 
         return TicketDetailResponse.builder()
                 .ticketId(ticket.getId())
@@ -51,7 +50,7 @@ public class TicketDetailResponse {
                 .secondCategory(ticket.getSecondCategory().getName())
                 .username(ticket.getUser().getUsername())
                 .manager(ticket.getManager() != null ? ticket.getManager().getUsername() : null)
-                .managerProfilePic(ticket.getManager().getProfilePic())
+                .managerProfilePic(ticket.getManager() != null ? ticket.getManager().getProfilePic() : null)
                 .content(ticket.getContent())
                 .dueDate(ticket.getDueDate())
                 .createdAt(ticket.getCreatedAt())

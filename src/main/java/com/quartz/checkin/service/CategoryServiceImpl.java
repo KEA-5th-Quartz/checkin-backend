@@ -95,4 +95,19 @@ public class CategoryServiceImpl implements CategoryService {
         // 1차 카테고리 이름 변경
         firstCategory.updateName(request.getFirstCategory());
     }
+
+    @Transactional
+    public void deleteFirstCategory(Long memberId, Long firstCategoryId) {
+        // 존재하지 않는 1차 카테고리 확인
+        Category firstCategory = categoryRepository.findById(firstCategoryId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+
+        // 하위 2차 카테고리 존재 여부 확인
+        if (categoryRepository.existsByParent(firstCategory)) {
+            throw new ApiException(ErrorCode.CATEGORY_HAS_SUBCATEGORIES);
+        }
+
+        // ✅ 1차 카테고리 삭제
+        categoryRepository.delete(firstCategory);
+    }
 }

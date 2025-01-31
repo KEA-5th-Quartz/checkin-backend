@@ -16,6 +16,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -73,5 +74,15 @@ public class CategoryController {
 
         SecondCategoryCreateResponse response = categoryService.createSecondCategory(user.getId(),firstCategoryId,request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.CREATED.value(), response);
+    }
+
+    @Admin
+    @Operation(summary = "API 명세서 v0.2 line 54", description = "관리자가 1차 카테고리 삭제")
+    @DeleteMapping("/{firstCategoryId}")
+    public ApiResponse<Void> deleteFirstCategory(
+            @PathVariable Long firstCategoryId,
+            @AuthenticationPrincipal CustomUser user) {
+        categoryService.deleteFirstCategory(user.getId(), firstCategoryId);
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 }

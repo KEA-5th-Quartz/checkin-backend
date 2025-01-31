@@ -12,5 +12,6 @@ public interface CategoryService {
     List<CategoryResponse> getAllCategories(Long memberId);
     FirstCategoryCreateResponse createFirstCategory(Long memberId, FirstCategoryCreateRequest request);
     void updateFirstCategory(Long memberId, Long firstCategoryId, FirstCategoryUpdateRequest request);
+    void deleteFirstCategory(Long memberId, Long firstCategoryId);
     SecondCategoryCreateResponse createSecondCategory(Long memberId, Long firstCategoryId, SecondCategoryCreateRequest request);
 }

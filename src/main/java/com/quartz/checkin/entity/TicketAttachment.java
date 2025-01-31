@@ -8,10 +8,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TicketAttachment {
 
     @Id
@@ -26,4 +32,9 @@ public class TicketAttachment {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "attachment_id")
     private Attachment attachment;
+
+    public TicketAttachment(Ticket ticket, Attachment attachment) {
+        this.ticket = ticket;
+        this.attachment = attachment;
+    }
 }

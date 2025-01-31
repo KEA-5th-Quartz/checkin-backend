@@ -1,11 +1,13 @@
 package com.quartz.checkin.controller;
 
+import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.TemplateCreateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.TemplateCreateResponse;
 import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.User;
+import com.quartz.checkin.service.AttachmentService;
 import com.quartz.checkin.service.TemplateService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -27,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class TemplateController {
 
     private final TemplateService templateService;
+    private final AttachmentService attachmentService;
 
     @User
     @PostMapping("/templates")
@@ -40,9 +43,10 @@ public class TemplateController {
 
     @User
     @PostMapping("/templates/attachment")
-    public ApiResponse<UploadAttachmentsResponse> uploadAttachments(
+    public ApiResponse<List<UploadAttachmentsResponse>> uploadAttachments(
             @RequestPart(name = "files") List<MultipartFile> multipartFiles) {
-        UploadAttachmentsResponse response = templateService.uploadAttachments(multipartFiles);
+        List<UploadAttachmentsResponse> response =
+                attachmentService.uploadAttachments(multipartFiles, S3Config.TEMPLATE_DIR);
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }

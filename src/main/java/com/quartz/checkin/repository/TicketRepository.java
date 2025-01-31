@@ -12,8 +12,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
-
+    // Todo: Manager 프로필도 같이 조회하기, QueryDSL로 구현
     @Query("SELECT t FROM Ticket t " +
+            "LEFT JOIN t.manager m " +
             "WHERE (:statuses IS NULL OR t.status IN :statuses) " +
             "AND (:categories IS NULL OR LOWER(TRIM(t.firstCategory.name)) IN :categories) " +
             "AND (:priorities IS NULL OR t.priority IN :priorities) " +
@@ -56,7 +57,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchTickets(@Param("keyword") String keyword, Pageable pageable);
 
-    @Query("SELECT t FROM Ticket t " +
+    @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
             "WHERE t.user.id = :memberId " +
             "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")

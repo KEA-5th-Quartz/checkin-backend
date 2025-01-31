@@ -6,6 +6,7 @@ import com.quartz.checkin.dto.request.CategoryCreateRequest;
 import com.quartz.checkin.dto.response.CategoryCreateResponse;
 import com.quartz.checkin.dto.response.CategoryResponse;
 import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
+import com.quartz.checkin.dto.response.SecondCategoryCreateResponse;
 import com.quartz.checkin.dto.response.SecondCategoryResponse;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.repository.CategoryRepository;

@@ -4,6 +4,8 @@ import com.quartz.checkin.dto.request.CategoryCreateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.CategoryCreateResponse;
 import com.quartz.checkin.dto.response.CategoryResponse;
+import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
+import com.quartz.checkin.dto.response.SecondCategoryCreateResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.service.CategoryService;
@@ -38,11 +40,11 @@ public class CategoryController {
     @Admin
     @Operation(summary = "API 명세서 v0.2 line 52", description = "관리자가 1차 카테고리 작성")
     @PostMapping
-    public ApiResponse<CategoryCreateResponse> createFirstCategory(
+    public ApiResponse<FirstCategoryCreateResponse> createFirstCategory(
             @RequestBody @Valid CategoryCreateRequest request,
             @AuthenticationPrincipal CustomUser user) {
 
-        CategoryCreateResponse response = categoryService.createFirstCategory(user.getId(),request);
+        FirstCategoryCreateResponse response = categoryService.createFirstCategory(user.getId(),request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.CREATED.value(), response);
     }
 

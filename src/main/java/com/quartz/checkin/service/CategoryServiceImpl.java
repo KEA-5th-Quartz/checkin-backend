@@ -2,7 +2,7 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.request.CategoryCreateRequest;
+import com.quartz.checkin.dto.request.FirstCategoryCreateRequest;
 import com.quartz.checkin.dto.request.SecondCategoryCreateRequest;
 import com.quartz.checkin.dto.response.CategoryResponse;
 import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
@@ -49,7 +49,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Transactional
-    public FirstCategoryCreateResponse createFirstCategory(Long memberId, CategoryCreateRequest request) {
+    public FirstCategoryCreateResponse createFirstCategory(Long memberId, FirstCategoryCreateRequest request) {
         // 동일한 이름의 1차 카테고리 존재 여부 확인
         if (categoryRepository.existsByNameAndParentIsNull(request.getName())) {
             throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_FIRST);

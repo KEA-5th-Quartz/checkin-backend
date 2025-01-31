@@ -1,6 +1,6 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.request.CategoryCreateRequest;
+import com.quartz.checkin.dto.request.FirstCategoryCreateRequest;
 import com.quartz.checkin.dto.request.SecondCategoryCreateRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.CategoryResponse;
@@ -42,7 +42,7 @@ public class CategoryController {
     @Operation(summary = "API 명세서 v0.2 line 52", description = "관리자가 1차 카테고리 작성")
     @PostMapping
     public ApiResponse<FirstCategoryCreateResponse> createFirstCategory(
-            @RequestBody @Valid CategoryCreateRequest request,
+            @RequestBody @Valid FirstCategoryCreateRequest request,
             @AuthenticationPrincipal CustomUser user) {
 
         FirstCategoryCreateResponse response = categoryService.createFirstCategory(user.getId(),request);

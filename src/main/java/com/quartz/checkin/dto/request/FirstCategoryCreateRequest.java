@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class CategoryCreateRequest {
+public class FirstCategoryCreateRequest {
     @NotNull
     private String name;
 }

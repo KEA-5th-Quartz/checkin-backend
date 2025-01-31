@@ -3,6 +3,7 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.FirstCategoryCreateRequest;
+import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.request.SecondCategoryCreateRequest;
 import com.quartz.checkin.dto.response.CategoryResponse;
 import com.quartz.checkin.dto.response.FirstCategoryCreateResponse;
@@ -77,5 +78,21 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.save(secondCategory);
 
         return new SecondCategoryCreateResponse(secondCategory.getId());
+    }
+
+    @Transactional
+    public void updateFirstCategory(Long memberId, Long firstCategoryId, FirstCategoryUpdateRequest request) {
+        // 존재하지 않는 1차 카테고리 예외 처리
+        Category firstCategory = categoryRepository.findById(firstCategoryId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+
+        // 동일한 이름의 1차 카테고리 존재 여부 확인 (자기 자신은 제외)
+        if (categoryRepository.existsByNameAndParentIsNull(request.getFirstCategory()) &&
+                !firstCategory.getName().equals(request.getFirstCategory())) {
+            throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_FIRST);
+        }
+
+        // 1차 카테고리 이름 변경
+        firstCategory.updateName(request.getFirstCategory());
     }
 }

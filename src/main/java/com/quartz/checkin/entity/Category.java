@@ -35,7 +35,7 @@ public class Category {
         this.name = name;
     }
 
-    public static Category createFirstCategory(String name) {
-        return new Category(null, name);
+    public void updateName(String name) {
+        this.name = name;
     }
 }

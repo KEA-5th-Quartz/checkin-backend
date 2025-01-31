@@ -9,9 +9,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public class Category {
 
@@ -27,4 +30,12 @@ public class Category {
     @Column(nullable = false)
     private String name;
 
+    public Category(Category parent, String name) {
+        this.parent = parent;
+        this.name = name;
+    }
+
+    public static Category createFirstCategory(String name) {
+        return new Category(null, name);
+    }
 }

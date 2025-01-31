@@ -1,5 +1,9 @@
 package com.quartz.checkin.service;
 
+import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.request.CategoryCreateRequest;
+import com.quartz.checkin.dto.response.CategoryCreateResponse;
 import com.quartz.checkin.dto.response.CategoryResponse;
 import com.quartz.checkin.dto.response.SecondCategoryResponse;
 import com.quartz.checkin.entity.Category;
@@ -41,4 +45,21 @@ public class CategoryServiceImpl implements CategoryService {
 
         return new ArrayList<>(categoryMap.values());
     }
+
+    @Transactional
+    public CategoryCreateResponse createFirstCategory(Long memberId, CategoryCreateRequest request) {
+
+        // 공백일 경우 자동으로 Trim 처리
+        String trimmedName = request.getName().trim();
+        if (categoryRepository.existsByNameAndParentIsNull(trimmedName)) {
+            throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_FIRST);
+        }
+
+        Category firstCategory = new Category(null, trimmedName);
+        categoryRepository.save(firstCategory);
+
+        return new CategoryCreateResponse(firstCategory.getId());
+    }
+
+
 }

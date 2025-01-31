@@ -132,4 +132,20 @@ public class CategoryServiceImpl implements CategoryService {
         // 2차 카테고리 이름 변경
         secondCategory.updateName(request.getSecondCategory());
     }
+
+
+    @Transactional
+    public void deleteSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId) {
+        // 존재하지 않는 2차 카테고리 예외 처리
+        Category secondCategory = categoryRepository.findById(secondCategoryId)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+
+        // 2차 카테고리의 부모가 요청된 1차 카테고리인지 검증
+        if (secondCategory.getParent() == null || !secondCategory.getParent().getId().equals(firstCategoryId)) {
+            throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST);
+        }
+
+        // 2차 카테고리 삭제
+        categoryRepository.delete(secondCategory);
+    }
 }

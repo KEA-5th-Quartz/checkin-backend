@@ -16,5 +16,5 @@ public interface CategoryService {
     void deleteFirstCategory(Long memberId, Long firstCategoryId);
     SecondCategoryCreateResponse createSecondCategory(Long memberId, Long firstCategoryId, SecondCategoryCreateRequest request);
     void updateSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId, SecondCategoryUpdateRequest request);
-
+    void deleteSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId);
     }

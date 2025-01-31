@@ -99,4 +99,16 @@ public class CategoryController {
         categoryService.updateSecondCategory(user.getId(), firstCategoryId, secondCategoryId, request);
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
+
+    @Admin
+    @Operation(summary = "API 명세서 v0.2 line 57", description = "관리자가 2차 카테고리 삭제")
+    @DeleteMapping("/{firstCategoryId}/second-categories/{secondCategoryId}")
+    public ApiResponse<Void> deleteSecondCategory(
+            @PathVariable Long firstCategoryId,
+            @PathVariable Long secondCategoryId,
+            @AuthenticationPrincipal CustomUser user) {
+        categoryService.deleteSecondCategory(user.getId(), firstCategoryId, secondCategoryId);
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
 }

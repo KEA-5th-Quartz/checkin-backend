@@ -2,6 +2,7 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.converter.TicketResponseConverter;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
 import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
@@ -11,7 +12,10 @@ import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
-import com.quartz.checkin.converter.TicketResponseConverter;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,11 +23,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +48,12 @@ public class TicketQueryServiceImpl implements TicketQueryService {
                                                        List<String> categories, List<Priority> priorities,
                                                        Boolean dueToday, Boolean dueThisWeek, int page, int size) {
         Page<Ticket> ticketPage = getTickets(null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size);
-        return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
+        List<Ticket> allTickets = ticketRepository.findAllByManagerId(memberId);
+
+
+        int totalTickets = (int) ticketRepository.count();
+        int openTicketCount = (int) ticketRepository.countByStatus(Status.OPEN);
+        return TicketResponseConverter.toManagerTicketListResponse(ticketPage, allTickets, totalTickets, openTicketCount);
     }
 
     @Transactional(readOnly = true)
@@ -70,7 +74,10 @@ public class TicketQueryServiceImpl implements TicketQueryService {
                 Sort.by(Sort.Direction.ASC, "dueDate").and(Sort.by(Sort.Direction.ASC, "title")));
 
         Page<Ticket> ticketPage = ticketRepository.searchTickets(keyword == null || keyword.isBlank() ? "" : keyword.toLowerCase(), pageable);
-        return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
+        List<Ticket> allTickets = ticketRepository.findAllByManagerId(memberId);
+        int totalTickets = (int) ticketRepository.count();
+        int openTicketCount = (int) ticketRepository.countByStatus(Status.OPEN);
+        return TicketResponseConverter.toManagerTicketListResponse(ticketPage, allTickets, totalTickets, openTicketCount);
     }
 
     @Transactional(readOnly = true)

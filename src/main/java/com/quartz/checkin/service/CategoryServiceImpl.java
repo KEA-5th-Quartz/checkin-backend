@@ -48,18 +48,16 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Transactional
     public CategoryCreateResponse createFirstCategory(Long memberId, CategoryCreateRequest request) {
-
-        // 공백일 경우 자동으로 Trim 처리
-        String trimmedName = request.getName().trim();
-        if (categoryRepository.existsByNameAndParentIsNull(trimmedName)) {
+        // 동일한 이름의 1차 카테고리 존재 여부 확인
+        if (categoryRepository.existsByNameAndParentIsNull(request.getName())) {
             throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_FIRST);
         }
 
-        Category firstCategory = new Category(null, trimmedName);
+        // 1차 카테고리 생성 (부모 없음)
+        Category firstCategory = new Category(null, request.getName());
         categoryRepository.save(firstCategory);
 
         return new CategoryCreateResponse(firstCategory.getId());
     }
-
 
 }

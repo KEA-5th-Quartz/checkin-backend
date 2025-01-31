@@ -41,7 +41,8 @@ public class CommentController {
             @AuthenticationPrincipal CustomUser customUser,
             @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId,
             @Valid @RequestBody TicketCommentRequest request) {
-        return ApiResponse.createSuccessResponseWithData(200, commentService.writeComment(customUser, ticketId, request.getContent()));
+        return ApiResponse.createSuccessResponseWithData(200, commentService.writeComment(customUser, ticketId,
+                request.getContent()));
     }
 
     @GetMapping("/{ticketId}/comments")

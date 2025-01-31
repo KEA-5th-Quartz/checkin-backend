@@ -133,14 +133,24 @@ public class CommentService {
      * @return 변환된 ActivityResponse
      */
     private ActivityResponse convertCommentToActivity(Comment comment) {
-        return ActivityResponse.builder()
-                .type(ActivityType.COMMENT)
-                .createdAt(comment.getCreatedAt())
-                .commentId(comment.getId())
-                .memberId(comment.getMember().getId())
-                .commentContent(comment.getContent())
-                .attachmentUrl(comment.getAttachment())
-                .build();
+        if (comment.getAttachment() != null) {
+            return ActivityResponse.builder()
+                    .type(ActivityType.COMMENT)
+                    .createdAt(comment.getCreatedAt())
+                    .commentId(comment.getId())
+                    .memberId(comment.getMember().getId())
+                    .isImage(s3UploadService.isImageType(comment.getContent()))
+                    .attachmentUrl(comment.getAttachment())
+                    .build();
+        } else {
+            return ActivityResponse.builder()
+                    .type(ActivityType.COMMENT)
+                    .createdAt(comment.getCreatedAt())
+                    .commentId(comment.getId())
+                    .memberId(comment.getMember().getId())
+                    .commentContent(comment.getContent())
+                    .build();
+        }
     }
 
     /**

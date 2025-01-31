@@ -3,7 +3,6 @@ package com.quartz.checkin.dto.response;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
-import com.quartz.checkin.repository.TicketAttachmentRepository;
 import java.util.stream.Collectors;
 import lombok.*;
 
@@ -23,6 +22,7 @@ public class TicketDetailResponse {
     private String firstCategory;
     private String secondCategory;
     private String username;
+    private String managerProfilePic;
     private String manager;
     private String content;
 
@@ -48,6 +48,7 @@ public class TicketDetailResponse {
                 .secondCategory(ticket.getSecondCategory().getName())
                 .username(ticket.getUser().getUsername())
                 .manager(ticket.getManager() != null ? ticket.getManager().getUsername() : null)
+                .managerProfilePic(ticket.getManager().getProfilePic())
                 .content(ticket.getContent())
                 .dueDate(ticket.getDueDate())
                 .createdAt(ticket.getCreatedAt())

@@ -17,7 +17,7 @@ public class UserTicketSummaryResponse {
     private String firstCategory;
     private String secondCategory;
     private String manager;
-    private String managerProfliePic;
+    private String managerProfilePic;
     private String content;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy/MM/dd")
@@ -32,7 +32,7 @@ public class UserTicketSummaryResponse {
                 .firstCategory(ticket.getFirstCategory().getName())
                 .secondCategory(ticket.getSecondCategory().getName())
                 .manager(ticket.getManager() != null ? ticket.getManager().getUsername() : null)
-                .managerProfliePic(ticket.getManager().getProfilePic())
+                .managerProfilePic(ticket.getManager().getProfilePic())
                 .content(ticket.getContent())
                 .dueDate(ticket.getDueDate())
                 .status(ticket.getStatus())

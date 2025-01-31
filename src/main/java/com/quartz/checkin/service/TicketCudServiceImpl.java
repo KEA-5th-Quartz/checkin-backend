@@ -2,6 +2,7 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
@@ -46,6 +47,7 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .secondCategory(secondCategory)
                 .title(request.getTitle())
                 .content(request.getContent())
+                .priority(Priority.UNDEFINED)
                 .status(Status.OPEN)
                 .dueDate(request.getDueDate())
                 .build();
@@ -54,7 +56,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {
                 if (!file.isEmpty()) {
-                    String fileUrl = s3UploadService.uploadFile(file, "attachments");
+                    String fileUrl = s3UploadService.uploadFile(file, S3Config.TICKET_DIR);
                     TicketAttachment attachment = new TicketAttachment(ticket, fileUrl);
                     ticketAttachmentRepository.save(attachment);
                 }

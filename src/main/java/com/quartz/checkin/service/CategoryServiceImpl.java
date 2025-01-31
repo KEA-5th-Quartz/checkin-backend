@@ -133,7 +133,6 @@ public class CategoryServiceImpl implements CategoryService {
         secondCategory.updateName(request.getSecondCategory());
     }
 
-
     @Transactional
     public void deleteSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId) {
         // 존재하지 않는 2차 카테고리 예외 처리

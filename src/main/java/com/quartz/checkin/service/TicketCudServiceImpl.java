@@ -15,7 +15,6 @@ import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -39,7 +37,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     @Transactional
     @Override
-    public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) throws IOException {
+    public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) {
         // 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
@@ -73,7 +71,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         List<TicketAttachment> ticketAttachments = new ArrayList<>();
         for (Attachment attachment : attachments) {
-            ticketAttachments.add(new TicketAttachment(ticket, attachment));
+            ticketAttachments.add(new TicketAttachment(savedTicket, attachment));
         }
 
         ticketAttachmentRepository.saveAll(ticketAttachments);

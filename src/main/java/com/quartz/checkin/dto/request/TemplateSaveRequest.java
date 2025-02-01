@@ -6,8 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 
+// 생성과 업데이트 처리
 @Getter
-public class TemplateCreateRequest {
+public class TemplateSaveRequest {
     @NotBlank(message = "제목은 필수 입력값입니다.")
     private String title;
 

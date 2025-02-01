@@ -2,10 +2,8 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.config.S3Config;
-import com.quartz.checkin.dto.request.TemplateCreateRequest;
+import com.quartz.checkin.dto.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.response.TemplateCreateResponse;
-import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
@@ -15,14 +13,12 @@ import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TemplateAttachmentRepository;
 import com.quartz.checkin.repository.TemplateRepository;
 import com.quartz.checkin.security.CustomUser;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -36,15 +32,23 @@ public class TemplateService {
     private final TemplateAttachmentRepository templateAttachmentRepository;
     private final TemplateRepository templateRepository;
 
+    public Template getTemplateByIdOrThrow(Long templateId) {
+        return templateRepository.findById(templateId)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 템플릿입니다.");
+                    return new ApiException(ErrorCode.TEMPLATE_NOT_FOUND);
+                });
+    }
+
     @Transactional
-    public TemplateCreateResponse createTemplate(TemplateCreateRequest templateCreateRequest, CustomUser customUser) {
+    public TemplateCreateResponse createTemplate(TemplateSaveRequest templateSaveRequest, CustomUser customUser) {
         Member member = memberService.getMemberByIdOrThrow(customUser.getId());
 
-        Category firstCategory = categoryService.getFirstCategoryOrThrow(templateCreateRequest.getFirstCategory());
+        Category firstCategory = categoryService.getFirstCategoryOrThrow(templateSaveRequest.getFirstCategory());
         Category secondCategory = categoryService.
-                getSecondCategoryOrThrow(templateCreateRequest.getSecondCategory(), firstCategory);
+                getSecondCategoryOrThrow(templateSaveRequest.getSecondCategory(), firstCategory);
 
-        List<Long> attachmentIds = templateCreateRequest.getAttachmentIds();
+        List<Long> attachmentIds = templateSaveRequest.getAttachmentIds();
         List<Attachment> attachments = attachmentRepository.findAllById(attachmentIds);
 
         if (attachments.size() != attachmentIds.size()) {
@@ -53,11 +57,11 @@ public class TemplateService {
         }
 
         Template template = templateRepository.save(Template.builder()
-                .title(templateCreateRequest.getTitle())
+                .title(templateSaveRequest.getTitle())
                 .member(member)
                 .firstCategory(firstCategory)
                 .secondCategory(secondCategory)
-                .content(templateCreateRequest.getContent())
+                .content(templateSaveRequest.getContent())
                 .build());
 
         List<TemplateAttachment> templateAttachments = new ArrayList<>();
@@ -69,5 +73,68 @@ public class TemplateService {
 
         return new TemplateCreateResponse(template.getId());
     }
+
+    @Transactional
+    public void updateTemplate(Long templateId, TemplateSaveRequest templateSaveRequest, CustomUser customUser) {
+        Template template = getTemplateByIdOrThrow(templateId);
+
+        Member member = memberService.getMemberByIdOrThrow(customUser.getId());
+
+        if (!template.getMember().getId().equals(member.getId())) {
+            log.error("다른 사용자의 리소스에 접근하려고 합니다.");
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        Category firstCategory = categoryService.getFirstCategoryOrThrow(templateSaveRequest.getFirstCategory());
+        Category secondCategory = categoryService.
+                getSecondCategoryOrThrow(templateSaveRequest.getSecondCategory(), firstCategory);
+
+        List<Long> newAttachmentIds = templateSaveRequest.getAttachmentIds();
+        List<Attachment> newAttachments = attachmentRepository.findAllById(newAttachmentIds);
+
+        if (newAttachmentIds.size() != newAttachments.size()) {
+            log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
+            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
+        }
+
+        template.updateTitle(templateSaveRequest.getTitle());
+        template.updateContent(templateSaveRequest.getContent());
+        template.updateCategories(firstCategory, secondCategory);
+
+        // 해당 템플릿의 저장된 첨부파일 ID들
+        List<Long> savedAttachmentIds = templateAttachmentRepository.findByTemplate(template)
+                .stream()
+                .map(ta -> ta.getAttachment().getId())
+                .toList();
+
+
+        // 추가해야 할 첨부파일 ID들
+        List<Long> attachmentIdsToAdd = newAttachmentIds.stream()
+                .filter(id -> !savedAttachmentIds.contains(id))
+                .toList();
+
+        // 제거해야 할 첨부파일 ID들
+        List<Long> attachmentIdsToRemove = savedAttachmentIds.stream()
+                .filter(id -> !newAttachmentIds.contains(id))
+                .toList();
+
+        // 추가해야 할 첨부파일
+        List<Attachment> attachmentsToAdd = newAttachments.stream()
+                .filter(a -> attachmentIdsToAdd.contains(a.getId()))
+                .toList();
+
+        List<TemplateAttachment> newTemplateAttachments = attachmentsToAdd.stream()
+                .map(a -> new TemplateAttachment(template, a))
+                .toList();
+
+        templateAttachmentRepository.saveAll(newTemplateAttachments);
+
+        // 해당 첨부파일이 티켓에서 사용 중일 수 있기에, 중간 테이블에서만 삭제
+        if (!attachmentIdsToRemove.isEmpty()) {
+            templateAttachmentRepository.deleteByTemplateAndAttachmentIds(template, attachmentIdsToRemove);
+        }
+
+    }
+
 
 }

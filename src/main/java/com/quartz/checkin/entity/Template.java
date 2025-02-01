@@ -43,4 +43,17 @@ public class Template {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
+    public void updateCategories(Category firstCategory, Category secondCategory) {
+        this.firstCategory = firstCategory;
+        this.secondCategory = secondCategory;
+    }
 }

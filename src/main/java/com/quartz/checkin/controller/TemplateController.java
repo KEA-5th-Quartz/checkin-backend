@@ -4,7 +4,7 @@ import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.TemplateCreateResponse;
-import com.quartz.checkin.dto.response.TemplateResponse;
+import com.quartz.checkin.dto.response.TemplateDetailResponse;
 import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.User;
@@ -68,10 +68,10 @@ public class TemplateController {
 
     @User
     @GetMapping("/templates/{templateId}")
-    public ApiResponse<TemplateResponse> template(
+    public ApiResponse<TemplateDetailResponse> template(
             @PathVariable Long templateId,
             @AuthenticationPrincipal CustomUser customUser) {
-        TemplateResponse response = templateService.readTemplate(templateId, customUser);
+        TemplateDetailResponse response = templateService.readTemplate(templateId, customUser);
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }

@@ -6,8 +6,8 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class TemplateResponse {
-    private Long id;
+public class TemplateDetailResponse {
+    private Long templateId;
     private String title;
     private String firstCategory;
     private String secondCategory;

@@ -9,6 +9,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UploadAttachmentsResponse {
 
-    private Long id;
+    private Long attachmentId;
     private String url;
 }

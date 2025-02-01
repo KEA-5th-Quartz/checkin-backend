@@ -4,7 +4,7 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.response.TemplateCreateResponse;
-import com.quartz.checkin.dto.response.TemplateResponse;
+import com.quartz.checkin.dto.response.TemplateDetailResponse;
 import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
@@ -42,7 +42,7 @@ public class TemplateService {
                 });
     }
 
-    public TemplateResponse readTemplate(Long templateId, CustomUser customUser) {
+    public TemplateDetailResponse readTemplate(Long templateId, CustomUser customUser) {
         Template template = templateRepository.findByIdJoinFetch(templateId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TEMPLATE_NOT_FOUND));
 
@@ -57,8 +57,8 @@ public class TemplateService {
                 .map(ta -> new UploadAttachmentsResponse(ta.getAttachment().getId(), ta.getAttachment().getUrl()))
                 .toList();
 
-        return TemplateResponse.builder()
-                .id(template.getId())
+        return TemplateDetailResponse.builder()
+                .templateId(template.getId())
                 .title(template.getTitle())
                 .firstCategory(template.getFirstCategory().getName())
                 .secondCategory(template.getSecondCategory().getName())

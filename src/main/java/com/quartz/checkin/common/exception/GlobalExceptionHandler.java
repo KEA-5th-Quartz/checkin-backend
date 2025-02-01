@@ -1,6 +1,6 @@
 package com.quartz.checkin.common.exception;
 
-import com.quartz.checkin.dto.response.ApiErrorResponse;
+import com.quartz.checkin.dto.common.response.ApiErrorResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;

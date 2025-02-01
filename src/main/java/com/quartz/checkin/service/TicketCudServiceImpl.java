@@ -1,11 +1,11 @@
 package com.quartz.checkin.service;
 
-import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.exception.ApiException;
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
-import com.quartz.checkin.dto.request.TicketCreateRequest;
-import com.quartz.checkin.dto.response.TicketCreateResponse;
 import com.quartz.checkin.entity.Attachment;
+import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
+import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
+import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Priority;
@@ -18,7 +18,6 @@ import com.quartz.checkin.repository.TicketRepository;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +29,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     private final AttachmentRepository attachmentRepository;
     private final TicketRepository ticketRepository;
-    private final CategoryService categoryService;
+    private final CategoryServiceImpl categoryService;
     private final MemberService memberService;
     private final TicketAttachmentRepository ticketAttachmentRepository;
 

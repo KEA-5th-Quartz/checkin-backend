@@ -1,7 +1,7 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.dto.response.AuthenticationResponse;
+import com.quartz.checkin.dto.auth.response.AuthenticationResponse;
+import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

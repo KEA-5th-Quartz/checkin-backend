@@ -1,12 +1,12 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.request.TicketCommentRequest;
-import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.dto.response.CommentAttachmentResponse;
-import com.quartz.checkin.dto.response.CommentLikeListResponse;
-import com.quartz.checkin.dto.response.CommentLikeResponse;
-import com.quartz.checkin.dto.response.CommentResponse;
-import com.quartz.checkin.dto.response.TicketActivityResponse;
+import com.quartz.checkin.dto.comment.response.CommentAttachmentResponse;
+import com.quartz.checkin.dto.comment.response.CommentLikeListResponse;
+import com.quartz.checkin.dto.comment.response.CommentLikeResponse;
+import com.quartz.checkin.dto.comment.response.CommentResponse;
+import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.ticket.request.TicketCommentRequest;
+import com.quartz.checkin.dto.ticket.response.TicketActivityResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.ManagerOrUser;
 import com.quartz.checkin.service.CommentService;

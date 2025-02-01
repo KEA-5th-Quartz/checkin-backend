@@ -2,8 +2,7 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.config.S3Config;
-import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
+import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.repository.AttachmentRepository;
 import java.io.IOException;

@@ -1,13 +1,13 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.config.S3Config;
-import com.quartz.checkin.dto.request.SimplePageRequest;
-import com.quartz.checkin.dto.request.TemplateSaveRequest;
-import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.dto.response.TemplateCreateResponse;
-import com.quartz.checkin.dto.response.TemplateDetailResponse;
-import com.quartz.checkin.dto.response.TemplateListResponse;
-import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
+import com.quartz.checkin.dto.common.request.SimplePageRequest;
+import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
+import com.quartz.checkin.dto.template.response.TemplateCreateResponse;
+import com.quartz.checkin.dto.template.response.TemplateDetailResponse;
+import com.quartz.checkin.dto.template.response.TemplateListResponse;
+import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.User;
 import com.quartz.checkin.service.AttachmentService;

@@ -2,12 +2,12 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.request.SimplePageRequest;
-import com.quartz.checkin.dto.request.TemplateSaveRequest;
-import com.quartz.checkin.dto.response.TemplateCreateResponse;
-import com.quartz.checkin.dto.response.TemplateDetailResponse;
-import com.quartz.checkin.dto.response.TemplateListResponse;
-import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
+import com.quartz.checkin.dto.common.request.SimplePageRequest;
+import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
+import com.quartz.checkin.dto.template.response.TemplateCreateResponse;
+import com.quartz.checkin.dto.template.response.TemplateDetailResponse;
+import com.quartz.checkin.dto.template.response.TemplateListResponse;
+import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TemplateService {
 
     private final AttachmentRepository attachmentRepository;
-    private final CategoryService categoryService;
+    private final CategoryServiceImpl categoryService;
     private final MemberService memberService;
     private final TemplateAttachmentRepository templateAttachmentRepository;
     private final TemplateRepository templateRepository;
@@ -96,8 +96,8 @@ public class TemplateService {
         Member member = memberService.getMemberByIdOrThrow(customUser.getId());
 
         Category firstCategory = categoryService.getFirstCategoryOrThrow(templateSaveRequest.getFirstCategory());
-        Category secondCategory = categoryService.
-                getSecondCategoryOrThrow(templateSaveRequest.getSecondCategory(), firstCategory);
+        Category secondCategory =
+                categoryService.getSecondCategoryOrThrow(templateSaveRequest.getSecondCategory(), firstCategory);
 
         List<Long> attachmentIds = templateSaveRequest.getAttachmentIds();
         List<Attachment> attachments = attachmentRepository.findAllById(attachmentIds);

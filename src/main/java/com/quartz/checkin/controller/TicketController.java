@@ -1,9 +1,14 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.config.S3Config;
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
-import com.quartz.checkin.dto.request.TicketCreateRequest;
-import com.quartz.checkin.dto.response.*;
+import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
+import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
+import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
+import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
+import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
+import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
+import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.security.CustomUser;
@@ -15,12 +20,19 @@ import com.quartz.checkin.service.TicketCudService;
 import com.quartz.checkin.service.TicketQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -76,7 +88,7 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueToday,
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.getManagerTickets(
@@ -92,7 +104,7 @@ public class TicketController {
     public ApiResponse<ManagerTicketListResponse> searchTickets(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size);
@@ -111,7 +123,7 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueToday,
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.getUserTickets(
@@ -128,7 +140,7 @@ public class TicketController {
     public ApiResponse<UserTicketListResponse> searchUserTickets(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size);

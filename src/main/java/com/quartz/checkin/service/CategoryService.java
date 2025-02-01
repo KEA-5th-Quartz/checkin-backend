@@ -1,28 +1,20 @@
 package com.quartz.checkin.service;
 
-import com.quartz.checkin.common.exception.ApiException;
-import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.entity.Category;
-import com.quartz.checkin.repository.CategoryRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import com.quartz.checkin.dto.category.request.FirstCategoryCreateRequest;
+import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryCreateRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.response.CategoryResponse;
+import com.quartz.checkin.dto.category.response.FirstCategoryCreateResponse;
+import com.quartz.checkin.dto.category.response.SecondCategoryCreateResponse;
+import java.util.List;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class CategoryService {
-
-    private final CategoryRepository categoryRepository;
-
-    public Category getFirstCategoryOrThrow(String firstCategory) {
-        return categoryRepository.findByNameAndParentIsNull(firstCategory)
-                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+public interface CategoryService {
+    List<CategoryResponse> getAllCategories(Long memberId);
+    FirstCategoryCreateResponse createFirstCategory(Long memberId, FirstCategoryCreateRequest request);
+    void updateFirstCategory(Long memberId, Long firstCategoryId, FirstCategoryUpdateRequest request);
+    void deleteFirstCategory(Long memberId, Long firstCategoryId);
+    SecondCategoryCreateResponse createSecondCategory(Long memberId, Long firstCategoryId, SecondCategoryCreateRequest request);
+    void updateSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId, SecondCategoryUpdateRequest request);
+    void deleteSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId);
     }
-
-    public Category getSecondCategoryOrThrow(String secondCategory, Category firstCategory) {
-        return categoryRepository.findByNameAndParent(secondCategory, firstCategory)
-                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
-    }
-
-}

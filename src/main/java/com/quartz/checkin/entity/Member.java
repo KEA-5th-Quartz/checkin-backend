@@ -1,7 +1,7 @@
 package com.quartz.checkin.entity;
 
 import com.quartz.checkin.config.MemberConfig;
-import com.quartz.checkin.dto.request.MemberRegistrationRequest;
+import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

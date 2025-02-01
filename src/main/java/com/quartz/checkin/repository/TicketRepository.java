@@ -3,16 +3,19 @@ package com.quartz.checkin.repository;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
+import java.time.LocalDate;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import java.time.LocalDate;
-import java.util.List;
 
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
-    // Todo: Manager 프로필도 같이 조회하기, QueryDSL로 구현
+    // Todo: QueryDSL로 구현
+
+    List<Ticket> findAllByManagerId(Long managerId);
+
     @Query("SELECT t FROM Ticket t " +
             "LEFT JOIN t.manager m " +
             "WHERE (:statuses IS NULL OR t.status IN :statuses) " +
@@ -62,4 +65,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchMyTickets(@Param("memberId") Long memberId, @Param("keyword") String keyword, Pageable pageable);
+
+    long countByStatus(Status status);
 }

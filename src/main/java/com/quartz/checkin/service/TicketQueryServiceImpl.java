@@ -9,8 +9,10 @@ import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.entity.TicketAttachment;
-import com.quartz.checkin.repository.AttachmentRepository;
+import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import java.time.DayOfWeek;
@@ -29,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TicketQueryServiceImpl implements TicketQueryService {
 
-    private final AttachmentRepository attachmentRepository;
+    private final MemberRepository memberRepository;
     private final TicketRepository ticketRepository;
     private final TicketAttachmentRepository ticketAttachmentRepository;
 
@@ -39,10 +41,15 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
 
-        if (!ticket.getUser().getId().equals(memberId) &&
-                (ticket.getManager() == null || !ticket.getManager().getId().equals(memberId))) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+
+        boolean isManager = member.getRole() == Role.MANAGER;
+
+        if (!isManager && !ticket.getUser().getId().equals(memberId)) {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
+
         List<TicketAttachment> attachments = ticketAttachmentRepository.findByTicketId(ticketId);
 
         return TicketDetailResponse.from(ticket, attachments);

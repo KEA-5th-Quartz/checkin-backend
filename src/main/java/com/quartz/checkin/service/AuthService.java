@@ -52,8 +52,6 @@ public class AuthService {
                 passwordChangedAt == null ? jwtService.createPasswordResetToken(memberId) : null;
 
         member.updateRefreshToken(refreshToken);
-        memberRepository.save(member);
-
         jwtService.setRefreshToken(response, refreshToken);
 
         return AuthenticationResponse.builder()

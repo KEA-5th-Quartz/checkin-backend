@@ -37,10 +37,10 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
 
-        if (!ticket.getUser().getId().equals(memberId)) {
+        if (!ticket.getUser().getId().equals(memberId) &&
+                (ticket.getManager() == null || !ticket.getManager().getId().equals(memberId))) {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
-
         List<TicketAttachment> attachments = ticketAttachmentRepository.findByTicketId(ticketId);
 
         return TicketDetailResponse.from(ticket, attachments);

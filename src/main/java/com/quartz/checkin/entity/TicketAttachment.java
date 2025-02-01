@@ -29,11 +29,12 @@ public class TicketAttachment {
     @JoinColumn(name = "ticket_id")
     private Ticket ticket;
 
-    @Column(nullable = false)
-    private String url;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "attachment_id")
+    private Attachment attachment;
 
-    public TicketAttachment(Ticket ticket, String url) {
+    public TicketAttachment(Ticket ticket, Attachment attachment) {
         this.ticket = ticket;
-        this.url = url;
+        this.attachment = attachment;
     }
 }

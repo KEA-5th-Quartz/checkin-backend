@@ -1,9 +1,8 @@
 package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.config.S3Config;
-import com.quartz.checkin.dto.ticket.response.TicketAttachmentResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
@@ -13,41 +12,49 @@ import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
-import com.quartz.checkin.repository.CategoryRepository;
-import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketCudServiceImpl implements TicketCudService {
 
+    private final AttachmentRepository attachmentRepository;
     private final TicketRepository ticketRepository;
-    private final CategoryRepository categoryRepository;
-    private final MemberRepository memberRepository;
+    private final CategoryServiceImpl categoryService;
+    private final MemberService memberService;
     private final TicketAttachmentRepository ticketAttachmentRepository;
-    private final S3UploadService s3UploadService;
+
 
     @Transactional
     @Override
-    public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request, List<MultipartFile> files) throws IOException {
+    public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) {
         // 사용자 조회
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+        Member member = memberService.getMemberByIdOrThrow(memberId);
 
         // 1차 카테고리 조회 (parent_id가 NULL인 경우)
-        Category firstCategory = categoryRepository.findByNameAndParentIsNull(request.getFirstCategory())
-                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+        Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
 
         // 2차 카테고리 조회 (해당 1차 카테고리의 자식 카테고리)
-        Category secondCategory = categoryRepository.findByNameAndParent(request.getSecondCategory(), firstCategory)
-                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+        Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
+
+        // 첨부파일 검증
+        List<Long> attachmentIds = request.getAttachmentIds();
+        List<Attachment> attachments = attachmentRepository.findAllById(attachmentIds);
+
+        if (attachments.size() != attachmentIds.size()) {
+            log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
+            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
+        }
+
         // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
                 .user(member)
@@ -59,43 +66,22 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .status(Status.OPEN)
                 .dueDate(request.getDueDate())
                 .build();
-        ticketRepository.save(ticket);
+        Ticket savedTicket = ticketRepository.save(ticket);
 
-        if (files != null && !files.isEmpty()) {
-            for (MultipartFile file : files) {
-                if (!file.isEmpty()) {
-                    String fileUrl = s3UploadService.uploadFile(file, S3Config.TICKET_DIR);
-                    TicketAttachment attachment = new TicketAttachment(ticket, fileUrl);
-                    ticketAttachmentRepository.save(attachment);
-                }
-            }
+        List<TicketAttachment> ticketAttachments = new ArrayList<>();
+        for (Attachment attachment : attachments) {
+            ticketAttachments.add(new TicketAttachment(savedTicket, attachment));
         }
+
+        ticketAttachmentRepository.saveAll(ticketAttachments);
+
         return new TicketCreateResponse(ticket.getId());
-    }
-
-    @Transactional
-    @Override
-    public TicketAttachmentResponse uploadAttachment(Long ticketId, MultipartFile file) throws IOException {
-        // 티켓 존재 여부 확인
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
-
-        // S3에 파일 업로드
-        String fileUrl = s3UploadService.uploadFile(file, "attachments");
-
-        // 첨부파일 엔티티 저장
-        TicketAttachment attachment = ticketAttachmentRepository.save(TicketAttachment.builder()
-                .ticket(ticket)
-                .url(fileUrl)
-                .build());
-
-        return TicketAttachmentResponse.from(attachment);
     }
 
     @Transactional
     public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
         // 담당자 검증
-        Member manager = getValidMember(memberId);
+        Member manager = memberService.getMemberByIdOrThrow(memberId);
 
         // 티켓 검증 및 중요도 업데이트
         Ticket ticket = getValidTicket(ticketId);
@@ -113,10 +99,6 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
     }
 
-    private Member getValidMember(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
-    }
 
     private void validateTicketManager(Ticket ticket, Member manager) {
         // 담당자가 본인이 맞는지 검증

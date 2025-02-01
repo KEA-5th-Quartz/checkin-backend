@@ -8,10 +8,16 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import java.time.LocalDate;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Getter
 public class Template {
 
@@ -38,7 +44,16 @@ public class Template {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(nullable = false)
-    private LocalDate dueDate;
+    public void updateTitle(String title) {
+        this.title = title;
+    }
 
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
+    public void updateCategories(Category firstCategory, Category secondCategory) {
+        this.firstCategory = firstCategory;
+        this.secondCategory = secondCategory;
+    }
 }

@@ -1,10 +1,11 @@
 package com.quartz.checkin.controller;
 
+import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
-import com.quartz.checkin.dto.ticket.response.TicketAttachmentResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
 import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
@@ -14,15 +15,14 @@ import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Manager;
 import com.quartz.checkin.security.annotation.ManagerOrUser;
 import com.quartz.checkin.security.annotation.User;
+import com.quartz.checkin.service.AttachmentService;
 import com.quartz.checkin.service.TicketCudService;
 import com.quartz.checkin.service.TicketQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
-import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -40,28 +40,29 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class TicketController {
 
+    private final AttachmentService attachmentService;
     private final TicketCudService ticketCudService;
     private final TicketQueryService ticketQueryService;
 
     @User
     @Operation(summary = "API 명세서 v0.1 line 25", description = "티켓 생성")
-    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PostMapping
     public ApiResponse<TicketCreateResponse> createTicket(
             @AuthenticationPrincipal CustomUser user,
-            @RequestPart("request") @Valid TicketCreateRequest request,
-            @RequestPart(value = "files", required = false) List<MultipartFile> files) throws IOException {
+            @RequestBody @Valid TicketCreateRequest request) {
 
-        TicketCreateResponse response = ticketCudService.createTicket(user.getId(), request, files);
+        TicketCreateResponse response = ticketCudService.createTicket(user.getId(), request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
+
     @User
     @Operation(summary = "API 명세서 v0.1 line 41", description = "티켓에 첨부파일 업로드")
-    @PostMapping("/{ticketId}/attachment")
-    public ApiResponse<TicketAttachmentResponse> uploadAttachment(
-            @PathVariable Long ticketId,
-            @RequestParam("file") MultipartFile file) throws IOException {
+    @PostMapping("/attachment")
+    public ApiResponse<List<UploadAttachmentsResponse>> uploadAttachment(
+            @RequestPart("files") List<MultipartFile> multipartFiles) {
 
-        TicketAttachmentResponse response = ticketCudService.uploadAttachment(ticketId, file);
+        List<UploadAttachmentsResponse> response =
+                attachmentService.uploadAttachments(multipartFiles, S3Config.TICKET_DIR);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -72,7 +73,7 @@ public class TicketController {
             @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user) {
 
-        TicketDetailResponse response = ticketQueryService.getTicketDetail(user.getId(),ticketId);
+        TicketDetailResponse response = ticketQueryService.getTicketDetail(user.getId(), ticketId);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 

@@ -38,9 +38,9 @@ public class TicketDetailResponse {
     private String status;
     private List<String> ticketAttachmentUrls;
 
-    public static TicketDetailResponse from(Ticket ticket, List<TicketAttachment> attachments) {
-        List<String> attachmentUrls = attachments.stream()
-                .map(TicketAttachment::getUrl)
+    public static TicketDetailResponse from(Ticket ticket, List<TicketAttachment> ticketAttachments) {
+        List<String> attachmentUrls = ticketAttachments.stream()
+                .map(ta -> ta.getAttachment().getUrl())
                 .toList();
 
         return TicketDetailResponse.builder()

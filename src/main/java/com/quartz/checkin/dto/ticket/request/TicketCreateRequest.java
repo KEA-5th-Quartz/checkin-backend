@@ -2,11 +2,12 @@ package com.quartz.checkin.dto.ticket.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,4 +27,6 @@ public class TicketCreateRequest {
 
     @NotNull
     private LocalDate dueDate;
+
+    private List<Long> attachmentIds = new ArrayList<>();
 }

@@ -1,4 +1,4 @@
-package com.quartz.checkin.dto.auth.request;
+package com.quartz.checkin.dto.member.request;
 
 import com.quartz.checkin.common.validator.ValidRole;
 import jakarta.validation.constraints.NotBlank;

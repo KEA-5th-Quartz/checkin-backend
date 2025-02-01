@@ -14,13 +14,11 @@ public class MemberInfoListRequest {
     @ValidRole
     private String role;
 
-    @NotNull(message = "page 번호는 필수 입력값입니다.")
     @Min(value = 1, message = "Page 번호는 1 이상이어야 합니다.")
-    private Integer page;
+    private Integer page = 1;
 
-    @NotNull(message = "size는 필수 입력값입니다.")
     @Min(value = 1, message = "size는 1 이상이어야 합니다.")
-    private Integer size;
+    private Integer size = 10;
 
     private String username;
 }

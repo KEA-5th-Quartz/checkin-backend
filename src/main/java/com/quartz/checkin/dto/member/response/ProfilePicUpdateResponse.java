@@ -1,4 +1,4 @@
-package com.quartz.checkin.dto.auth.response;
+package com.quartz.checkin.dto.member.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

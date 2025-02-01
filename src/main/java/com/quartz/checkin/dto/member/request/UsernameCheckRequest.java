@@ -1,4 +1,4 @@
-package com.quartz.checkin.dto.auth.request;
+package com.quartz.checkin.dto.member.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

@@ -135,4 +135,14 @@ public class CategoryServiceImpl implements CategoryService {
             throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_SECOND);
         }
     }
+
+    public Category getFirstCategoryOrThrow(String firstCategory) {
+        return categoryRepository.findByNameAndParentIsNull(firstCategory)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+    }
+
+    public Category getSecondCategoryOrThrow(String secondCategory, Category firstCategory) {
+        return categoryRepository.findByNameAndParent(secondCategory, firstCategory)
+                .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+    }
 }

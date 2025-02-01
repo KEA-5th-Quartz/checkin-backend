@@ -1,12 +1,12 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.auth.request.EmailCheckRequest;
-import com.quartz.checkin.dto.auth.request.MemberRegistrationRequest;
-import com.quartz.checkin.dto.auth.request.PasswordChangeRequest;
-import com.quartz.checkin.dto.auth.request.PasswordResetEmailRequest;
-import com.quartz.checkin.dto.auth.request.PasswordResetRequest;
-import com.quartz.checkin.dto.auth.request.UsernameCheckRequest;
-import com.quartz.checkin.dto.auth.response.ProfilePicUpdateResponse;
+import com.quartz.checkin.dto.member.request.EmailCheckRequest;
+import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
+import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
+import com.quartz.checkin.dto.member.request.PasswordResetRequest;
+import com.quartz.checkin.dto.member.request.UsernameCheckRequest;
+import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
 import com.quartz.checkin.dto.member.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;

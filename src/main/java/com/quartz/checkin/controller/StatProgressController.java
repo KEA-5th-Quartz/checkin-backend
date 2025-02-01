@@ -3,10 +3,10 @@ package com.quartz.checkin.controller;
 import com.quartz.checkin.dto.request.StatProgressRequest;
 import com.quartz.checkin.dto.response.StatProgressResponse;
 import com.quartz.checkin.service.StatProgressService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+
 
 @RestController
 @RequestMapping("/stats")

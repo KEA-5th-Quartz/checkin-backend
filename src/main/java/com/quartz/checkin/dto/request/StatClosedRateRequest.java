@@ -1,20 +1,20 @@
 package com.quartz.checkin.dto.request;
 
+
 import lombok.Getter;
 import lombok.Setter;
 
-
 @Setter
 @Getter
-public class StatProgressRequest {
+public class StatClosedRateRequest {
     // Getters and Setters
     private String type; // "WEEK", "MONTH", "QUARTER"
 
     // 기본 생성자
-    public StatProgressRequest() {}
+    public StatClosedRateRequest() {}
 
     // 모든 필드를 포함한 생성자
-    public StatProgressRequest(String type) {
+    public StatClosedRateRequest(String type) {
         this.type = type;
     }
 

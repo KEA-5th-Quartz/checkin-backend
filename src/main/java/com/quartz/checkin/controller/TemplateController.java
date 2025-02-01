@@ -1,10 +1,12 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.config.S3Config;
+import com.quartz.checkin.dto.request.SimplePageRequest;
 import com.quartz.checkin.dto.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.response.ApiResponse;
 import com.quartz.checkin.dto.response.TemplateCreateResponse;
 import com.quartz.checkin.dto.response.TemplateDetailResponse;
+import com.quartz.checkin.dto.response.TemplateListResponse;
 import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.User;
@@ -17,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -75,4 +78,16 @@ public class TemplateController {
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
+
+    @User
+    @GetMapping("/{memberId}/templates")
+    public ApiResponse<TemplateListResponse> templates(
+            @PathVariable Long memberId,
+            @ModelAttribute @Valid SimplePageRequest pageRequest,
+            @AuthenticationPrincipal CustomUser customUser) {
+        TemplateListResponse response = templateService.readTemplates(memberId, pageRequest, customUser);
+
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
 }

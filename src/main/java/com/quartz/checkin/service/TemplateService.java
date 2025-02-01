@@ -2,9 +2,11 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.request.SimplePageRequest;
 import com.quartz.checkin.dto.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.response.TemplateCreateResponse;
 import com.quartz.checkin.dto.response.TemplateDetailResponse;
+import com.quartz.checkin.dto.response.TemplateListResponse;
 import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
@@ -19,6 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +72,23 @@ public class TemplateService {
                 .attachmentIds(attachmentsResponses)
                 .build();
 
+    }
+
+    public TemplateListResponse readTemplates(Long memberId, SimplePageRequest pageRequest, CustomUser customUser) {
+        Member member = memberService.getMemberByIdOrThrow(memberId);
+
+        if (!memberId.equals(customUser.getId())) {
+            log.error("다른 사용자의 리소스에 접근하려 합니다.");
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        int page = pageRequest.getPage() - 1;
+        int size = pageRequest.getSize();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+
+        Page<Template> templatePage = templateRepository.findAllByMemberJoinFetch(member, pageable);
+
+        return TemplateListResponse.from(templatePage);
     }
 
     @Transactional

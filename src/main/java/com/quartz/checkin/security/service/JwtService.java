@@ -113,17 +113,21 @@ public class JwtService {
     }
 
     public Optional<String> extractRefreshToken(HttpServletRequest request) {
+        // Authorization 헤더에서 리프레시 토큰 찾기
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return Optional.of(authHeader.substring(7));
+        }
+
+        // 쿠키에서 리프레시 토큰 찾기
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                String cookieName = cookie.getName();
-                String value = cookie.getValue();
-                if (cookieName.equals(REFRESH_TOKEN_COOKIE)) {
-                    return Optional.ofNullable(value);
+                if ("refreshToken".equals(cookie.getName())) {
+                    return Optional.of(cookie.getValue());
                 }
             }
         }
-
         return Optional.empty();
     }
 

@@ -1,13 +1,13 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
+import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
 import com.quartz.checkin.dto.ticket.response.TicketAttachmentResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
 import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
-import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
-import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.security.CustomUser;
@@ -87,7 +87,7 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueToday,
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.getManagerTickets(
@@ -103,7 +103,7 @@ public class TicketController {
     public ApiResponse<ManagerTicketListResponse> searchTickets(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size);
@@ -122,7 +122,7 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueToday,
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.getUserTickets(
@@ -139,7 +139,7 @@ public class TicketController {
     public ApiResponse<UserTicketListResponse> searchUserTickets(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size);

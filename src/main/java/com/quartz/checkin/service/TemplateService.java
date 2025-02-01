@@ -3,9 +3,12 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.common.request.SimplePageRequest;
+import com.quartz.checkin.dto.template.request.TemplateDeleteRequest;
 import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.template.response.TemplateCreateResponse;
+import com.quartz.checkin.dto.template.response.TemplateDeleteResponse;
 import com.quartz.checkin.dto.template.response.TemplateDetailResponse;
+import com.quartz.checkin.dto.template.response.TemplateIdResponse;
 import com.quartz.checkin.dto.template.response.TemplateListResponse;
 import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.entity.Attachment;
@@ -175,6 +178,33 @@ public class TemplateService {
             templateAttachmentRepository.deleteByTemplateAndAttachmentIds(template, attachmentIdsToRemove);
         }
 
+    }
+
+    @Transactional
+    public TemplateDeleteResponse deleteTemplates(TemplateDeleteRequest templateDeleteRequest, CustomUser customUser) {
+        Member member = memberService.getMemberByIdOrThrow(customUser.getId());
+
+        List<Long> templateIdsToDelete = templateDeleteRequest.getTemplateIds();
+
+        // 요청에 담긴 id들이 회원의 템플릿들이 맞는지 검증
+        List<Template> templates = templateRepository.findAllByIdAndMember(templateIdsToDelete, member);
+
+        if (templates.size() != templateIdsToDelete.size()) {
+            log.error("다른 사용자의 템플릿을 삭제하려합니다.");
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        // 해당 템플릿들과 관련된 템플릿_첨부파일 레코드들 삭제
+        templateAttachmentRepository.deleteByTemplates(templates);
+
+        // 템플릿 삭제
+        templateRepository.deleteByTemplateIds(templateIdsToDelete);
+
+        List<TemplateIdResponse> deletedIds = templateIdsToDelete.stream()
+                .map(TemplateIdResponse::new)
+                .toList();
+
+        return new TemplateDeleteResponse(deletedIds);
     }
 
     private void checkInvalidAttachment(List<Long> attachmentIds, List<Attachment> attachments) {

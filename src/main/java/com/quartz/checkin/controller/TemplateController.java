@@ -3,8 +3,10 @@ package com.quartz.checkin.controller;
 import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.common.request.SimplePageRequest;
 import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.template.request.TemplateDeleteRequest;
 import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.template.response.TemplateCreateResponse;
+import com.quartz.checkin.dto.template.response.TemplateDeleteResponse;
 import com.quartz.checkin.dto.template.response.TemplateDetailResponse;
 import com.quartz.checkin.dto.template.response.TemplateListResponse;
 import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,6 +47,16 @@ public class TemplateController {
             @RequestBody @Valid TemplateSaveRequest templateSaveRequest,
             @AuthenticationPrincipal CustomUser customUser) {
         TemplateCreateResponse response = templateService.createTemplate(templateSaveRequest, customUser);
+
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @User
+    @DeleteMapping("/templates")
+    public ApiResponse<TemplateDeleteResponse> deleteTemplates(
+            @RequestBody @Valid TemplateDeleteRequest templateDeleteRequest,
+            @AuthenticationPrincipal CustomUser customUser) {
+        TemplateDeleteResponse response = templateService.deleteTemplates(templateDeleteRequest, customUser);
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }

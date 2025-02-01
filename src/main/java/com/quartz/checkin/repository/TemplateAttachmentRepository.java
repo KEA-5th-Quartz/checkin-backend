@@ -16,6 +16,10 @@ public interface TemplateAttachmentRepository extends JpaRepository<TemplateAtta
     void deleteByTemplateAndAttachmentIds(@Param("template") Template template,
                                           @Param("attachmentIds") List<Long> attachmentIds);
 
+    @Modifying
+    @Query("DELETE FROM TemplateAttachment ta WHERE ta.template IN :templates")
+    void deleteByTemplates(@Param("templates") List<Template> templates);
+
     @Query("SELECT ta FROM TemplateAttachment ta " +
             "JOIN FETCH ta.attachment a " +
             "WHERE ta.template = :template")

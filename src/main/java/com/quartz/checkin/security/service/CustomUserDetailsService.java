@@ -31,8 +31,16 @@ public class CustomUserDetailsService implements UserDetailsService {
         Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 사용자입니다."));
 
-        return new CustomUser(member.getId(), member.getUsername(), member.getPassword(), member.getProfilePic(),
-                member.getRole(), member.getPasswordChangedAt(), Collections.singleton(new SimpleGrantedAuthority("ROLE_" + member.getRole().getValue())));
+        return new CustomUser(
+                member.getId(),
+                member.getUsername(),
+                member.getPassword(),
+                member.getEmail(),
+                member.getProfilePic(),
+                member.getRole(),
+                member.getPasswordChangedAt(),
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + member.getRole().getValue()))
+        );
     }
 
     public UserDetails loadUserByAccessToken(String accessToken) throws InValidAccessTokenException {
@@ -43,7 +51,9 @@ public class CustomUserDetailsService implements UserDetailsService {
 
             return new CustomUser(
                     claims.get(JwtService.ID_CLAIM, Long.class),
+
                     claims.get(JwtService.USERNAME_CLAIM, String.class),
+                    "",
                     "",
                     claims.get(JwtService.PROFILE_PIC_CLAIM, String.class),
                     role,

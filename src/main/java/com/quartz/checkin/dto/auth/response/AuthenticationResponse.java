@@ -16,6 +16,7 @@ public class AuthenticationResponse {
     private Long memberId;
     private String username;
     private String profilePic;
+    private String email;
     private String role;
     private String accessToken;
     private String passwordResetToken;
@@ -27,6 +28,7 @@ public class AuthenticationResponse {
                 .accessToken(accessToken)
                 .memberId(user.getId())
                 .username(user.getUsername())
+                .email(user.getEmail())
                 .role(user.getRole().getValue())
                 .profilePic(user.getProfilePic())
                 .passwordResetToken(passwordResetToken)

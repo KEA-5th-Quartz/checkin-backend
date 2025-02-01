@@ -4,6 +4,8 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.response.TemplateCreateResponse;
+import com.quartz.checkin.dto.response.TemplateResponse;
+import com.quartz.checkin.dto.response.UploadAttachmentsResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
@@ -40,6 +42,32 @@ public class TemplateService {
                 });
     }
 
+    public TemplateResponse readTemplate(Long templateId, CustomUser customUser) {
+        Template template = templateRepository.findByIdJoinFetch(templateId)
+                .orElseThrow(() -> new ApiException(ErrorCode.TEMPLATE_NOT_FOUND));
+
+        Member member = memberService.getMemberByIdOrThrow(customUser.getId());
+
+        checkTemplateOwner(template, member);
+
+        List<TemplateAttachment> templateAttachments =
+                templateAttachmentRepository.findAllByTemplateJoinFetch(template);
+
+        List<UploadAttachmentsResponse> attachmentsResponses = templateAttachments.stream()
+                .map(ta -> new UploadAttachmentsResponse(ta.getAttachment().getId(), ta.getAttachment().getUrl()))
+                .toList();
+
+        return TemplateResponse.builder()
+                .id(template.getId())
+                .title(template.getTitle())
+                .firstCategory(template.getFirstCategory().getName())
+                .secondCategory(template.getSecondCategory().getName())
+                .content(template.getContent())
+                .attachmentIds(attachmentsResponses)
+                .build();
+
+    }
+
     @Transactional
     public TemplateCreateResponse createTemplate(TemplateSaveRequest templateSaveRequest, CustomUser customUser) {
         Member member = memberService.getMemberByIdOrThrow(customUser.getId());
@@ -51,10 +79,7 @@ public class TemplateService {
         List<Long> attachmentIds = templateSaveRequest.getAttachmentIds();
         List<Attachment> attachments = attachmentRepository.findAllById(attachmentIds);
 
-        if (attachments.size() != attachmentIds.size()) {
-            log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
-            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
-        }
+        checkInvalidAttachment(attachmentIds, attachments);
 
         Template template = templateRepository.save(Template.builder()
                 .title(templateSaveRequest.getTitle())
@@ -80,10 +105,7 @@ public class TemplateService {
 
         Member member = memberService.getMemberByIdOrThrow(customUser.getId());
 
-        if (!template.getMember().getId().equals(member.getId())) {
-            log.error("다른 사용자의 리소스에 접근하려고 합니다.");
-            throw new ApiException(ErrorCode.FORBIDDEN);
-        }
+        checkTemplateOwner(template, member);
 
         Category firstCategory = categoryService.getFirstCategoryOrThrow(templateSaveRequest.getFirstCategory());
         Category secondCategory = categoryService.
@@ -92,10 +114,7 @@ public class TemplateService {
         List<Long> newAttachmentIds = templateSaveRequest.getAttachmentIds();
         List<Attachment> newAttachments = attachmentRepository.findAllById(newAttachmentIds);
 
-        if (newAttachmentIds.size() != newAttachments.size()) {
-            log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
-            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
-        }
+        checkInvalidAttachment(newAttachmentIds, newAttachments);
 
         template.updateTitle(templateSaveRequest.getTitle());
         template.updateContent(templateSaveRequest.getContent());
@@ -106,7 +125,6 @@ public class TemplateService {
                 .stream()
                 .map(ta -> ta.getAttachment().getId())
                 .toList();
-
 
         // 추가해야 할 첨부파일 ID들
         List<Long> attachmentIdsToAdd = newAttachmentIds.stream()
@@ -134,6 +152,20 @@ public class TemplateService {
             templateAttachmentRepository.deleteByTemplateAndAttachmentIds(template, attachmentIdsToRemove);
         }
 
+    }
+
+    private void checkInvalidAttachment(List<Long> attachmentIds, List<Attachment> attachments) {
+        if (attachmentIds.size() != attachments.size()) {
+            log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
+            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
+        }
+    }
+
+    private void checkTemplateOwner(Template template, Member member) {
+        if (!template.getMember().getId().equals(member.getId())) {
+            log.error("다른 사용자의 리소스에 접근하려고 합니다.");
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
     }
 
 

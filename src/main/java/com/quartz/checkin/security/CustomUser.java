@@ -13,13 +13,22 @@ public class CustomUser extends User {
 
     private Long id;
     private String profilePic;
+    private String email;
     private Role role;
     private LocalDateTime passwordChangedAt;
 
-    public CustomUser(Long id, String username, String password, String profilePic, Role role, LocalDateTime passwordChangedAt,
-                      Collection<? extends GrantedAuthority> authorities) {
+    public CustomUser(
+            Long id,
+            String username,
+            String password,
+            String email,
+            String profilePic,
+            Role role,
+            LocalDateTime passwordChangedAt,
+            Collection<? extends GrantedAuthority> authorities) {
         super(username, password, authorities);
         this.id = id;
+        this.email = email;
         this.profilePic = profilePic;
         this.role = role;
         this.passwordChangedAt = passwordChangedAt;

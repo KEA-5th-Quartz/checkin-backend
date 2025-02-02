@@ -1,6 +1,6 @@
 package com.quartz.checkin.common.exception;
 
-import com.quartz.checkin.dto.response.ApiErrorResponse;
+import com.quartz.checkin.dto.common.response.ApiErrorResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import software.amazon.awssdk.core.exception.SdkException;
 
@@ -122,6 +123,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                                                                           HttpHeaders headers, HttpStatusCode status,
                                                                           WebRequest request) {
         log.error("요청에 필요한 파라미터가 누락되었습니다. {}", ex.getMessage());
+        return handleExceptionInternal(ErrorCode.INVALID_DATA);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestPart(MissingServletRequestPartException ex,
+                                                                     HttpHeaders headers, HttpStatusCode status,
+                                                                     WebRequest request) {
+        log.error("요청에 필요한 multi-part를 찾을 수 없습니다.");
         return handleExceptionInternal(ErrorCode.INVALID_DATA);
     }
 

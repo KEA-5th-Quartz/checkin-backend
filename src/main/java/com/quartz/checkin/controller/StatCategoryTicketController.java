@@ -15,8 +15,11 @@ import java.util.List;
 @RequestMapping("/stats") // 기본 경로를 "/stats"로 설정
 public class StatCategoryTicketController {
 
-    @Autowired
-    private StatCategoryTicketService statCategoryTicketService;
+    private final StatCategoryTicketService statCategoryTicketService;
+
+    public StatCategoryTicketController(StatCategoryTicketService statCategoryTicketService) {
+        this.statCategoryTicketService = statCategoryTicketService;
+    }
 
     @AdminOrManager
     @GetMapping("/categories") // "/categories" 경로로 매핑

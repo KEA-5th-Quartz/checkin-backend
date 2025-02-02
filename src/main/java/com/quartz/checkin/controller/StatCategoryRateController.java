@@ -15,8 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequestMapping("/stats")
 public class StatCategoryRateController {
 
-    @Autowired
-    private StatCategoryRateService statCategoryRateService;
+    private final StatCategoryRateService statCategoryRateService;
+
+    public StatCategoryRateController(StatCategoryRateService statCategoryRateService) {
+        this.statCategoryRateService = statCategoryRateService;
+    }
 
     @GetMapping("/managers/categories")
     public List<StatCategoryRateResponse> getStatsByCategory() {

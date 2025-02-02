@@ -26,15 +26,15 @@ public class StatProgressResponse {
     public static class StatusRate {
         // Getters and Setters
         private String status; // "In Progress", "Closed"
-        private double rate;   // 비율 (예: 60.0)
+        private int ticket_count;   // 비율 (예: 60.0)
 
         // 기본 생성자
         public StatusRate() {}
 
         // 모든 필드를 포함한 생성자
-        public StatusRate(String status, double rate) {
+        public StatusRate(String status, int ticket_count) {
             this.status = status;
-            this.rate = rate;
+            this.ticket_count = ticket_count;
         }
 
     }

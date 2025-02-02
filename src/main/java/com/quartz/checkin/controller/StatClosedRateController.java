@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/stats")
 public class StatClosedRateController {
 
-    @Autowired
-    private StatClosedRateService statClosedRateService;
+    private final StatClosedRateService statClosedRateService;
+
+    public StatClosedRateController(StatClosedRateService statClosedRateService) {
+        this.statClosedRateService = statClosedRateService;
+    }
 
     @GetMapping("/closed-rate")
     public StatClosedRateResponse getCompletionRate(@RequestBody StatClosedRateRequest request) {

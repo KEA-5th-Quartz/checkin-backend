@@ -17,7 +17,7 @@ public interface StatProgressRepository extends JpaRepository<Ticket, Long> {
             "        STRING_AGG( " +
             "            CONCAT( " +
             "                '{\"status\": \"', subquery.status, '\", ', " +
-            "                '\"rate\": ', ROUND(subquery.status_count * 1.0 / total.total_count * 100, 2), '}' " +
+            "                '\"ticket_count\": ', subquery.status_count, '}' " +
             "            ), " +
             "            ',' " +
             "        ), " +

@@ -11,8 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequestMapping("/stats")
 public class StatDueTodayController {
 
-    @Autowired
-    private StatDueTodayService StatDueTodayService;
+    private final StatDueTodayService StatDueTodayService;
+
+    public StatDueTodayController(StatDueTodayService StatDueTodayService) {
+        this.StatDueTodayService = StatDueTodayService;
+    }
 
     @GetMapping("/{managerId}/due-today")
     public StatDueTodayResponse getTicketCount(

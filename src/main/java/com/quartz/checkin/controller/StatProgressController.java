@@ -12,8 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequestMapping("/stats")
 public class StatProgressController {
 
-    @Autowired
-    private StatProgressService statProgressService;
+    private final StatProgressService statProgressService;
+
+    public StatProgressController(StatProgressService statProgressService) {
+        this.statProgressService = statProgressService;
+    }
 
     @GetMapping("/managers")
     public List<StatProgressResponse> getProgressRates(@RequestBody StatProgressRequest request) {

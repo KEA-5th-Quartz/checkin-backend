@@ -20,6 +20,7 @@ public interface StatProgressRepository extends JpaRepository<Ticket, Long> {
             "                '\"ticket_count\": ', subquery.status_count, '}' " +
             "            ), " +
             "            ',' " +
+            "            ORDER BY subquery.status DESC " +
             "        ), " +
             "        ']' " +
             "    ) AS state " +

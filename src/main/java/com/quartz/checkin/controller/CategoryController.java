@@ -34,8 +34,7 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @AdminOrManager
-    @Operation(summary = "API 명세서 v0.2 line 52", description = "관리자가 전체 카테고리 조회")
+    @Operation(summary = "API 명세서 v0.2 line 52", description = "전체 카테고리 조회")
     @GetMapping
     public ApiResponse<List<CategoryResponse>> getAllCategories(
             @AuthenticationPrincipal CustomUser user) {

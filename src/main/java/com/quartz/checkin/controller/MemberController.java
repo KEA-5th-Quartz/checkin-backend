@@ -6,6 +6,7 @@ import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.dto.member.request.UsernameCheckRequest;
+import com.quartz.checkin.dto.member.response.MemberRoleCount;
 import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
 import com.quartz.checkin.dto.member.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
@@ -122,6 +123,14 @@ public class MemberController {
         memberService.updateMemberRole(memberId, roleUpdateRequest);
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @Admin
+    @GetMapping("/stats/role")
+    public ApiResponse<MemberRoleCount> roleCount() {
+        MemberRoleCount response = memberService.getMemberRoleCounts();
+
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
 }

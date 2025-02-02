@@ -12,6 +12,7 @@ import com.quartz.checkin.dto.member.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
+import com.quartz.checkin.dto.member.response.MemberRoleCount;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
@@ -213,6 +214,10 @@ public class MemberService {
             log.error("사용중인 사용자 이름입니다. {}", username);
             throw new ApiException(ErrorCode.DUPLICATE_USERNAME);
         }
+    }
+    
+    public MemberRoleCount getMemberRoleCounts() {
+        return memberRepository.findRoleCounts();
     }
 
 }

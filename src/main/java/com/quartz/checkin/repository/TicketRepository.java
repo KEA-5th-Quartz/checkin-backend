@@ -14,14 +14,12 @@ import org.springframework.data.repository.query.Param;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // Todo: QueryDSL로 구현
 
-    List<Ticket> findAllByManagerId(Long managerId);
-
     @Query("SELECT t FROM Ticket t " +
             "LEFT JOIN t.manager m " +
             "WHERE (:statuses IS NULL OR t.status IN :statuses) " +
             "AND (:categories IS NULL OR LOWER(TRIM(t.firstCategory.name)) IN :categories) " +
             "AND (:priorities IS NULL OR t.priority IN :priorities) " +
-            "AND (:usernames IS NULL OR t.manager.username IN :usernames OR (t.status = 'OPEN' AND t.manager IS NULL)) " +
+            "AND (:usernames IS NULL OR (t.manager IS NOT NULL AND t.manager.username IN :usernames)) " +
             "AND (:dueToday = false OR t.dueDate = CAST(NOW() AS DATE)) " +
             "AND (:dueThisWeek = false OR (t.dueDate BETWEEN CAST(NOW() AS DATE) AND :endOfWeek))")
     Page<Ticket> findManagerTickets(

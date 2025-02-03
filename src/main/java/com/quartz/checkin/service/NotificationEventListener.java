@@ -5,9 +5,11 @@ import com.quartz.checkin.entity.AlertLog;
 import com.quartz.checkin.event.NotificationEvent;
 import com.quartz.checkin.repository.AlertLogRepository;
 import java.util.ArrayList;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -24,11 +26,18 @@ public class NotificationEventListener {
     @Async
     @EventListener
     public void handleNotificationEvent(NotificationEvent event) {
-        if ("ASSIGNEE_CHANGED".equals(event.getType())) {
-            webhookService.updateAssigneeInWebhook(event.getRelatedId(), event.getNewManagerId());
+        if (("CATEGORY_CHANGED".equals(event.getType()) || "COMMENT_ADDED".equals(event.getType()))
+                && event.getLogMessage() != null && event.getAgitId() != null) {
+
+            Map<String, Object> payload = Map.of(
+                    "parent_id", event.getAgitId(),
+                    "text", event.getLogMessage()
+            );
+
+            webhookService.sendWebhookRequest("/wall_messages/" + event.getAgitId() + "/comments", payload, HttpMethod.POST);
         }
 
-        // 기존 로직 유지
+        // 기존 알림 로직 유지
         List<Long> receivers = determineReceivers(event);
         for (Long receiverId : receivers) {
             AlertLog alertLog = new AlertLog(

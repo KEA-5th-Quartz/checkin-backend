@@ -13,4 +13,6 @@ public class NotificationEvent {
     private Long userId;         // 티켓을 등록한 사용자
     private Long managerId;      // 기존 담당자 (댓글 이벤트에서 사용)
     private Long newManagerId;   // 변경된 담당자 (ASSIGNEE_CHANGED에서 사용)
+    private Long agitId;
+    private String logMessage;
 }

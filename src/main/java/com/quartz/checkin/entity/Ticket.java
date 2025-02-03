@@ -68,13 +68,16 @@ public class Ticket extends BaseEntity {
 
     private LocalDateTime deletedAt;
 
+    @Column(name = "agit_id", nullable = true)
+    private Long agitId;
+
     @Getter
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketAttachment> attachments;
 
     @Builder
     public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
-                  Status status, LocalDate dueDate) {
+                  Status status, LocalDate dueDate, Long agitId) {
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;
@@ -82,6 +85,7 @@ public class Ticket extends BaseEntity {
         this.content = content;
         this.status = status;
         this.dueDate = dueDate;
+        this.agitId = agitId;
     }
 
     // 담당자 할당 메서드

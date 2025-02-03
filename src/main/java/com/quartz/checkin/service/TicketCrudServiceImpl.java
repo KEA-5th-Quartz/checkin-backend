@@ -6,6 +6,7 @@ import com.quartz.checkin.converter.TicketResponseConverter;
 import com.quartz.checkin.dto.request.TicketCreateRequest;
 import com.quartz.checkin.dto.response.*;
 import com.quartz.checkin.entity.*;
+import com.quartz.checkin.event.NotificationEvent;
 import com.quartz.checkin.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -27,6 +29,8 @@ public class TicketCrudServiceImpl implements TicketCrudService {
     private final TicketRepository ticketRepository;
     private final CategoryRepository categoryRepository;
     private final MemberRepository memberRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final WebhookService webhookService;
 
     private void validatePagination(int page, int size) {
         if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
@@ -47,6 +51,14 @@ public class TicketCrudServiceImpl implements TicketCrudService {
         // 2차 카테고리 조회 (해당 1차 카테고리의 자식 카테고리)
         Category secondCategory = categoryRepository.findByNameAndParent(request.getSecondCategory(), firstCategory)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+
+        // 요청 보낸 사용자를 담당자로 설정하여 웹훅으로 게시물 생성
+        Long agitId = webhookService.createAgitPost(
+                request.getTitle(),
+                request.getContent(),
+                List.of(user.getUsername()) // 요청한 사용자 지정
+        );
+
         // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
                 .user(user)
@@ -56,8 +68,22 @@ public class TicketCrudServiceImpl implements TicketCrudService {
                 .content(request.getContent())
                 .status(Status.OPEN)
                 .dueDate(request.getDueDate())
+                .agitId(agitId)
                 .build();
         ticketRepository.save(ticket);
+
+        // 티켓 생성 이벤트 발행
+        eventPublisher.publishEvent(new NotificationEvent(
+                ticket.getId(), // relatedId
+                "TICKET_CREATED", // type
+                "ticket", // relatedTable
+                ticket.getUser().getId(), // memberId
+                ticket.getUser().getId(), // userId
+                ticket.getManager() != null ? ticket.getManager().getId() : null,
+                null,
+                ticket.getAgitId(), // agitId
+                "새로운 티켓이 생성되었습니다."
+        ));
 
         return new TicketCreateResponse(ticket.getId());
     }

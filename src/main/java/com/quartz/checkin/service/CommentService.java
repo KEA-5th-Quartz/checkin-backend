@@ -40,6 +40,7 @@ public class CommentService {
     private final TicketLogRepository ticketLogRepository;
     private final LikeRepository likeRepository;
     private final MemberRepository memberRepository;
+    private final WebhookService webhookService;
 
     /**
      * 회원이 작성한 댓글을 저장한다.
@@ -73,6 +74,18 @@ public class CommentService {
         comment.writeContent(content);
 
         Comment savedComment = commentRepository.save(comment);
+
+        if (ticket.getAgitId() != null) {
+            try {
+                log.info("웹훅에 댓글 추가 요청: ticketId={}, agitId={}, comment={}", ticketId, ticket.getAgitId(), content);
+                webhookService.addCommentToWebhookPost(ticket.getAgitId(), content);
+            } catch (Exception e) {
+                log.error("웹훅 댓글 추가 실패: {}", e.getMessage());
+            }
+        } else {
+            log.warn("아지트 게시글 ID가 없음 (댓글 추가 안됨): ticketId={}", ticketId);
+        }
+
         return CommentResponse.builder()
                 .commentId(savedComment.getId())
                 .build();

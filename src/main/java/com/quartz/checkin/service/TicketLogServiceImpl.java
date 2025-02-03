@@ -13,8 +13,11 @@ import com.quartz.checkin.repository.TicketLogRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -27,6 +30,8 @@ public class TicketLogServiceImpl implements TicketLogService {
     private final TicketLogRepository ticketLogRepository;
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final WebhookService webhookService;
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',
             'A', 'E', 'I', 'O', 'U');
@@ -49,6 +54,9 @@ public class TicketLogServiceImpl implements TicketLogService {
         // 담당자 배정 처리
         ticket.assignManager(manager);
         ticketRepository.save(ticket);
+
+        //웹훅 담당자 변경 요청
+        webhookService.updateAssigneeInWebhook(ticket.getId(), manager.getId(), ticket.getUser().getId());
 
         // 로그 기록
         String logContent = String.format("%s%s %s에게 배정되었습니다.",
@@ -79,6 +87,11 @@ public class TicketLogServiceImpl implements TicketLogService {
         // 상태 변경 적용
         ticket.closeTicket();
         ticketRepository.save(ticket);
+
+        // 웹훅 상태 변경 요청
+        Map<String, Object> payload = Map.of("status", 2); // 2: 완료
+        String url = "/wall_messages/" + ticket.getAgitId() + "/update_status";
+        webhookService.sendWebhookRequest(url, payload, HttpMethod.PUT);
 
         // 조사 처리
         String subjectParticle = getSubjectParticle(manager.getUsername());
@@ -138,6 +151,9 @@ public class TicketLogServiceImpl implements TicketLogService {
                 newSecondCategory.getName()
         );
 
+        // 웹훅 댓글로 카테고리 변경 알림
+        webhookService.addCommentToWebhookPost(ticket.getAgitId(), logContent);
+
         // 로그 저장
         TicketLog ticketLog = TicketLog.builder()
                 .ticket(ticket)
@@ -190,6 +206,9 @@ public class TicketLogServiceImpl implements TicketLogService {
                 newSecondCategory.getName()
         );
 
+        // 웹훅 댓글로 카테고리 변경 알림
+        webhookService.addCommentToWebhookPost(ticket.getAgitId(), logContent);
+
         // 로그 저장
         TicketLog ticketLog = TicketLog.builder()
                 .ticket(ticket)
@@ -232,6 +251,9 @@ public class TicketLogServiceImpl implements TicketLogService {
         // 담당자 변경
         ticket.reassignManager(newManager);
         ticketRepository.save(ticket);
+
+        // 웹훅 담당자 업데이트
+        webhookService.updateAssigneeInWebhook(ticket.getId(), newManager.getId(), ticket.getUser().getId());
 
         // 로그 기록
         String logContent = String.format("담당자가 변경되었습니다. %s → %s",
@@ -319,5 +341,11 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 한글 받침 여부에 따라 "을" 또는 "를"
         return (lastChar >= '가' && lastChar <= '힣' && (lastChar - '가') % 28 != 0) ? "을" : "를";
+    }
+
+    private String getLatestLogMessage(Ticket ticket) {
+        return ticketLogRepository.findTopByTicketOrderByCreatedAtDesc(ticket)
+                .map(TicketLog::getContent) // 로그 메시지 내용 가져오기
+                .orElse("로그 정보 없음");  // 만약 로그가 없으면 기본 메시지 반환
     }
 }

@@ -45,7 +45,7 @@ public class TicketController {
     private final TicketQueryService ticketQueryService;
 
     @User
-    @Operation(summary = "API 명세서 v0.1 line 25", description = "티켓 생성")
+    @Operation(summary = "API 명세서 v0.2 line 30", description = "티켓 생성")
     @PostMapping
     public ApiResponse<TicketCreateResponse> createTicket(
             @AuthenticationPrincipal CustomUser user,
@@ -56,7 +56,7 @@ public class TicketController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.1 line 41", description = "티켓에 첨부파일 업로드")
+    @Operation(summary = "API 명세서 v0.2 line 31", description = "티켓에 첨부파일 업로드")
     @PostMapping("/attachment")
     public ApiResponse<List<UploadAttachmentsResponse>> uploadAttachment(
             @RequestPart("files") List<MultipartFile> multipartFiles) {
@@ -67,7 +67,7 @@ public class TicketController {
     }
 
     @ManagerOrUser
-    @Operation(summary = "API 명세서 v0.1 line 29", description = "티켓 상세 조회")
+    @Operation(summary = "API 명세서 v0.2 line 36", description = "티켓 상세 조회")
     @GetMapping("/{ticketId}")
     public ApiResponse<TicketDetailResponse> getTicketDetail(
             @PathVariable Long ticketId,
@@ -78,7 +78,7 @@ public class TicketController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 30", description = "담당자 전체 티켓 조회")
+    @Operation(summary = "API 명세서 v0.2 line 37", description = "담당자 전체 티켓 조회")
     @GetMapping
     public ApiResponse<ManagerTicketListResponse> getTickets(
             @RequestParam(required = false) List<Status> statuses,
@@ -99,7 +99,7 @@ public class TicketController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 33", description = "담당자 티켓 검색")
+    @Operation(summary = "API 명세서 v0.2 line 40", description = "담당자 티켓 검색")
     @GetMapping("/search")
     public ApiResponse<ManagerTicketListResponse> searchTickets(
             @RequestParam(required = false) String keyword,
@@ -113,7 +113,7 @@ public class TicketController {
 
 
     @User
-    @Operation(summary = "API 명세서 v0.1 line 32", description = "사용자 전체 티켓 조회")
+    @Operation(summary = "API 명세서 v0.2 line 39", description = "사용자 전체 티켓 조회")
     @GetMapping("/my-tickets")
     public ApiResponse<UserTicketListResponse> getUserTickets(
             @RequestParam(required = false) List<Status> statuses,
@@ -135,7 +135,7 @@ public class TicketController {
 
 
     @User
-    @Operation(summary = "API 명세서 v0.1 line 34", description = "사용자 티켓 검색")
+    @Operation(summary = "API 명세서 v0.2 line 41", description = "사용자 티켓 검색")
     @GetMapping("/my-tickets/search")
     public ApiResponse<UserTicketListResponse> searchUserTickets(
             @RequestParam(required = false) String keyword,
@@ -148,7 +148,7 @@ public class TicketController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 38", description = "중요도 변경")
+    @Operation(summary = "API 명세서 v0.2 line 47", description = "중요도 변경")
     @PatchMapping("/{ticketId}/priority")
     public ApiResponse<Void> updateTicketPriority(
             @PathVariable Long ticketId,

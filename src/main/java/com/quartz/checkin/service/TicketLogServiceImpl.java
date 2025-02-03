@@ -2,16 +2,17 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
-import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
-import com.quartz.checkin.dto.response.TicketLogResponse;
+import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
+import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.CategoryRepository;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketLogRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import jakarta.transaction.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -55,8 +56,11 @@ public class TicketLogServiceImpl implements TicketLogService {
         ticket.assignManager(manager);
         ticketRepository.save(ticket);
 
-        //웹훅 담당자 변경 요청
-        webhookService.updateAssigneeInWebhook(ticket.getId(), manager.getId(), ticket.getUser().getId());
+        // 상태 변경 요청
+        webhookService.updateStatusInWebhook(ticket.getAgitId(), 1);
+
+        // 웹훅 담당자 변경 요청
+        webhookService.updateAssigneeInWebhook(ticket.getAgitId(), manager.getId(), ticket.getUser().getId());
 
         // 로그 기록
         String logContent = String.format("%s%s %s에게 배정되었습니다.",
@@ -89,9 +93,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         ticketRepository.save(ticket);
 
         // 웹훅 상태 변경 요청
-        Map<String, Object> payload = Map.of("status", 2); // 2: 완료
-        String url = "/wall_messages/" + ticket.getAgitId() + "/update_status";
-        webhookService.sendWebhookRequest(url, payload, HttpMethod.PUT);
+        webhookService.updateStatusInWebhook(ticket.getAgitId(), 2);
 
         // 조사 처리
         String subjectParticle = getSubjectParticle(manager.getUsername());
@@ -252,8 +254,8 @@ public class TicketLogServiceImpl implements TicketLogService {
         ticket.reassignManager(newManager);
         ticketRepository.save(ticket);
 
-        // 웹훅 담당자 업데이트
-        webhookService.updateAssigneeInWebhook(ticket.getId(), newManager.getId(), ticket.getUser().getId());
+        // 웹훅 담당자 업데이트 요청
+        webhookService.updateAssigneeInWebhook(ticket.getAgitId(), newManager.getId(), ticket.getUser().getId());
 
         // 로그 기록
         String logContent = String.format("담당자가 변경되었습니다. %s → %s",

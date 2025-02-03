@@ -1,12 +1,12 @@
 package com.quartz.checkin.security.service;
 
 
+import com.quartz.checkin.common.ServletResponseUtils;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.response.AuthenticationResponse;
+import com.quartz.checkin.dto.auth.response.AuthenticationResponse;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.security.CustomUser;
-import com.quartz.checkin.common.ServletResponseUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -30,7 +30,8 @@ public class JwtService {
     private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
     private static final String PASSWORD_RESET_TOKEN_SUBJECT = "PasswordReset";
     private static final String REFRESH_TOKEN_SUBJECT = "RefreshToken";
-    private static final Long ACCESS_TOKEN_EXPIRATION_PERIOD = 3600000L;
+    private static final Long ACCESS_TOKEN_EXPIRATION_PERIOD = 86400000L;
+    // 1시간 private static final Long ACCESS_TOKEN_EXPIRATION_PERIOD = 3600000L;
     private static final Long PASSWORD_RESET_TOKEN_EXPIRATION_PERIOD = 300000L;
     private static final Long REFRESH_TOKEN_EXPIRATION_PERIOD = 604800000L;
     private static final int REFRESH_TOKEN_COOKIE_MAX_AGE = 604800;

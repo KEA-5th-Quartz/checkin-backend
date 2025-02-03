@@ -1,21 +1,23 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.request.SecondCategoryUpdateRequest;
-import com.quartz.checkin.dto.response.ApiResponse;
-import com.quartz.checkin.dto.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.request.PriorityUpdateRequest;
-import com.quartz.checkin.dto.response.TicketLogResponse;
+import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.common.response.ApiResponse;
+import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Manager;
 import com.quartz.checkin.service.TicketLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/tickets")
@@ -25,7 +27,7 @@ public class TicketLogController {
     private final TicketLogService ticketLogService;
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 35", description = "티켓 완료 처리")
+    @Operation(summary = "API 명세서 v0.2 line 43", description = "티켓 완료 처리")
     @PatchMapping("/{ticketId}/close")
     public ApiResponse<TicketLogResponse> closeTicket(
             @PathVariable Long ticketId,
@@ -35,7 +37,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 36", description = "1차 카테고리 수정")
+    @Operation(summary = "API 명세서 v0.2 line 44", description = "1차 카테고리 수정")
     @PatchMapping("/{ticketId}/category")
     public ApiResponse<TicketLogResponse> updateFirstCategory(
             @PathVariable Long ticketId,
@@ -47,7 +49,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 37", description = "2차 카테고리 수정")
+    @Operation(summary = "API 명세서 v0.2 line 45", description = "2차 카테고리 수정")
     @PatchMapping("/{ticketId}/category/{firstCategoryId}")
     public ApiResponse<TicketLogResponse> updateSecondCategory(
             @PathVariable Long ticketId,
@@ -60,7 +62,7 @@ public class TicketLogController {
     }
   
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 38", description = "담당자 변경")
+    @Operation(summary = "API 명세서 v0.2 line 46", description = "담당자 변경")
     @PatchMapping("/{ticketId}/reassign")
     public ApiResponse<TicketLogResponse> reassignManager(
             @PathVariable Long ticketId,
@@ -72,19 +74,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.1 line 39", description = "중요도 변경")
-    @PatchMapping("/{ticketId}/priority")
-    public ApiResponse<Void> updateTicketPriority(
-            @PathVariable Long ticketId,
-            @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid PriorityUpdateRequest request) {
-
-        ticketLogService.updatePriority(user.getId(), ticketId, request);
-        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
-    }
-
-    @Manager
-    @Operation(summary = "API 명세서 v0.1 line 40", description = "담당자 할당")
+    @Operation(summary = "API 명세서 v0.2 line 42", description = "담당자 할당")
     @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> assignManager(
             @PathVariable Long ticketId,

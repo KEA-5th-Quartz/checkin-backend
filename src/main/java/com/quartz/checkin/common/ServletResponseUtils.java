@@ -2,8 +2,8 @@ package com.quartz.checkin.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.response.ApiErrorResponse;
-import com.quartz.checkin.dto.response.ApiResponse;
+import com.quartz.checkin.dto.common.response.ApiErrorResponse;
+import com.quartz.checkin.dto.common.response.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;

@@ -3,6 +3,9 @@ package com.quartz.checkin.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.entity.Member;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +31,7 @@ public class WebhookService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final MemberRepository memberRepository;
 
     @Value("${webhook.url}")
     private String webhookUrl;
@@ -41,7 +45,13 @@ public class WebhookService {
      */
     @Async
     public void sendWebhook(Object request, String action, Long receiverId) {
-        String url = webhookUrl + action;
+        String url = webhookUrl;
+        if (action != null && !action.isEmpty()) {
+            if (!url.endsWith("/")) {
+                url += "/";
+            }
+            url += action;
+        }
 
         try {
             Map<String, Object> payload = new HashMap<>();
@@ -72,7 +82,7 @@ public class WebhookService {
     }
 
     public Long createAgitPost(String title, String content, List<String> assignees) {
-        // ✅ URL 중복 제거
+        // URL 중복 제거
         String url = webhookUrl + "/wall_messages";
 
         Map<String, Object> payload = Map.of(
@@ -105,24 +115,76 @@ public class WebhookService {
     }
 
     @Async
-    public void updateAssigneeInWebhook(Long messageId, Long newManagerId, Long userId) {
-        String url = webhookUrl + "/wall_messages/" + messageId + "/update_assignees";
+    public void updateAssigneeInWebhook(Long agitId, Long managerId, Long userId) {
+        if (agitId == null) {
+            log.error("웹훅 담당자 변경 실패: agitId가 null입니다.");
+            throw new IllegalArgumentException("agitId가 null일 수 없습니다.");
+        }
 
-        // 사용자와 새로운 담당자 리스트 구성
+        // 사용자 및 담당자의 username 조회
+        String userUsername = memberRepository.findById(userId)
+                .map(Member::getUsername)
+                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+
+        String managerUsername = memberRepository.findById(managerId)
+                .map(Member::getUsername)
+                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // assignees 리스트 생성
         List<String> assignees = new ArrayList<>();
-        assignees.add(userId.toString()); // 기존 사용자 유지
-        assignees.add(newManagerId.toString()); // 새로운 담당자 추가
+        assignees.add(userUsername);  // 사용자 추가
+        assignees.add(managerUsername); // 담당자 추가
 
+        // 웹훅 요청
+        String url = webhookUrl + "/wall_messages/" + agitId + "/update_assignees";
         Map<String, Object> payload = Map.of("assignees", assignees);
 
         try {
-            sendWebhookRequest(url, payload, HttpMethod.PUT);
-            log.info("Webhook 담당자 변경 완료 (messageId: {}, assignees: {})", messageId, assignees);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, entity, String.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("웹훅 담당자 변경 실패: " + response.getStatusCode());
+            }
+
+            log.info("웹훅 담당자 변경 성공: agitId={}, assignees={}", agitId, assignees);
         } catch (Exception e) {
-            log.error("Webhook 담당자 변경 실패 (messageId: {}): {}", messageId, e.getMessage());
+            log.error("웹훅 담당자 변경 중 오류 발생: {}", e.getMessage());
+            throw new RuntimeException("웹훅 담당자 변경 실패: " + e.getMessage());
         }
     }
 
+    @Async
+    public void updateStatusInWebhook(Long agitId, int status) {
+        if (agitId == null) {
+            log.error("웹훅 상태 변경 실패: agitId가 null입니다.");
+            throw new IllegalArgumentException("agitId가 null일 수 없습니다.");
+        }
+
+        String url = webhookUrl + "/wall_messages/" + agitId + "/update_status";
+
+        Map<String, Object> payload = Map.of("status", status);
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, entity, String.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("웹훅 상태 변경 실패: " + response.getStatusCode());
+            }
+
+            log.info("웹훅 상태 변경 성공: agitId={}, status={}", agitId, status);
+        } catch (Exception e) {
+            log.error("웹훅 상태 변경 중 오류 발생: {}", e.getMessage());
+            throw new RuntimeException("웹훅 상태 변경 실패: " + e.getMessage());
+        }
+    }
 
     // 공통 웹훅 요청 처리 메서드
     public ResponseEntity<Map<String, Object>> sendWebhookRequest(String actionUrl, Map<String, Object> payload, HttpMethod method) {

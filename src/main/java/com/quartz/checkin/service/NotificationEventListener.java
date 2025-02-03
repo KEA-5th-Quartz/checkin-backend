@@ -55,7 +55,7 @@ public class NotificationEventListener {
                 webhookRequest.setText("새 알림이 생성되었습니다.");
                 webhookRequest.setTask(new WebhookRequest.Task(event.getType(), List.of(receiverId.toString())));
 
-                webhookService.sendWebhook(webhookRequest, "/notification", receiverId);
+                webhookService.sendWebhook(webhookRequest, "", receiverId);
                 alertLog.setStatus("SUCCESS");
             } catch (Exception e) {
                 alertLog.setStatus("FAILURE");

@@ -344,10 +344,4 @@ public class TicketLogServiceImpl implements TicketLogService {
         // 한글 받침 여부에 따라 "을" 또는 "를"
         return (lastChar >= '가' && lastChar <= '힣' && (lastChar - '가') % 28 != 0) ? "을" : "를";
     }
-
-    private String getLatestLogMessage(Ticket ticket) {
-        return ticketLogRepository.findTopByTicketOrderByCreatedAtDesc(ticket)
-                .map(TicketLog::getContent) // 로그 메시지 내용 가져오기
-                .orElse("로그 정보 없음");  // 만약 로그가 없으면 기본 메시지 반환
-    }
 }

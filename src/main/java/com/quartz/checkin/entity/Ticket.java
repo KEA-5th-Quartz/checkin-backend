@@ -54,7 +54,7 @@ public class Ticket extends BaseEntity {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column
+    @Column(nullable = false)
     private Priority priority;
 
     @Enumerated(EnumType.STRING)

@@ -1,4 +1,4 @@
-package com.quartz.checkin.dto.request;
+package com.quartz.checkin.dto.webhook;
 
 import java.util.List;
 import lombok.AllArgsConstructor;

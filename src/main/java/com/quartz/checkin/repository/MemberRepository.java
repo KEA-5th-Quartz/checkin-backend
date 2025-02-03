@@ -23,9 +23,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     Page<Member> findByRoleAndUsernameContaining(Role role, String username, Pageable pageable);
 
-    @Query("SELECT m.username FROM Member m WHERE m.id = :id")
-    Optional<String> findUsernameById(@Param("id") Long id);
-
     @Query("""
            SELECT new com.quartz.checkin.dto.member.response.MemberRoleCount(
                 SUM (CASE WHEN m.role = com.quartz.checkin.entity.Role.USER THEN 1 ELSE 0 END),

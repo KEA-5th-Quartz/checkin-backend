@@ -1,6 +1,6 @@
 package com.quartz.checkin.service;
 
-import com.quartz.checkin.dto.request.WebhookRequest;
+import com.quartz.checkin.dto.webhook.WebhookRequest;
 import com.quartz.checkin.entity.AlertLog;
 import com.quartz.checkin.event.NotificationEvent;
 import com.quartz.checkin.repository.AlertLogRepository;

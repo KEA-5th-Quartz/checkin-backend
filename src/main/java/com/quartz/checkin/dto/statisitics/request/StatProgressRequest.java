@@ -1,4 +1,4 @@
-package com.quartz.checkin.dto.request;
+package com.quartz.checkin.dto.statisitics.request;
 
 import lombok.Getter;
 import lombok.Setter;

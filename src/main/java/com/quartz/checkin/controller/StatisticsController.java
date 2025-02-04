@@ -4,6 +4,7 @@ import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.statisitics.request.StatClosedRateRequest;
 import com.quartz.checkin.dto.statisitics.request.StatProgressRequest;
 import com.quartz.checkin.dto.statisitics.response.*;
+import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.security.annotation.AdminOrManager;
 import com.quartz.checkin.security.annotation.Manager;
 import com.quartz.checkin.service.*;
@@ -45,14 +46,14 @@ public class StatisticsController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
-    @AdminOrManager
+    @Admin
     @GetMapping("/status-rate")
     public ApiResponse<StatTotalProgressResponse> getStatTotalProgress() {
         StatTotalProgressResponse response = statsTicketService.getStatTotalProgress();
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
-    @AdminOrManager
+    @Admin
     @GetMapping("/closed-rate")
     public ApiResponse<StatClosedRateResponse> getCompletionRate(@RequestBody StatClosedRateRequest request) {
         StatClosedRateResponse response = statsTicketService.getCompletionRate(request);

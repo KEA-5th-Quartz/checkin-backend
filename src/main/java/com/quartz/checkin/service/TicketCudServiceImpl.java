@@ -1,11 +1,12 @@
 package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
-import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
+import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
+import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
+import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Priority;
@@ -15,6 +16,7 @@ import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +81,116 @@ public class TicketCudServiceImpl implements TicketCudService {
     }
 
     @Transactional
+    public void updateTicket(Long memberId, TicketUpdateRequest request, Long ticketId) {
+        // 티켓 조회 및 존재 여부 검증
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
+
+        // 사용자 조회
+        Member member = memberService.getMemberByIdOrThrow(memberId);
+
+        // 본인이 생성한 티켓인지 검증
+        if (!ticket.getUser().getId().equals(member.getId())) {
+            throw new ApiException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        // 카테고리 검증 (1차 및 2차)
+        Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
+        Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
+
+        // 첨부파일 검증 및 변경 사항 반영
+        List<Long> newAttachmentIds = request.getAttachmentIds();
+        List<Attachment> newAttachments = attachmentRepository.findAllById(newAttachmentIds);
+        checkInvalidAttachment(newAttachmentIds, newAttachments);
+
+        // 현재 저장된 첨부파일 ID 조회
+        List<Long> savedAttachmentIds = ticketAttachmentRepository.findByTicketId(ticketId)
+                .stream()
+                .map(ta -> ta.getAttachment().getId())
+                .toList();
+
+        // 추가해야 할 첨부파일 ID 확인
+        List<Long> attachmentIdsToAdd = newAttachmentIds.stream()
+                .filter(id -> !savedAttachmentIds.contains(id))
+                .toList();
+
+        // 제거해야 할 첨부파일 ID 확인
+        List<Long> attachmentIdsToRemove = savedAttachmentIds.stream()
+                .filter(id -> !newAttachmentIds.contains(id))
+                .toList();
+
+        // 추가해야 할 첨부파일 엔티티 생성
+        List<Attachment> attachmentsToAdd = newAttachments.stream()
+                .filter(a -> attachmentIdsToAdd.contains(a.getId()))
+                .toList();
+
+        List<TicketAttachment> newTicketAttachments = attachmentsToAdd.stream()
+                .map(a -> new TicketAttachment(ticket, a))
+                .toList();
+
+        // 첨부파일 업데이트 (추가 및 삭제)
+        ticketAttachmentRepository.saveAll(newTicketAttachments);
+
+        if (!attachmentIdsToRemove.isEmpty()) {
+            // 중간 테이블에서 삭제
+            ticketAttachmentRepository.deleteByTicketAndAttachmentIds(ticket, attachmentIdsToRemove);
+
+            // 삭제 대상 첨부파일이 다른 티켓에서도 사용되는지 확인
+            List<Long> usedAttachmentIds = ticketAttachmentRepository.findAttachmentIdsInUse(attachmentIdsToRemove);
+            List<Long> finalAttachmentsToDelete = attachmentIdsToRemove.stream()
+                    .filter(id -> !usedAttachmentIds.contains(id)) // 다른 티켓에서 사용되지 않는 것만 필터링
+                    .toList();
+
+            if (!finalAttachmentsToDelete.isEmpty()) {
+                // 사용되지 않는 첨부파일 삭제
+                attachmentRepository.deleteAllByIdInBatch(finalAttachmentsToDelete);
+            }
+        }
+        // 티켓 필드 업데이트
+        ticket.updateTitle(request.getTitle());
+        ticket.updateContent(request.getContent());
+        ticket.updateCategories(firstCategory, secondCategory);
+        ticket.updateDueDate(request.getDueDate());
+
+        ticketRepository.save(ticket);
+    }
+
+    @Transactional
+    public void deleteTickets(Long memberId, List<Long> ticketIds) {
+        // 현재 사용자 조회
+        Member member = memberService.getMemberByIdOrThrow(memberId);
+
+        // 삭제할 티켓 조회
+        List<Ticket> tickets = ticketRepository.findAllById(ticketIds);
+
+        // 존재하지 않는 티켓이 있는 경우 예외 처리
+        if (tickets.size() != ticketIds.size()) {
+            throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
+        }
+
+        // 사용자가 생성한 티켓인지 확인
+        for (Ticket ticket : tickets) {
+            if (!ticket.getUser().getId().equals(member.getId())) {
+                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+            }
+        }
+
+        // **티켓에 연결된 첨부파일 ID 조회**
+        List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
+
+        // **첨부파일 영구 삭제**
+        if (!attachmentIds.isEmpty()) {
+            ticketAttachmentRepository.deleteAllByIdInBatch(ticketIds); // 연결 데이터 삭제
+            attachmentRepository.deleteAllById(attachmentIds); // 첨부파일 삭제
+        }
+
+        // **티켓 소프트 삭제 (deleted_at 업데이트)**
+        ticketRepository.updateDeletedAtByIds(ticketIds, LocalDateTime.now());
+    }
+
+
+
+    @Transactional
     public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
         // 담당자 검증
         Member manager = memberService.getMemberByIdOrThrow(memberId);
@@ -104,6 +216,13 @@ public class TicketCudServiceImpl implements TicketCudService {
         // 담당자가 본인이 맞는지 검증
         if (ticket.getManager() == null || !ticket.getManager().getId().equals(manager.getId())) {
             throw new ApiException(ErrorCode.INVALID_TICKET_MANAGER);
+        }
+    }
+
+    private void checkInvalidAttachment(List<Long> attachmentIds, List<Attachment> attachments) {
+        if (attachmentIds.size() != attachments.size()) {
+            log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
+            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
         }
     }
 }

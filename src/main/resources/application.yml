@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: checkin
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  config:
+    import: application-secret.yml
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+cloud:
+  aws:
+    bucket: "${AWS_BUCKET}"
+    stack:
+      auto: false
+    region:
+      static: "${AWS_REGION}"
+    credentials:
+      accessKey: "${AWS_ACCESSKEY}"
+      secretKey: "${AWS_SECRETKEY}"
+
+jwt:
+  secretKey: "${JWT_SECRET_KEY}"
+
+user:
+  profile:
+    defaultImageUrl: "${DEFAULT_PROFILE_IMAGE_URL}"

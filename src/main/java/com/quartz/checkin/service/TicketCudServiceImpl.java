@@ -131,9 +131,20 @@ public class TicketCudServiceImpl implements TicketCudService {
         ticketAttachmentRepository.saveAll(newTicketAttachments);
 
         if (!attachmentIdsToRemove.isEmpty()) {
+            // 중간 테이블에서 삭제
             ticketAttachmentRepository.deleteByTicketAndAttachmentIds(ticket, attachmentIdsToRemove);
-        }
 
+            // 삭제 대상 첨부파일이 다른 티켓에서도 사용되는지 확인
+            List<Long> usedAttachmentIds = ticketAttachmentRepository.findAttachmentIdsInUse(attachmentIdsToRemove);
+            List<Long> finalAttachmentsToDelete = attachmentIdsToRemove.stream()
+                    .filter(id -> !usedAttachmentIds.contains(id)) // 다른 티켓에서 사용되지 않는 것만 필터링
+                    .toList();
+
+            if (!finalAttachmentsToDelete.isEmpty()) {
+                // 사용되지 않는 첨부파일 삭제
+                attachmentRepository.deleteAllByIdInBatch(finalAttachmentsToDelete);
+            }
+        }
         // 티켓 필드 업데이트
         ticket.updateTitle(request.getTitle());
         ticket.updateContent(request.getContent());

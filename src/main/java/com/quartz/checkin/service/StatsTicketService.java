@@ -30,17 +30,16 @@ public class StatsTicketService {
         this.objectMapper = objectMapper;
     }
 
-    // 1. 전체 진행 상태 통계 조회
     public StatTotalProgressResponse getStatTotalProgress() {
         List<Object[]> result = statsTicketRepository.findStatTotalProgress();
         if (result.isEmpty()) return new StatTotalProgressResponse();
 
         Object[] row = result.get(0);
-        int deleted_count = ((Number) row[0]).intValue();
-        String stateJson = (String) row[1];
+        int overdue = ((Number) row[0]).intValue(); // 첫 번째 컬럼이 overdue
+        String stateJson = (String) row[1]; // 두 번째 컬럼이 state_json
 
         List<StatTotalProgressResponse.StatusCount> state = parseStateJson(stateJson);
-        return new StatTotalProgressResponse(deleted_count, state);
+        return new StatTotalProgressResponse(overdue, state);
     }
 
     // 2. 유형별 진행률 조회

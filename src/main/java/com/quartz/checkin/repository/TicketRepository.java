@@ -63,6 +63,4 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchMyTickets(@Param("memberId") Long memberId, @Param("keyword") String keyword, Pageable pageable);
-
-    long countByStatus(Status status);
 }

@@ -5,6 +5,7 @@ import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
+import com.quartz.checkin.dto.ticket.request.TicketDeleteRequest;
 import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
@@ -80,6 +81,19 @@ public class TicketController {
         ticketCudService.updateTicket(user.getId(), request, ticketId);
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
+
+    @PatchMapping
+    @User
+    @Operation(summary = "사용자가 다중 티켓 삭제", description = "주어진 티켓 ID 목록을 삭제합니다.")
+    public ApiResponse<Void> deleteMultipleTickets(
+            @AuthenticationPrincipal CustomUser user,
+            @RequestBody @Valid TicketDeleteRequest request) {
+
+        ticketCudService.deleteTickets(user.getId(), request.getTicketIds());
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
 
     @ManagerOrUser
     @Operation(summary = "API 명세서 v0.2 line 36", description = "티켓 상세 조회")

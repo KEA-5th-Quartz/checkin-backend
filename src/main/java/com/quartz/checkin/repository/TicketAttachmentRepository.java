@@ -17,4 +17,7 @@ public interface TicketAttachmentRepository extends JpaRepository<TicketAttachme
 
     @Query("SELECT DISTINCT ta.attachment.id FROM TicketAttachment ta WHERE ta.attachment.id IN :attachmentIds")
     List<Long> findAttachmentIdsInUse(@Param("attachmentIds") List<Long> attachmentIds);
+
+    @Query("SELECT ta.attachment.id FROM TicketAttachment ta WHERE ta.ticket.id IN :ticketIds")
+    List<Long> findAttachmentIdsByTicketIds(@Param("ticketIds") List<Long> ticketIds);
 }

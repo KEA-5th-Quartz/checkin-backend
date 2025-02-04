@@ -16,6 +16,7 @@ import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -153,6 +154,40 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         ticketRepository.save(ticket);
     }
+
+    @Transactional
+    public void deleteTickets(Long memberId, List<Long> ticketIds) {
+        // 현재 사용자 조회
+        Member member = memberService.getMemberByIdOrThrow(memberId);
+
+        // 삭제할 티켓 조회
+        List<Ticket> tickets = ticketRepository.findAllById(ticketIds);
+
+        // 존재하지 않는 티켓이 있는 경우 예외 처리
+        if (tickets.size() != ticketIds.size()) {
+            throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
+        }
+
+        // 사용자가 생성한 티켓인지 확인
+        for (Ticket ticket : tickets) {
+            if (!ticket.getUser().getId().equals(member.getId())) {
+                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+            }
+        }
+
+        // **티켓에 연결된 첨부파일 ID 조회**
+        List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
+
+        // **첨부파일 영구 삭제**
+        if (!attachmentIds.isEmpty()) {
+            ticketAttachmentRepository.deleteAllByIdInBatch(ticketIds); // 연결 데이터 삭제
+            attachmentRepository.deleteAllById(attachmentIds); // 첨부파일 삭제
+        }
+
+        // **티켓 소프트 삭제 (deleted_at 업데이트)**
+        ticketRepository.updateDeletedAtByIds(ticketIds, LocalDateTime.now());
+    }
+
 
 
     @Transactional

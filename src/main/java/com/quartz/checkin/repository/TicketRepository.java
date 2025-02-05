@@ -16,7 +16,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     @Query("SELECT t FROM Ticket t " +
             "LEFT JOIN t.manager m " +
-            "WHERE (:statuses IS NULL OR t.status IN :statuses) " +
+            "WHERE t.deletedAt IS NULL " +
+            "AND (:statuses IS NULL OR t.status IN :statuses) " +
             "AND (:categories IS NULL OR LOWER(TRIM(t.firstCategory.name)) IN :categories) " +
             "AND (:priorities IS NULL OR t.priority IN :priorities) " +
             "AND (:usernames IS NULL OR (t.manager IS NOT NULL AND t.manager.username IN :usernames)) " +
@@ -35,7 +36,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     @Query("SELECT t FROM Ticket t " +
             "LEFT JOIN t.manager m " +
-            "WHERE (:userId IS NULL OR t.user.id = :userId) " +
+            "WHERE t.deletedAt IS NULL " +
+            "AND (:userId IS NULL OR t.user.id = :userId) " +
             "AND (:statuses IS NULL OR t.status IN :statuses) " +
             "AND (:categories IS NULL OR LOWER(TRIM(t.firstCategory.name)) IN :categories) " +
             "AND (:priorities IS NULL OR t.priority IN :priorities) " +
@@ -54,12 +56,14 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     );
 
     @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
-            "WHERE (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "WHERE t.deletedAt IS NULL " +
+            "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchTickets(@Param("keyword") String keyword, Pageable pageable);
 
     @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
             "WHERE t.user.id = :memberId " +
+            "AND t.deletedAt IS NULL " +
             "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchMyTickets(@Param("memberId") Long memberId, @Param("keyword") String keyword, Pageable pageable);

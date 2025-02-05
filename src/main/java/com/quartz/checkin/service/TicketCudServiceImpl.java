@@ -13,20 +13,24 @@ import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
+import com.quartz.checkin.event.NotificationEvent;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TicketCudServiceImpl implements TicketCudService {
 
     private final AttachmentRepository attachmentRepository;
@@ -34,9 +38,10 @@ public class TicketCudServiceImpl implements TicketCudService {
     private final CategoryServiceImpl categoryService;
     private final MemberService memberService;
     private final TicketAttachmentRepository ticketAttachmentRepository;
+    private final WebhookService webhookService;
+    private final ApplicationEventPublisher eventPublisher;
 
 
-    @Transactional
     @Override
     public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) {
         // 사용자 조회
@@ -57,6 +62,13 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
         }
 
+        // 요청 보낸 사용자를 담당자로 설정하여 웹훅으로 게시물 생성
+        Long agitId = webhookService.createAgitPost(
+                request.getTitle(),
+                request.getContent(),
+                List.of(member.getUsername()) // 요청한 사용자 지정
+        );
+
         // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
                 .user(member)
@@ -67,6 +79,7 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .priority(Priority.UNDEFINED)
                 .status(Status.OPEN)
                 .dueDate(request.getDueDate())
+                .agitId(agitId)
                 .build();
         Ticket savedTicket = ticketRepository.save(ticket);
 
@@ -77,10 +90,24 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         ticketAttachmentRepository.saveAll(ticketAttachments);
 
+        // 티켓 생성 이벤트 발행
+        eventPublisher.publishEvent(new NotificationEvent(
+                ticket.getId(), // relatedId
+                "TICKET_CREATED", // type
+                "ticket", // relatedTable
+                ticket.getUser().getId(), // memberId
+                ticket.getUser().getId(), // userId
+                ticket.getManager() != null ? ticket.getManager().getId() : null,
+                null,
+                ticket.getAgitId(), // agitId
+                "새로운 티켓이 생성되었습니다."
+        ));
+
+
         return new TicketCreateResponse(ticket.getId());
     }
 
-    @Transactional
+    @Override
     public void updateTicket(Long memberId, TicketUpdateRequest request, Long ticketId) {
         // 티켓 조회 및 존재 여부 검증
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -98,9 +125,9 @@ public class TicketCudServiceImpl implements TicketCudService {
         Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
 
-        // 첨부파일 검증 및 변경 사항 반영
-        List<Long> newAttachmentIds = request.getAttachmentIds();
-        List<Attachment> newAttachments = attachmentRepository.findAllById(newAttachmentIds);
+        // 첨부파일 검증 및 변경 사항 반영 (null 체크 추가)
+        List<Long> newAttachmentIds = request.getAttachmentIds() != null ? request.getAttachmentIds() : Collections.emptyList();
+        List<Attachment> newAttachments = newAttachmentIds.isEmpty() ? Collections.emptyList() : attachmentRepository.findAllById(newAttachmentIds);
         checkInvalidAttachment(newAttachmentIds, newAttachments);
 
         // 현재 저장된 첨부파일 ID 조회
@@ -155,7 +182,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         ticketRepository.save(ticket);
     }
 
-    @Transactional
+    @Override
     public void deleteTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
@@ -175,22 +202,20 @@ public class TicketCudServiceImpl implements TicketCudService {
             }
         }
 
-        // **티켓에 연결된 첨부파일 ID 조회**
+        // 티켓에 연결된 첨부파일 ID 조회
         List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
 
-        // **첨부파일 영구 삭제**
+        // 첨부파일 영구 삭제
         if (!attachmentIds.isEmpty()) {
             ticketAttachmentRepository.deleteAllByIdInBatch(ticketIds); // 연결 데이터 삭제
             attachmentRepository.deleteAllById(attachmentIds); // 첨부파일 삭제
         }
 
-        // **티켓 소프트 삭제 (deleted_at 업데이트)**
+        // 티켓 소프트 삭제 (deleted_at 업데이트)
         ticketRepository.updateDeletedAtByIds(ticketIds, LocalDateTime.now());
     }
 
-
-
-    @Transactional
+    @Override
     public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
         // 담당자 검증
         Member manager = memberService.getMemberByIdOrThrow(memberId);

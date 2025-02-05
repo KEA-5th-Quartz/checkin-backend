@@ -17,7 +17,6 @@ import com.quartz.checkin.event.NotificationEvent;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -102,7 +101,6 @@ public class TicketCudServiceImpl implements TicketCudService {
                 ticket.getAgitId(), // agitId
                 "새로운 티켓이 생성되었습니다."
         ));
-
 
         return new TicketCreateResponse(ticket.getId());
     }
@@ -195,6 +193,16 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
         }
 
+        // 진행 중인(IN_PROGRESS) 티켓이 포함되어 있는지 확인
+        List<Long> inProgressTickets = tickets.stream()
+                .filter(ticket -> ticket.getStatus() == Status.IN_PROGRESS)
+                .map(Ticket::getId)
+                .toList();
+
+        if (!inProgressTickets.isEmpty()) {
+            throw new ApiException(ErrorCode.TICKET_ALREADY_ASSIGNED);
+        }
+
         // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
@@ -211,8 +219,9 @@ public class TicketCudServiceImpl implements TicketCudService {
             attachmentRepository.deleteAllById(attachmentIds); // 첨부파일 삭제
         }
 
-        // 티켓 소프트 삭제 (deleted_at 업데이트)
-        ticketRepository.updateDeletedAtByIds(ticketIds, LocalDateTime.now());
+        // 티켓 소프트 삭제
+        tickets.forEach(Ticket::softDelete);
+        ticketRepository.saveAll(tickets);
     }
 
     @Override
@@ -228,7 +237,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         // 중요도 변경
         ticket.updatePriority(request.getPriority());
-        ticketRepository.save(ticket); // 안전하게 변경 사항 저장
+        ticketRepository.save(ticket);
     }
 
     private Ticket getValidTicket(Long ticketId) {

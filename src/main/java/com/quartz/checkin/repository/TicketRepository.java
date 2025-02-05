@@ -67,4 +67,18 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchMyTickets(@Param("memberId") Long memberId, @Param("keyword") String keyword, Pageable pageable);
+
+
+    @Query("""
+    SELECT\s
+        COALESCE(COUNT(CASE WHEN t.dueDate = CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0),
+        COALESCE(COUNT(CASE WHEN t.status = 'OPEN' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0),
+        COALESCE(COUNT(CASE WHEN t.status = 'IN_PROGRESS' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0),
+        COALESCE(COUNT(CASE WHEN t.status = 'CLOSED' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0),
+        COALESCE((SELECT COUNT(t2) FROM Ticket t2 WHERE t2.deletedAt IS NULL), 0)
+    FROM Ticket t
+    WHERE t.deletedAt IS NULL
+""")
+    List<Object[]> getManagerTicketStatistics(@Param("managerId") Long managerId);
+
 }

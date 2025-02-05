@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TicketCudServiceImpl implements TicketCudService {
 
     private final AttachmentRepository attachmentRepository;
@@ -36,7 +37,6 @@ public class TicketCudServiceImpl implements TicketCudService {
     private final TicketAttachmentRepository ticketAttachmentRepository;
 
 
-    @Transactional
     @Override
     public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) {
         // 사용자 조회
@@ -80,7 +80,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         return new TicketCreateResponse(ticket.getId());
     }
 
-    @Transactional
+    @Override
     public void updateTicket(Long memberId, TicketUpdateRequest request, Long ticketId) {
         // 티켓 조회 및 존재 여부 검증
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -155,7 +155,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         ticketRepository.save(ticket);
     }
 
-    @Transactional
+    @Override
     public void deleteTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
@@ -175,22 +175,20 @@ public class TicketCudServiceImpl implements TicketCudService {
             }
         }
 
-        // **티켓에 연결된 첨부파일 ID 조회**
+        // 티켓에 연결된 첨부파일 ID 조회
         List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
 
-        // **첨부파일 영구 삭제**
+        // 첨부파일 영구 삭제
         if (!attachmentIds.isEmpty()) {
             ticketAttachmentRepository.deleteAllByIdInBatch(ticketIds); // 연결 데이터 삭제
             attachmentRepository.deleteAllById(attachmentIds); // 첨부파일 삭제
         }
 
-        // **티켓 소프트 삭제 (deleted_at 업데이트)**
+        // 티켓 소프트 삭제 (deleted_at 업데이트)
         ticketRepository.updateDeletedAtByIds(ticketIds, LocalDateTime.now());
     }
 
-
-
-    @Transactional
+    @Override
     public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
         // 담당자 검증
         Member manager = memberService.getMemberByIdOrThrow(memberId);

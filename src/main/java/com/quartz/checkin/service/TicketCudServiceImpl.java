@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class TicketCudServiceImpl implements TicketCudService {
 
+    private final AttachmentService attachmentService;
     private final AttachmentRepository attachmentRepository;
     private final TicketRepository ticketRepository;
     private final CategoryServiceImpl categoryService;
@@ -170,7 +171,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
             if (!finalAttachmentsToDelete.isEmpty()) {
                 // 사용되지 않는 첨부파일 삭제
-                attachmentRepository.deleteAllByIdInBatch(finalAttachmentsToDelete);
+                attachmentService.deleteAttachments(finalAttachmentsToDelete);
             }
         }
         // 티켓 필드 업데이트
@@ -208,7 +209,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         // 첨부파일 영구 삭제
         if (!attachmentIds.isEmpty()) {
             ticketAttachmentRepository.deleteAllByIdInBatch(ticketIds); // 연결 데이터 삭제
-            attachmentRepository.deleteAllById(attachmentIds); // 첨부파일 삭제
+            attachmentService.deleteAttachments(attachmentIds); // 첨부파일 삭제
         }
 
         // 티켓 소프트 삭제 (deleted_at 업데이트)

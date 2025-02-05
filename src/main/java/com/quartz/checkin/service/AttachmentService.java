@@ -60,6 +60,6 @@ public class AttachmentService {
                 log.error("파일 삭제에 실패했습니다.");
             }
         }
-        attachmentRepository.deleteAllByIdIn(attachmentIdsToRemove);
+        attachmentRepository.deleteAllByIdInBatch(attachmentIdsToRemove);
     }
 }

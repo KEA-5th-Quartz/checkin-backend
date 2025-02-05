@@ -12,7 +12,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -117,4 +116,22 @@ public class Ticket extends BaseEntity {
     public void updatePriority(Priority newPriority) {
         this.priority = newPriority;
     }
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
+    public void updateCategories(Category firstCategory, Category secondCategory) {
+        this.firstCategory = firstCategory;
+        this.secondCategory = secondCategory;
+    }
+
+    public void updateDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
+    }
+
 }

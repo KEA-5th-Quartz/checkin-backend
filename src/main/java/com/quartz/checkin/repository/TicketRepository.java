@@ -4,10 +4,12 @@ import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -64,5 +66,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchMyTickets(@Param("memberId") Long memberId, @Param("keyword") String keyword, Pageable pageable);
 
-    long countByStatus(Status status);
+    @Modifying
+    @Query("UPDATE Ticket t SET t.deletedAt = :deletedAt WHERE t.id IN :ticketIds")
+    void updateDeletedAtByIds(@Param("ticketIds") List<Long> ticketIds, @Param("deletedAt") LocalDateTime deletedAt);
 }

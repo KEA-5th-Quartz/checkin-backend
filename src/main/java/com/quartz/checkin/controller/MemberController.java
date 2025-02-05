@@ -1,5 +1,6 @@
 package com.quartz.checkin.controller;
 
+import com.quartz.checkin.dto.common.request.SimplePageRequest;
 import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.member.request.EmailCheckRequest;
 import com.quartz.checkin.dto.member.request.MemberInfoListRequest;
@@ -8,17 +9,16 @@ import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.dto.member.request.UsernameCheckRequest;
+import com.quartz.checkin.dto.member.response.AccessLogListResponse;
 import com.quartz.checkin.dto.member.response.MemberRoleCount;
 import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
-import com.quartz.checkin.dto.member.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
-import com.quartz.checkin.dto.member.request.UsernameCheckRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
-import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.security.annotation.AdminOrManager;
+import com.quartz.checkin.service.MemberAccessLogService;
 import com.quartz.checkin.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -44,6 +44,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class MemberController {
 
     private final MemberService memberService;
+    private final MemberAccessLogService memberAccessLogService;
 
     @Admin
     @Operation(summary = "API 명세서 v0.2 line 7", description = "관리자가 사용자 생성")
@@ -140,9 +141,21 @@ public class MemberController {
     }
 
     @Admin
+    @Operation(summary = "API 명세서 v0.3 line 11", description = "관리자가 사용자, 담당자, 관리자의 전체 수를 조회")
     @GetMapping("/stats/role")
     public ApiResponse<MemberRoleCount> roleCount() {
         MemberRoleCount response = memberService.getMemberRoleCounts();
+
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @Admin
+    @Operation(summary = "API 명세서 v0.3 line 27", description = "관리자가 사용자들의 접속 로그 조회")
+    @GetMapping("/access-logs")
+    public ApiResponse<AccessLogListResponse> accesslogs(
+            @ModelAttribute @Valid SimplePageRequest simplePageRequest,
+            @RequestParam(defaultValue = "DESC") String order) {
+        AccessLogListResponse response = memberAccessLogService.getAccessLogList(simplePageRequest, order);
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }

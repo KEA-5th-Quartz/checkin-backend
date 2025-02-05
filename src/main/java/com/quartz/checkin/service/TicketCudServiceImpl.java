@@ -19,6 +19,7 @@ import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -124,9 +125,9 @@ public class TicketCudServiceImpl implements TicketCudService {
         Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
 
-        // 첨부파일 검증 및 변경 사항 반영
-        List<Long> newAttachmentIds = request.getAttachmentIds();
-        List<Attachment> newAttachments = attachmentRepository.findAllById(newAttachmentIds);
+        // 첨부파일 검증 및 변경 사항 반영 (null 체크 추가)
+        List<Long> newAttachmentIds = request.getAttachmentIds() != null ? request.getAttachmentIds() : Collections.emptyList();
+        List<Attachment> newAttachments = newAttachmentIds.isEmpty() ? Collections.emptyList() : attachmentRepository.findAllById(newAttachmentIds);
         checkInvalidAttachment(newAttachmentIds, newAttachments);
 
         // 현재 저장된 첨부파일 ID 조회

@@ -128,6 +128,8 @@ public class TicketController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
+    @Manager
+    @Operation(summary = "API 명세서 v0.3 line 35", description = "담당자가 자신의 데이터 조회(내 티켓 현황)")
     @GetMapping("/progress")
     public ApiResponse<TicketProgressResponse> getManagerProgress(
             @AuthenticationPrincipal CustomUser user) {

@@ -193,6 +193,16 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
         }
 
+        // 진행 중인(IN_PROGRESS) 티켓이 포함되어 있는지 확인
+        List<Long> inProgressTickets = tickets.stream()
+                .filter(ticket -> ticket.getStatus() == Status.IN_PROGRESS)
+                .map(Ticket::getId)
+                .toList();
+
+        if (!inProgressTickets.isEmpty()) {
+            throw new ApiException(ErrorCode.TICKET_ALREADY_ASSIGNED);
+        }
+
         // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {

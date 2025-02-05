@@ -10,6 +10,7 @@ import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
+import com.quartz.checkin.dto.ticket.response.TicketProgressResponse;
 import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
 import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
@@ -127,7 +128,15 @@ public class TicketController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
-    @Manager
+    @GetMapping("/progress")
+    public ApiResponse<TicketProgressResponse> getManagerProgress(
+            @AuthenticationPrincipal CustomUser user) {
+
+        TicketProgressResponse response = ticketQueryService.getManagerProgress(user.getId());
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+@Manager
     @Operation(summary = "API 명세서 v0.3 line 37", description = "담당자 티켓 검색")
     @GetMapping("/search")
     public ApiResponse<ManagerTicketListResponse> searchTickets(

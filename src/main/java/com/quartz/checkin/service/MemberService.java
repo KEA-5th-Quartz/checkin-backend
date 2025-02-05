@@ -54,6 +54,14 @@ public class MemberService {
                 });
     }
 
+    public Member getMemberByUsernameOrThrow(String username) {
+        return memberRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 사용자입니다.");
+                    return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
+                });
+    }
+
     public MemberInfoResponse getMemberInfo(Long id) {
         Member member = getMemberByIdOrThrow(id);
 

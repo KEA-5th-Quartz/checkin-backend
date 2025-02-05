@@ -59,6 +59,9 @@ public class CustomUsernamePasswordAuthenticationFilter extends AbstractAuthenti
 
         log.info("{}가 로그인을 시도합니다.", username);
 
+        // 로그인 실패 핸들러에서 사용자 정보를 얻기 위해 저장
+        request.setAttribute("username", username);
+
         UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(username,
                 password);
 

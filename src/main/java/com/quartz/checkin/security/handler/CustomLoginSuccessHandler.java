@@ -2,6 +2,7 @@ package com.quartz.checkin.security.handler;
 
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
+import com.quartz.checkin.service.MemberAccessLogService;
 import com.quartz.checkin.service.MemberService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtService jwtService;
+    private final MemberAccessLogService memberAccessLogService;
     private final MemberService memberService;
 
     @Override
@@ -34,6 +36,9 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
         String refreshToken = jwtService.createRefreshToken();
         jwtService.setRefreshToken(response, refreshToken);
         memberService.updateMemberRefreshToken(user.getId(), refreshToken);
+
+        String clientIp = memberAccessLogService.getClientIp(request);
+        memberAccessLogService.writeLoginSuccessAccessLog(user.getId(), clientIp);
 
     }
 }

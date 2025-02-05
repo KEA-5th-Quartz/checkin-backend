@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public class ApiException extends RuntimeException {
 
-    private final ErrorCode errorCode;
+    private ErrorCode errorCode;
 
     public ApiException(ErrorCode errorCode, String message) {
         super(message);
@@ -15,5 +15,9 @@ public class ApiException extends RuntimeException {
     public ApiException(ErrorCode errorCode) {
         super(errorCode.getMessage());
         this.errorCode = errorCode;
+    }
+
+    public ApiException(String message) {
+        super(message);
     }
 }

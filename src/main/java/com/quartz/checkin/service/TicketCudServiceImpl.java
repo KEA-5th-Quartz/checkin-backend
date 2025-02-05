@@ -13,6 +13,7 @@ import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
+import com.quartz.checkin.event.NotificationEvent;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,8 @@ public class TicketCudServiceImpl implements TicketCudService {
     private final CategoryServiceImpl categoryService;
     private final MemberService memberService;
     private final TicketAttachmentRepository ticketAttachmentRepository;
+    private final WebhookService webhookService;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Override
@@ -57,6 +61,13 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
         }
 
+        // 요청 보낸 사용자를 담당자로 설정하여 웹훅으로 게시물 생성
+        Long agitId = webhookService.createAgitPost(
+                request.getTitle(),
+                request.getContent(),
+                List.of(member.getUsername()) // 요청한 사용자 지정
+        );
+
         // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
                 .user(member)
@@ -67,6 +78,7 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .priority(Priority.UNDEFINED)
                 .status(Status.OPEN)
                 .dueDate(request.getDueDate())
+                .agitId(agitId)
                 .build();
         Ticket savedTicket = ticketRepository.save(ticket);
 
@@ -76,6 +88,20 @@ public class TicketCudServiceImpl implements TicketCudService {
         }
 
         ticketAttachmentRepository.saveAll(ticketAttachments);
+
+        // 티켓 생성 이벤트 발행
+        eventPublisher.publishEvent(new NotificationEvent(
+                ticket.getId(), // relatedId
+                "TICKET_CREATED", // type
+                "ticket", // relatedTable
+                ticket.getUser().getId(), // memberId
+                ticket.getUser().getId(), // userId
+                ticket.getManager() != null ? ticket.getManager().getId() : null,
+                null,
+                ticket.getAgitId(), // agitId
+                "새로운 티켓이 생성되었습니다."
+        ));
+
 
         return new TicketCreateResponse(ticket.getId());
     }

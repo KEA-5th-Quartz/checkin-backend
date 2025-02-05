@@ -70,12 +70,12 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
 
     @Query("""
-    SELECT\s
-        COALESCE(COUNT(CASE WHEN t.dueDate = CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0),
-        COALESCE(COUNT(CASE WHEN t.status = 'OPEN' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0),
-        COALESCE(COUNT(CASE WHEN t.status = 'IN_PROGRESS' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0),
-        COALESCE(COUNT(CASE WHEN t.status = 'CLOSED' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0),
-        COALESCE((SELECT COUNT(t2) FROM Ticket t2 WHERE t2.deletedAt IS NULL), 0)
+    SELECT 
+        COALESCE(COUNT(CASE WHEN t.dueDate = CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0) AS dueTodayCount,
+        COALESCE(COUNT(CASE WHEN t.status = 'OPEN' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0) AS openTicketCount,
+        COALESCE(COUNT(CASE WHEN t.status = 'IN_PROGRESS' AND t.dueDate >= CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0) AS inProgressTicketCount,
+        COALESCE(COUNT(CASE WHEN t.status = 'CLOSED' AND t.dueDate >= CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0) AS closedTicketCount,
+        COALESCE(COUNT(CASE WHEN t.dueDate >= CURRENT_DATE THEN 1 END), 0) AS totalTickets
     FROM Ticket t
     WHERE t.deletedAt IS NULL
 """)

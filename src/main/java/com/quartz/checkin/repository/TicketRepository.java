@@ -70,7 +70,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
 
     @Query("""
-    SELECT 
+    SELECT\s
         COALESCE(COUNT(CASE WHEN t.dueDate = CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0),
         COALESCE(COUNT(CASE WHEN t.status = 'OPEN' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0),
         COALESCE(COUNT(CASE WHEN t.status = 'IN_PROGRESS' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0),

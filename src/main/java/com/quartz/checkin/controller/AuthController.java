@@ -21,7 +21,7 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @Operation(summary = "API 명세서 v0.2 line 5", description = "refreshToken 재발급")
+    @Operation(summary = "API 명세서 v0.3 line 5", description = "refreshToken 재발급")
     @PostMapping("/refresh")
     public ApiResponse<AuthenticationResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
         AuthenticationResponse authenticationResponse = authService.refresh(request, response);

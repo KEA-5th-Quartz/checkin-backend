@@ -153,8 +153,9 @@ public class MemberController {
     @Operation(summary = "API 명세서 v0.3 line 27", description = "관리자가 사용자들의 접속 로그 조회")
     @GetMapping("/access-logs")
     public ApiResponse<AccessLogListResponse> accesslogs(
-            @ModelAttribute @Valid SimplePageRequest simplePageRequest) {
-        AccessLogListResponse response = memberAccessLogService.getAccessLogList(simplePageRequest);
+            @ModelAttribute @Valid SimplePageRequest simplePageRequest,
+            @RequestParam(defaultValue = "DESC") String order) {
+        AccessLogListResponse response = memberAccessLogService.getAccessLogList(simplePageRequest, order);
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }

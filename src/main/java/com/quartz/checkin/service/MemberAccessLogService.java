@@ -1,6 +1,8 @@
 package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.PaginationRequestUtils;
+import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.common.request.SimplePageRequest;
 import com.quartz.checkin.dto.member.response.AccessLogListResponse;
 import com.quartz.checkin.entity.AccessLogType;
@@ -26,14 +28,21 @@ public class MemberAccessLogService {
     private final MemberAccessLogRepository memberAccessLogRepository;
     private final MemberService memberService;
 
-    public AccessLogListResponse getAccessLogList(SimplePageRequest pageRequest) {
+    public AccessLogListResponse getAccessLogList(SimplePageRequest pageRequest, String order) {
 
         Integer page = pageRequest.getPage();
         Integer size = pageRequest.getSize();
 
         PaginationRequestUtils.checkPageNumberAndPageSize(page, size);
+        if (order == null ||    (!order.equalsIgnoreCase("desc") && !order.equalsIgnoreCase("asc"))) {
+            log.error("유효하지 않은 방향값입니다.");
+            throw new ApiException(ErrorCode.INVALID_DATA);
+        }
 
-        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
+        Sort sort = order.equalsIgnoreCase("desc") ?
+                Sort.by("id").descending() : Sort.by("id").ascending();
+
+        Pageable pageable = PageRequest.of(page - 1, size, sort);
 
         Page<MemberAccessLog> accessLogPage = memberAccessLogRepository.findAllJoinFetch(pageable);
 
@@ -66,8 +75,6 @@ public class MemberAccessLogService {
         memberAccessLogRepository.save(memberAccessLog);
 
     }
-
-
 
 
     public String getClientIp(HttpServletRequest request) {

@@ -18,6 +18,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
@@ -84,6 +85,13 @@ public class Ticket extends BaseEntity {
         this.priority = priority;
         this.status = status;
         this.dueDate = dueDate;
+        this.agitId = agitId;
+    }
+
+    public void linkToAgit(Long agitId) {
+        if (this.agitId != null) {
+            throw new IllegalStateException("아지트 ID는 이미 설정되어 있습니다.");
+        }
         this.agitId = agitId;
     }
 

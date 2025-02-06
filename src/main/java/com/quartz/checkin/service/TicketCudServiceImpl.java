@@ -13,7 +13,7 @@ import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
-import com.quartz.checkin.event.NotificationEvent;
+import com.quartz.checkin.event.TicketCreatedEvent;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
@@ -90,17 +90,11 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         ticketAttachmentRepository.saveAll(ticketAttachments);
 
-        // 티켓 생성 이벤트 발행
-        eventPublisher.publishEvent(new NotificationEvent(
-                ticket.getId(), // relatedId
-                "TICKET_CREATED", // type
-                "ticket", // relatedTable
-                ticket.getUser().getId(), // memberId
-                ticket.getUser().getId(), // userId
-                ticket.getManager() != null ? ticket.getManager().getId() : null,
-                null,
-                ticket.getAgitId(), // agitId
-                "새로운 티켓이 생성되었습니다."
+        eventPublisher.publishEvent(new TicketCreatedEvent(
+                savedTicket.getId(),
+                savedTicket.getUser().getId(),
+                savedTicket.getAgitId(),
+                savedTicket.getTitle()
         ));
 
         return new TicketCreateResponse(ticket.getId());

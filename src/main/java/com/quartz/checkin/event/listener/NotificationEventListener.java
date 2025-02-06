@@ -1,19 +1,21 @@
-package com.quartz.checkin.service;
+package com.quartz.checkin.event.listener;
 
 import com.quartz.checkin.dto.webhook.WebhookRequest;
 import com.quartz.checkin.entity.AlertLog;
 import com.quartz.checkin.event.NotificationEvent;
 import com.quartz.checkin.repository.AlertLogRepository;
+import com.quartz.checkin.service.WebhookService;
 import java.util.ArrayList;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class NotificationEventListener {
     private final AlertLogRepository alertLogRepository;
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleNotificationEvent(NotificationEvent event) {
         if (("CATEGORY_CHANGED".equals(event.getType()) || "COMMENT_ADDED".equals(event.getType()))
                 && event.getLogMessage() != null && event.getAgitId() != null) {
@@ -34,10 +36,9 @@ public class NotificationEventListener {
                     "text", event.getLogMessage()
             );
 
-            webhookService.sendWebhookRequest("/wall_messages/" + event.getAgitId() + "/comments", payload, HttpMethod.POST);
+            webhookService.sendWebhook("/wall_messages/" + event.getAgitId() + "/comments", HttpMethod.POST, payload);
         }
 
-        // 기존 알림 로직 유지
         List<Long> receivers = determineReceivers(event);
         for (Long receiverId : receivers) {
             AlertLog alertLog = new AlertLog(
@@ -55,7 +56,13 @@ public class NotificationEventListener {
                 webhookRequest.setText("새 알림이 생성되었습니다.");
                 webhookRequest.setTask(new WebhookRequest.Task(event.getType(), List.of(receiverId.toString())));
 
-                webhookService.sendWebhook(webhookRequest, "", receiverId);
+                String fullUrl = "/wall_messages/" + event.getAgitId() + "/update_status";
+                Map<String, Object> payload = Map.of(
+                        "text", webhookRequest.getText(),
+                        "task", webhookRequest.getTask()
+                );
+
+                webhookService.sendWebhook(fullUrl, HttpMethod.PUT, payload);
                 alertLog.setStatus("SUCCESS");
             } catch (Exception e) {
                 alertLog.setStatus("FAILURE");
@@ -66,12 +73,6 @@ public class NotificationEventListener {
         }
     }
 
-    /**
-     * 알림 수신자를 결정하는 메서드
-     *
-     * @param event NotificationEvent
-     * @return 알림 수신자 ID
-     */
     private List<Long> determineReceivers(NotificationEvent event) {
         List<Long> receivers = new ArrayList<>();
 

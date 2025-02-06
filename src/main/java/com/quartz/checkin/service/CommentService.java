@@ -17,6 +17,8 @@ import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketLog;
+import com.quartz.checkin.event.CommentAddedEvent;
+import com.quartz.checkin.event.FileUploadedEvent;
 import com.quartz.checkin.repository.CommentRepository;
 import com.quartz.checkin.repository.LikeRepository;
 import com.quartz.checkin.repository.MemberRepository;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,6 +47,7 @@ public class CommentService {
     private final LikeRepository likeRepository;
     private final MemberRepository memberRepository;
     private final WebhookService webhookService;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final S3Service s3Service;
 
@@ -81,19 +85,7 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        if (ticket.getAgitId() != null) {
-            try {
-                String commenterName = member.getUsername();
-                String formattedComment = commenterName + "님의 댓글: \"" + content + "\"";
-
-                log.info("웹훅에 댓글 추가 요청: ticketId={}, agitId={}, comment={}", ticketId, ticket.getAgitId(), formattedComment);
-                webhookService.addCommentToWebhookPost(ticket.getAgitId(), formattedComment);
-            } catch (Exception e) {
-                log.error("웹훅 댓글 추가 실패: {}", e.getMessage());
-            }
-        } else {
-            log.warn("아지트 게시글 ID가 없음 (댓글 추가 안됨): ticketId={}", ticketId);
-        }
+        eventPublisher.publishEvent(new CommentAddedEvent(ticket.getId(), ticket.getAgitId(), comment));
 
         return CommentResponse.builder()
                 .commentId(savedComment.getId())
@@ -272,23 +264,11 @@ public class CommentService {
             comment.addAttachment(attachmentUrl);
             Comment savedComment = commentRepository.save(comment);
 
-            // 🔹 웹훅에 "ㅇㅇ님이 첨부파일을 업로드했습니다." 메시지 전송
-            if (ticket.getAgitId() != null) {
-                try {
-                    String commenterName = member.getUsername();
-                    String fileName = file.getOriginalFilename();
-                    String formattedMessage = commenterName + "님이 첨부파일을 업로드했습니다.";
-
-                    log.info("웹훅에 첨부파일 업로드 알림 요청: ticketId={}, agitId={}, message={}",
-                            ticketId, ticket.getAgitId(), formattedMessage);
-
-                    webhookService.addCommentToWebhookPost(ticket.getAgitId(), formattedMessage);
-                } catch (Exception e) {
-                    log.error("웹훅 첨부파일 업로드 알림 실패: {}", e.getMessage());
-                }
-            } else {
-                log.warn("아지트 게시글 ID가 없음 (첨부파일 업로드 알림 안됨): ticketId={}", ticketId);
-            }
+            eventPublisher.publishEvent(new FileUploadedEvent(
+                    ticket.getId(),
+                    ticket.getAgitId(),
+                    member.getUsername()
+            ));
 
             return CommentAttachmentResponse.builder()
                     .commentId(savedComment.getId())

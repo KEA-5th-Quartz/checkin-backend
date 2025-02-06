@@ -30,12 +30,22 @@ public class Category {
     @Column(nullable = false)
     private String name;
 
-    public Category(Category parent, String name) {
+    @Column
+    private String alias;
+
+    @Column(name = "content_guide", columnDefinition = "TEXT")
+    private String contentGuide;
+
+    public Category(Category parent, String name, String alias, String contentGuide) {
         this.parent = parent;
         this.name = name;
+        this.alias = alias;
+        this.contentGuide = contentGuide;
     }
 
-    public void updateName(String name) {
+    public void updateCategory(String name, String alias, String contentGuide) {
         this.name = name;
+        this.alias = alias;
+        this.contentGuide = contentGuide;
     }
 }

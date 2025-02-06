@@ -8,4 +8,8 @@ public class SecondCategoryUpdateRequest {
 
     @NotBlank
     private String secondCategory;
+
+    @NotBlank
+    private String alias;
+
 }

@@ -49,7 +49,7 @@ public class CommentService {
     private final WebhookService webhookService;
     private final ApplicationEventPublisher eventPublisher;
 
-    private final S3UploadService s3UploadService;
+    private final S3Service s3Service;
 
     /**
      * 회원이 작성한 댓글을 저장한다.
@@ -147,7 +147,7 @@ public class CommentService {
                     .createdAt(comment.getCreatedAt())
                     .commentId(comment.getId())
                     .memberId(comment.getMember().getId())
-                    .isImage(s3UploadService.isImageType(comment.getContent()))
+                    .isImage(s3Service.isImageType(comment.getContent()))
                     .attachmentUrl(comment.getAttachment())
                     .build();
         } else {
@@ -260,7 +260,7 @@ public class CommentService {
         comment.writeContent(file.getContentType());
 
         try {
-            String attachmentUrl = s3UploadService.uploadFile(file, S3Config.COMMENT_DIR);
+            String attachmentUrl = s3Service.uploadFile(file, S3Config.COMMENT_DIR);
             comment.addAttachment(attachmentUrl);
             Comment savedComment = commentRepository.save(comment);
 
@@ -272,7 +272,7 @@ public class CommentService {
 
             return CommentAttachmentResponse.builder()
                     .commentId(savedComment.getId())
-                    .isImage(s3UploadService.isImageType(file.getContentType()))
+                    .isImage(s3Service.isImageType(file.getContentType()))
                     .attachmentUrl(attachmentUrl)
                     .build();
         } catch (Exception e) {

@@ -8,4 +8,5 @@ import lombok.Getter;
 public class SecondCategoryResponse {
     private Long secondCategoryId;
     private String name;
+    private String alias;
 }

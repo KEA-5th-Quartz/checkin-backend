@@ -53,7 +53,7 @@ public enum ErrorCode {
     TICKET_FILE_TOO_LARGE(HttpStatus.UNAUTHORIZED, "TICKET_4016", "파일 크기가 초과되었습니다."),
     TICKET_FILE_NOT_FOUND(HttpStatus.UNAUTHORIZED, "TICKET_4017", "파일이 존재하지 않습니다."),
     TICKET_NOT_FOUND(HttpStatus.NOT_FOUND, "TICKET_4040", "존재하지 않는 티켓입니다."),
-    TICKET_KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "TICKET_4041", "해당 키워드를 가진 티켓이 존재하지 않습니다."),
+    TICKET_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "TICKET_4090", "이미 담당자가 할당된 상태입니다."),
     TICKET_ALREADY_ASSIGNED_TO_SELF(HttpStatus.CONFLICT, "TICKET_4091", "이미 본인이 담당자로 할당된 상태입니다."),
 
     // 댓글 서비스 예외
@@ -62,11 +62,13 @@ public enum ErrorCode {
     // 카테고리 서비스 예외
     CATEGORY_NAME_MISSING(HttpStatus.BAD_REQUEST, "CATEGORY_4000", "카테고리 이름이 누락되었습니다."),
     INVALID_CATEGORY_NAME_FORMAT(HttpStatus.BAD_REQUEST, "CATEGORY_4001", "카테고리 이름 형식이 올바르지 않습니다."),
+    INVALID_ALIAS_FORMAT(HttpStatus.BAD_REQUEST,"CATEGORY_4002", "약어 형식이 올바르지 않습니다."),
     CATEGORY_NOT_FOUND_FIRST(HttpStatus.NOT_FOUND, "CATEGORY_4040", "존재하지 않는 1차 카테고리입니다."),
     CATEGORY_NOT_FOUND_SECOND(HttpStatus.NOT_FOUND, "CATEGORY_4041", "존재하지 않는 2차 카테고리입니다."),
     DUPLICATE_CATEGORY_FIRST(HttpStatus.CONFLICT, "CATEGORY_4090", "동일한 이름의 1차 카테고리가 이미 존재합니다."),
     DUPLICATE_CATEGORY_SECOND(HttpStatus.CONFLICT, "CATEGORY_4091", "동일한 이름의 2차 카테고리가 이미 존재합니다."),
     CATEGORY_HAS_SUBCATEGORIES(HttpStatus.CONFLICT, "CATEGORY_4092", "1차 카테고리에 속한 2차 카테고리가 존재하여 삭제할 수 없습니다."),
+    DUPLICATE_ALIAS(HttpStatus.CONFLICT,"CATEGORY_4093", "동일한 이름의 약어가 존재합니다."),
 
     // 통계 서비스 예외
     STATS_MISSING_DATE(HttpStatus.BAD_REQUEST, "STATS_4000", "시작 날짜 또는 종료 날짜가 누락되었습니다."),

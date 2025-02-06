@@ -24,4 +24,9 @@ public interface TemplateAttachmentRepository extends JpaRepository<TemplateAtta
             "JOIN FETCH ta.attachment a " +
             "WHERE ta.template = :template")
     List<TemplateAttachment> findAllByTemplateJoinFetch(@Param("template") Template template);
+
+    @Query("SELECT ta FROM TemplateAttachment ta " +
+            "JOIN FETCH ta.attachment a " +
+            "WHERE ta.template.id in :templateIds")
+    List<TemplateAttachment> findAllByTemplatesJoinFetch(@Param("templateIds") List<Long> templateIds);
 }

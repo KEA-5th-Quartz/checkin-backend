@@ -5,6 +5,7 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.converter.TicketResponseConverter;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
+import com.quartz.checkin.dto.ticket.response.TicketProgressResponse;
 import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Priority;
@@ -95,6 +96,39 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         Page<Ticket> ticketPage = ticketRepository.searchMyTickets(memberId, (keyword != null && !keyword.isBlank()) ? keyword : null, pageable);
         return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
+
+    @Override
+    public TicketProgressResponse getManagerProgress(Long memberId) {
+        List<Object[]> resultList = ticketRepository.getManagerTicketStatistics(memberId);
+
+        // 만약 결과가 비어있다면 기본값 반환
+        if (resultList.isEmpty()) {
+            return new TicketProgressResponse(0, 0, 0, 0, "0 / 0");
+        }
+
+        // Object 배열에서 각 값 추출
+        Object[] result = resultList.get(0);
+
+        int dueTodayCount = ((Number) result[0]).intValue();
+        int openTicketCount = ((Number) result[1]).intValue();
+        int inProgressTicketCount = ((Number) result[2]).intValue();
+        int closedTicketCount = ((Number) result[3]).intValue();
+        int totalTickets = ((Number) result[4]).intValue();
+
+        String progressExpression = totalTickets > 0
+                ? String.format("%d / %d", inProgressTicketCount + closedTicketCount, totalTickets)
+                : "0 / 0";
+
+        return new TicketProgressResponse(
+                dueTodayCount,
+                openTicketCount,
+                inProgressTicketCount,
+                closedTicketCount,
+                progressExpression
+        );
+    }
+
+
 
     private Page<Ticket> getTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                     List<String> categories, List<Priority> priorities,

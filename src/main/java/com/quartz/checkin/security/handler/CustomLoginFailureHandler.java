@@ -2,10 +2,12 @@ package com.quartz.checkin.security.handler;
 
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.ServletResponseUtils;
+import com.quartz.checkin.service.MemberAccessLogService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -15,7 +17,10 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
+
+    private final MemberAccessLogService memberAccessLogService;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
@@ -27,6 +32,10 @@ public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
         } else if (exception instanceof BadCredentialsException) {
             log.warn("비밀번호가 틀렸습니다.");
             //TODO 로그인 실패 횟수 카운트
+
+            String username = (String) request.getAttribute("username");
+            String clientIp = memberAccessLogService.getClientIp(request);
+            memberAccessLogService.writeWrongPasswordAccessLog(username, clientIp);
         }
 
         ServletResponseUtils.writeApiErrorResponse(response, ErrorCode.INVALID_USERNAME_OR_PASSWORD);

@@ -1,9 +1,7 @@
 package com.quartz.checkin.controller;
 
 import com.quartz.checkin.dto.category.request.FirstCategoryPatchRequest;
-import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.category.request.SecondCategoryPatchRequest;
-import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.security.CustomUser;
@@ -32,7 +30,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 40", description = "티켓 완료 처리")
     @PatchMapping("/{ticketId}/close")
     public ApiResponse<TicketLogResponse> closeTicket(
-            @PathVariable String ticketId,
+            @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user) {
         TicketLogResponse response = ticketLogService.closeTicket(user.getId(), ticketId);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
@@ -42,7 +40,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 41", description = "1차 카테고리 수정")
     @PatchMapping("/{ticketId}/category")
     public ApiResponse<TicketLogResponse> updateFirstCategory(
-            @PathVariable String ticketId,
+            @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid FirstCategoryPatchRequest request) {
 
@@ -54,7 +52,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 42", description = "2차 카테고리 수정")
     @PatchMapping("/{ticketId}/category/{firstCategoryId}")
     public ApiResponse<TicketLogResponse> updateSecondCategory(
-            @PathVariable String ticketId,
+            @PathVariable Long ticketId,
             @PathVariable Long firstCategoryId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid SecondCategoryPatchRequest request) {
@@ -67,7 +65,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 43", description = "담당자 변경")
     @PatchMapping("/{ticketId}/reassign")
     public ApiResponse<TicketLogResponse> reassignManager(
-            @PathVariable String ticketId,
+            @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody Map<String, String> request) {
 
@@ -79,7 +77,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 39", description = "담당자 할당")
     @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> assignManager(
-            @PathVariable String ticketId,
+            @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user
     ) {
         TicketLogResponse response = ticketLogService.assignManager(user.getId(), ticketId);

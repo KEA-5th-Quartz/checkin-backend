@@ -44,7 +44,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     // 담당자 배정
     @Override
-    public TicketLogResponse assignManager(Long memberId, String ticketId) {
+    public TicketLogResponse assignManager(Long memberId, Long ticketId) {
 
         // 티켓 & 담당자 조회
         Member manager = getValidMember(memberId);
@@ -72,7 +72,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         ticketLogRepository.save(ticketLog);
 
-        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getAgitId(), 1));
+        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), 1));
 
         List<String> assigneesForInProgress = new ArrayList<>();
 
@@ -99,7 +99,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     // 티켓 상태 변경: 진행 중 → 완료
     @Override
-    public TicketLogResponse closeTicket(Long memberId, String ticketId) {
+    public TicketLogResponse closeTicket(Long memberId, Long ticketId) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -130,14 +130,14 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         ticketLogRepository.save(ticketLog);
 
-        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getAgitId(), 2));
+        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), 2));
 
         return new TicketLogResponse(ticketLog);
     }
 
     // 1차 카테고리 변경
     @Override
-    public TicketLogResponse updateFirstCategory(Long memberId, String ticketId, FirstCategoryPatchRequest request) {
+    public TicketLogResponse updateFirstCategory(Long memberId, Long ticketId, FirstCategoryPatchRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -183,14 +183,14 @@ public class TicketLogServiceImpl implements TicketLogService {
         ticketLogRepository.save(ticketLog);
 
         eventPublisher.publishEvent(
-                new TicketCategoryChangedEvent(ticket.getId(), ticket.getAgitId(), memberId, oldFirstCategory, newFirstCategory.getName(), logContent)
+                new TicketCategoryChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), memberId, oldFirstCategory, newFirstCategory.getName(), logContent)
         );
 
         return new TicketLogResponse(ticketLog);
     }
 
     @Override
-    public TicketLogResponse updateSecondCategory(Long memberId, String ticketId, Long firstCategoryId, SecondCategoryPatchRequest request) {
+    public TicketLogResponse updateSecondCategory(Long memberId, Long ticketId, Long firstCategoryId, SecondCategoryPatchRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -238,7 +238,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         ticketLogRepository.save(ticketLog);
 
-        eventPublisher.publishEvent(new TicketCategoryChangedEvent(ticket.getId(), ticket.getAgitId(), memberId, oldSecondCategory, newSecondCategory.getName(), logContent));
+        eventPublisher.publishEvent(new TicketCategoryChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), memberId, oldSecondCategory, newSecondCategory.getName(), logContent));
 
 
         return new TicketLogResponse(ticketLog);
@@ -246,7 +246,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     @Transactional
     @Override
-    public TicketLogResponse reassignManager(Long memberId, String ticketId, String newManagerUsername) {
+    public TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername) {
         // 티켓 & 기존 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
         Member currentManager = ticket.getManager();
@@ -280,9 +280,7 @@ public class TicketLogServiceImpl implements TicketLogService {
             assigneesForInProgress.add(ticket.getUser().getUsername());
         }
 
-        if (newManager != null) {
-            assigneesForInProgress.add(newManager.getUsername());
-        }
+        assigneesForInProgress.add(newManager.getUsername());
 
         eventPublisher.publishEvent(new TicketAssigneeChangedEvent(
                 ticket.getAgitId(),
@@ -296,7 +294,7 @@ public class TicketLogServiceImpl implements TicketLogService {
     }
 
     // 특정 티켓 조회
-    private Ticket getValidTicket(String ticketId) {
+    private Ticket getValidTicket(Long ticketId) {
         return ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
     }

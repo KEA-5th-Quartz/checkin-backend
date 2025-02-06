@@ -28,5 +28,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     boolean existsByNameAndParentAndIdNot(String name, Category parent, Long id);
     boolean existsByParent(Category parent);
     boolean existsByNameAndParent(String name, Category parent);
+    List<Category> findByParentId(Long parentId);
 }
 

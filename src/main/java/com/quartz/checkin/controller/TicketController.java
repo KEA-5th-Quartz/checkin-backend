@@ -186,23 +186,7 @@ public class TicketController {
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
-    // @User
-    @GetMapping("/trash")
-    public ResponseEntity<SoftDeletedTicketResponse> getSoftDeletedTickets(Pageable pageable) {
-        SoftDeletedTicketResponse response = ticketCudService.getSoftDeletedTickets(pageable);
-        return ResponseEntity.ok(response);
-    }
 
-
-    @Manager
-    @DeleteMapping("/permanent")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void permanentlyDeleteTickets(
-            @AuthenticationPrincipal Long memberId,
-            @RequestBody @Valid PermanentlyDeleteTicketsRequest request
-    ) {
-        ticketCudService.permanentlyDeleteTickets(memberId, request.getTicketIds());
-    }
 
 
 

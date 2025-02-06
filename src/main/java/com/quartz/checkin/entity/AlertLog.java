@@ -1,11 +1,15 @@
 package com.quartz.checkin.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "alert_log")
@@ -20,7 +24,7 @@ public class AlertLog {
     private Long memberId;
     private String type;
     private String relatedTable;
-    private Long relatedId;
+    private String relatedId;
     private String status;
     private LocalDateTime createdAt;
 

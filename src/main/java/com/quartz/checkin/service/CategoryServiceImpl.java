@@ -234,5 +234,4 @@ public class CategoryServiceImpl implements CategoryService {
             default -> throw new ApiException(ErrorCode.INVALID_ALIAS_FORMAT);
         };
     }
-
 }

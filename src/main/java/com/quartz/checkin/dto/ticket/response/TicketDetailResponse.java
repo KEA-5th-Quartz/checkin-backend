@@ -19,7 +19,7 @@ import lombok.Setter;
 @Builder
 public class TicketDetailResponse {
 
-    private Long ticketId;
+    private String ticketId;
     private String title;
     private String firstCategory;
     private String secondCategory;

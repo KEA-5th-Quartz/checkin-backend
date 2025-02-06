@@ -4,6 +4,7 @@ import com.quartz.checkin.common.ServletRequestUtils;
 import com.quartz.checkin.common.cache.LoginFailureInfo;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.ServletResponseUtils;
+import com.quartz.checkin.service.LoginBlockCacheService;
 import com.quartz.checkin.service.LoginFailureCacheService;
 import com.quartz.checkin.service.MemberAccessLogService;
 import jakarta.servlet.ServletException;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
 
     private final MemberAccessLogService memberAccessLogService;
+    private final LoginBlockCacheService loginBlockCacheService;
     private final LoginFailureCacheService loginFailureCacheService;
 
     @Override
@@ -44,8 +46,12 @@ public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
             LoginFailureInfo loginFailureInfo = loginFailureCacheService.getLoginFailureInfo(key);
 
             if (loginFailureInfo.getCount() == 5) {
-                log.error("사용자 로그인 잠금 필요");
                 loginFailureCacheService.evictLoginFailureInfo(key);
+
+
+                log.error("{}를 잠금", key);
+                loginBlockCacheService.block(key);
+
             }
         }
 

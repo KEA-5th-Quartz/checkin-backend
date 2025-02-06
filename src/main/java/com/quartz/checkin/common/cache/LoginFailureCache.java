@@ -28,7 +28,7 @@ public class LoginFailureCache extends ConcurrentMapCache {
     public void evict(Object key) {
         String k = (String) key;
         cache.remove(k);
-        log.info("로그인 실패 캐사 키({}) 초기화", k);
+        log.info("로그인 실패 캐시 키({}) 초기화", k);
     }
 
     @Override

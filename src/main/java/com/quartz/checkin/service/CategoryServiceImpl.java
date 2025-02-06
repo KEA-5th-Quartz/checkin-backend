@@ -16,16 +16,19 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
-    @Transactional(readOnly = true)
+
+    @Override
     public List<CategoryResponse> getAllCategories(Long memberId) {
         List<Object[]> result = categoryRepository.findAllCategoriesWithSecondCategories();
         Map<Long, CategoryResponse> categoryMap = new LinkedHashMap<>();
@@ -55,7 +58,7 @@ public class CategoryServiceImpl implements CategoryService {
         return new ArrayList<>(categoryMap.values());
     }
 
-    @Transactional
+    @Override
     public FirstCategoryCreateResponse createFirstCategory(Long memberId, FirstCategoryCreateRequest request) {
         checkDuplicateFirstCategory(request.getName(), null);
         checkDuplicateAlias(request.getAlias(), null);
@@ -70,7 +73,8 @@ public class CategoryServiceImpl implements CategoryService {
         return new FirstCategoryCreateResponse(firstCategory.getId());
     }
 
-    @Transactional
+
+    @Override
     public void updateFirstCategory(Long memberId, Long firstCategoryId, FirstCategoryUpdateRequest request) {
         Category firstCategory = getValidFirstCategory(firstCategoryId);
 
@@ -79,15 +83,16 @@ public class CategoryServiceImpl implements CategoryService {
             checkDuplicateFirstCategory(request.getName(), firstCategoryId);
         }
 
-        // 본인의 기존 약어와 다를 경우에만 중복 검사 수행
-        if (!firstCategory.getAlias().equals(request.getAlias())) {
+        if (request.getAlias() != null && !request.getAlias().equals(firstCategory.getAlias())) {
             checkDuplicateAlias(request.getAlias(), firstCategoryId);
         }
 
-        firstCategory.updateCategory(request.getName(), request.getAlias(), request.getContentGuide());
+        String formattedAlias = formatAlias(request.getAlias());
+
+        firstCategory.updateCategory(request.getName(), formattedAlias, request.getContentGuide());
     }
 
-    @Transactional
+    @Override
     public void deleteFirstCategory(Long memberId, Long firstCategoryId) {
         Category firstCategory = getValidFirstCategory(firstCategoryId);
 
@@ -98,10 +103,11 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.delete(firstCategory);
     }
 
-    @Transactional
+    @Override
     public SecondCategoryCreateResponse createSecondCategory(Long memberId, Long firstCategoryId, SecondCategoryCreateRequest request) {
         Category firstCategory = getValidFirstCategory(firstCategoryId);
         checkDuplicateSecondCategory(request.getName(), firstCategory, null);
+
 
         Category secondCategory = new Category(firstCategory, request.getName(), null, null);
         categoryRepository.save(secondCategory);
@@ -109,7 +115,7 @@ public class CategoryServiceImpl implements CategoryService {
         return new SecondCategoryCreateResponse(secondCategory.getId());
     }
 
-    @Transactional
+    @Override
     public void updateSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId, SecondCategoryUpdateRequest request) {
         Category secondCategory = getValidSecondCategory(firstCategoryId, secondCategoryId);
 
@@ -121,7 +127,7 @@ public class CategoryServiceImpl implements CategoryService {
         secondCategory.updateCategory(request.getSecondCategory(), null, null);
     }
 
-    @Transactional
+    @Override
     public void deleteSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId) {
         Category secondCategory = getValidSecondCategory(firstCategoryId, secondCategoryId);
         categoryRepository.delete(secondCategory);
@@ -151,20 +157,37 @@ public class CategoryServiceImpl implements CategoryService {
         return secondCategory;
     }
 
-    // 중복된 1차 카테고리 확인 (자기 자신 제외)
     private void checkDuplicateFirstCategory(String name, Long excludeId) {
-        if (categoryRepository.existsByNameAndParentIsNullAndIdNot(name, excludeId)) {
+        boolean exists = Optional.ofNullable(excludeId)
+                .map(id -> categoryRepository.existsByNameAndParentIsNullAndIdNot(name, id))
+                .orElse(categoryRepository.existsByNameAndParentIsNull(name));
+
+        if (exists) {
             throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_FIRST);
         }
     }
 
-    // 중복된 2차 카테고리 확인 (자기 자신 제외)
-    private void checkDuplicateSecondCategory(String name, Category parent, Long excludeId) {
-        if (categoryRepository.existsByNameAndParentAndIdNot(name, parent, excludeId)) {
-            throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_SECOND);
+    private void checkDuplicateAlias(String alias, Long excludeId) {
+        boolean exists = Optional.ofNullable(excludeId)
+                .map(id -> categoryRepository.existsByAliasAndIdNot(alias, id))
+                .orElse(categoryRepository.existsByAlias(alias));
+
+        if (exists) {
+            throw new ApiException(ErrorCode.DUPLICATE_ALIAS);
         }
     }
 
+
+    // 중복된 2차 카테고리 확인 (자기 자신 제외)
+    private void checkDuplicateSecondCategory(String name, Category parent, Long excludeId) {
+        boolean exists = (excludeId == null)
+                ? categoryRepository.existsByNameAndParent(name, parent)
+                : categoryRepository.existsByNameAndParentAndIdNot(name, parent, excludeId);
+
+        if (exists) {
+            throw new ApiException(ErrorCode.DUPLICATE_CATEGORY_SECOND);
+        }
+    }
     public Category getFirstCategoryOrThrow(String firstCategory) {
         return categoryRepository.findByNameAndParentIsNull(firstCategory)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
@@ -175,23 +198,17 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
     }
 
-    // 중복된 Alias 확인 (자기 자신 제외)
-    private void checkDuplicateAlias(String alias, Long excludeId) {
-        if (categoryRepository.existsByAliasAndIdNot(alias, excludeId)) {
-            throw new ApiException(ErrorCode.DUPLICATE_ALIAS);
-        }
-    }
-
     private String formatAlias(String alias) {
-        if (alias.length() == 2) {
-            return alias + "__";
-        } else if (alias.length() == 3) {
-            return alias + "_";
-        } else if (alias.length() == 4) {
-            return alias;  // 4글자는 그대로 사용
-        } else {
+        if (alias == null || alias.isBlank()) {
             throw new ApiException(ErrorCode.INVALID_ALIAS_FORMAT);
         }
+
+        return switch (alias.length()) {
+            case 2 -> alias + "__";
+            case 3 -> alias + "_";
+            case 4 -> alias;
+            default -> throw new ApiException(ErrorCode.INVALID_ALIAS_FORMAT);
+        };
     }
 
 }

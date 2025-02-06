@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class ManagerTicketSummaryResponse {
-    private Long ticketId;
+    private String ticketId;
     private String title;
     private String firstCategory;
     private String secondCategory;

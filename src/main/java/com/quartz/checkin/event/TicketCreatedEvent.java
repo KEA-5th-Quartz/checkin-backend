@@ -5,8 +5,10 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class TicketStatusChangedEvent {
-    private final String ticketId;
+public class TicketCreatedEvent {
+    private String ticketId;
+    private Long userId;
     private Long agitId;
-    private final int status;
+    private String title;
 }
+

@@ -5,7 +5,6 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
-import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
@@ -14,20 +13,18 @@ import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
-import com.quartz.checkin.event.NotificationEvent;
+import com.quartz.checkin.event.TicketCreatedEvent;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
-
-
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class TicketCudServiceImpl implements TicketCudService {
 
+    private final AttachmentService attachmentService;
     private final AttachmentRepository attachmentRepository;
     private final TicketRepository ticketRepository;
     private final CategoryServiceImpl categoryService;
@@ -57,6 +55,20 @@ public class TicketCudServiceImpl implements TicketCudService {
         // 2차 카테고리 조회 (해당 1차 카테고리의 자식 카테고리)
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
 
+        // 날짜 기반 prefix 생성 (MMDD + 1차 카테고리 alias + "-" + 2차 카테고리 alias)
+        String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("MMdd"));
+        String firstCategoryAlias = firstCategory.getAlias();
+        String secondCategoryAlias = secondCategory.getAlias();
+        String prefix = datePart + firstCategoryAlias + "-" + secondCategoryAlias;
+
+        // 기존 티켓 중 오늘 날짜에 해당하는 마지막 티켓 ID 조회
+        String lastTicketId = ticketRepository.findLastTicketId(prefix);
+        int lastTicketNumber = (lastTicketId != null && lastTicketId.startsWith(prefix))
+                ? Integer.parseInt(lastTicketId.substring(lastTicketId.length() - 3)) + 1
+                : 1; // 날짜가 바뀌면 1로 초기화
+
+        String newTicketId = prefix + String.format("%03d", lastTicketNumber);
+
         // 첨부파일 검증
         List<Long> attachmentIds = request.getAttachmentIds();
         List<Attachment> attachments = attachmentRepository.findAllById(attachmentIds);
@@ -75,6 +87,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
+                .id(newTicketId) // 수정된 티켓 ID 적용
                 .user(member)
                 .firstCategory(firstCategory)
                 .secondCategory(secondCategory)
@@ -85,6 +98,7 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .dueDate(request.getDueDate())
                 .agitId(agitId)
                 .build();
+
         Ticket savedTicket = ticketRepository.save(ticket);
 
         List<TicketAttachment> ticketAttachments = new ArrayList<>();
@@ -94,24 +108,19 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         ticketAttachmentRepository.saveAll(ticketAttachments);
 
-        // 티켓 생성 이벤트 발행
-        eventPublisher.publishEvent(new NotificationEvent(
-                ticket.getId(), // relatedId
-                "TICKET_CREATED", // type
-                "ticket", // relatedTable
-                ticket.getUser().getId(), // memberId
-                ticket.getUser().getId(), // userId
-                ticket.getManager() != null ? ticket.getManager().getId() : null,
-                null,
-                ticket.getAgitId(), // agitId
-                "새로운 티켓이 생성되었습니다."
+        eventPublisher.publishEvent(new TicketCreatedEvent(
+                savedTicket.getId(),
+                savedTicket.getUser().getId(),
+                savedTicket.getAgitId(),
+                savedTicket.getTitle()
         ));
 
-        return new TicketCreateResponse(ticket.getId());
+        return new TicketCreateResponse(savedTicket.getId());
     }
 
+
     @Override
-    public void updateTicket(Long memberId, TicketUpdateRequest request, Long ticketId) {
+    public void updateTicket(Long memberId, TicketUpdateRequest request, String ticketId) {
         // 티켓 조회 및 존재 여부 검증
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
@@ -173,7 +182,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
             if (!finalAttachmentsToDelete.isEmpty()) {
                 // 사용되지 않는 첨부파일 삭제
-                attachmentRepository.deleteAllByIdInBatch(finalAttachmentsToDelete);
+                attachmentService.deleteAttachments(finalAttachmentsToDelete);
             }
         }
         // 티켓 필드 업데이트
@@ -186,7 +195,7 @@ public class TicketCudServiceImpl implements TicketCudService {
     }
 
     @Override
-    public void deleteTickets(Long memberId, List<Long> ticketIds) {
+    public void deleteTickets(Long memberId, List<String> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
@@ -199,7 +208,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         }
 
         // 진행 중인(IN_PROGRESS) 티켓이 포함되어 있는지 확인
-        List<Long> inProgressTickets = tickets.stream()
+        List<String> inProgressTickets = tickets.stream()
                 .filter(ticket -> ticket.getStatus() == Status.IN_PROGRESS)
                 .map(Ticket::getId)
                 .toList();
@@ -220,8 +229,8 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         // 첨부파일 영구 삭제
         if (!attachmentIds.isEmpty()) {
-            ticketAttachmentRepository.deleteAllByIdInBatch(ticketIds); // 연결 데이터 삭제
-            attachmentRepository.deleteAllById(attachmentIds); // 첨부파일 삭제
+            ticketAttachmentRepository.deleteAllByTicketIds(ticketIds); // 연결 데이터 삭제
+            attachmentService.deleteAttachments(attachmentIds); // 첨부파일 삭제
         }
 
         // 티켓 소프트 삭제
@@ -230,7 +239,7 @@ public class TicketCudServiceImpl implements TicketCudService {
     }
 
     @Override
-    public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
+    public void updatePriority(Long memberId, String ticketId, PriorityUpdateRequest request) {
         // 담당자 검증
         Member manager = memberService.getMemberByIdOrThrow(memberId);
 
@@ -245,7 +254,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         ticketRepository.save(ticket);
     }
 
-    private Ticket getValidTicket(Long ticketId) {
+    private Ticket getValidTicket(String ticketId) {
         return ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
     }
@@ -264,73 +273,4 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
         }
     }
-
-    @Override
-    public SoftDeletedTicketResponse getSoftDeletedTickets(Pageable pageable) {
-        // soft delete된 티켓 조회
-        Page<Ticket> softDeletedTickets = ticketRepository.findAllSoftDeleted(pageable);
-
-        // 응답 DTO로 변환
-        List<SoftDeletedTicketResponse.TicketDetail> ticketDetails = softDeletedTickets.stream()
-                .map(ticket -> {
-                    SoftDeletedTicketResponse.TicketDetail detail = new SoftDeletedTicketResponse.TicketDetail();
-                    detail.setTicketId(ticket.getId());
-                    detail.setTitle(ticket.getTitle());
-                    detail.setFirstCategory(ticket.getFirstCategory().getName());
-                    detail.setSecondCategory(ticket.getSecondCategory().getName());
-                    detail.setManager(ticket.getManager() != null ? ticket.getManager().getUsername() : null);
-                    detail.setManagerProfilePic(ticket.getManager() != null ? ticket.getManager().getProfilePic() : null);
-                    detail.setContent(ticket.getContent());
-                    detail.setDueDate(ticket.getDueDate().toString());
-                    detail.setPriority(ticket.getPriority().name());
-                    detail.setStatus(ticket.getStatus().name());
-                    return detail;
-                })
-                .toList();
-
-        // 응답 객체 생성
-        SoftDeletedTicketResponse response = new SoftDeletedTicketResponse();
-        response.setPage(softDeletedTickets.getNumber() + 1);
-        response.setSize(softDeletedTickets.getSize());
-        response.setTotalPages(softDeletedTickets.getTotalPages());
-        response.setTotalElements(softDeletedTickets.getTotalElements());
-        response.setTickets(ticketDetails);
-
-        return response;
-    }
-
-
-    public void permanentlyDeleteTickets(Long memberId, List<Long> ticketIds) {
-        // 1. 사용자 조회
-        Member member = memberService.getMemberByIdOrThrow(memberId);
-
-        // 2. 소프트 삭제된 티켓만 조회 (t.deletedAt IS NOT NULL)
-        List<Ticket> tickets = ticketRepository.findAllByIdAndDeletedAtIsNotNull(ticketIds);
-
-        // 3. 조회된 티켓 수 검증
-        if (tickets.size() != ticketIds.size()) {
-            throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
-        }
-
-        // 4. 소유자 검증
-        tickets.forEach(ticket -> {
-            if (!ticket.getUser().getId().equals(member.getId())) {
-                throw new ApiException(ErrorCode.UNAUTHENTICATED);
-            }
-        });
-
-        // 5. 첨부파일 및 연결 관계 삭제
-        List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
-        if (!attachmentIds.isEmpty()) {
-            ticketAttachmentRepository.deleteAllByTicketIds(ticketIds); // 연결 제거
-            attachmentRepository.deleteAllById(attachmentIds); // 파일 영구 삭제
-        }
-
-        // 6. 티켓 영구 삭제 (하드 딜리트)
-        ticketRepository.deleteAllInBatch(tickets);
-
-    }
-
-
-
 }

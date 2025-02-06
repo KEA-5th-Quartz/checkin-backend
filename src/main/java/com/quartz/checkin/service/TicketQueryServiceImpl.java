@@ -38,7 +38,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
 
     @Transactional(readOnly = true)
     @Override
-    public TicketDetailResponse getTicketDetail(Long memberId, Long ticketId) {
+    public TicketDetailResponse getTicketDetail(Long memberId, String ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
 

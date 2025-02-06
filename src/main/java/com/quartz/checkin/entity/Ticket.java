@@ -6,8 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -18,6 +16,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
@@ -25,9 +24,8 @@ import lombok.NoArgsConstructor;
 public class Ticket extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ticket_id")
-    private Long id;
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
@@ -74,8 +72,9 @@ public class Ticket extends BaseEntity {
     private List<TicketAttachment> attachments;
 
     @Builder
-    public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
+    public Ticket(String id, Member user, Category firstCategory, Category secondCategory, String title, String content,
                   Priority priority,Status status, LocalDate dueDate, Long agitId) {
+        this.id = id;
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;
@@ -84,6 +83,13 @@ public class Ticket extends BaseEntity {
         this.priority = priority;
         this.status = status;
         this.dueDate = dueDate;
+        this.agitId = agitId;
+    }
+
+    public void linkToAgit(Long agitId) {
+        if (this.agitId != null) {
+            throw new IllegalStateException("아지트 ID는 이미 설정되어 있습니다.");
+        }
         this.agitId = agitId;
     }
 

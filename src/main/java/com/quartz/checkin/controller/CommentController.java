@@ -40,7 +40,7 @@ public class CommentController {
     @PostMapping("/{ticketId}/comments")
     public ApiResponse<CommentResponse> writeComment(
             @AuthenticationPrincipal CustomUser customUser,
-            @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId,
+            @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") String ticketId,
             @Valid @RequestBody TicketCommentRequest request) {
         return ApiResponse.createSuccessResponseWithData(200, commentService.writeComment(customUser, ticketId,
                 request.getContent()));
@@ -49,7 +49,7 @@ public class CommentController {
     @Operation(summary = "API 명세서 v0.3 line 47", description = "티켓의 로그와 댓글 전체 조회")
     @GetMapping("/{ticketId}/comments")
     public ApiResponse<TicketActivityResponse> getCommentsAndLogs(
-            @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId) {
+            @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") String ticketId) {
         return ApiResponse.createSuccessResponseWithData(200, commentService.getCommentsAndLogs(ticketId));
     }
 
@@ -58,7 +58,7 @@ public class CommentController {
     @PutMapping("/{ticketId}/comments/{commentId}/likes")
     public ApiResponse<CommentLikeResponse> toggleLike(
             @AuthenticationPrincipal CustomUser user,
-            @PathVariable("ticketId") Long ticketId,
+            @PathVariable("ticketId") String ticketId,
             @PathVariable("commentId") Long commentId) {
 
         CommentLikeResponse response = commentService.toggleLike(user, ticketId, commentId);
@@ -68,7 +68,7 @@ public class CommentController {
     @Operation(summary = "API 명세서 v0.3 line 49", description = "특정 댓글에 좋아요 누른 멤버 조회")
     @GetMapping("/{ticketId}/comments/{commentId}/likes")
     public ApiResponse<CommentLikeListResponse> getLikingMembersList(
-            @PathVariable("ticketId") Long ticketId,
+            @PathVariable("ticketId") String ticketId,
             @PathVariable("commentId") Long commentId) {
 
         CommentLikeListResponse response = commentService.getLikingMembersList(ticketId, commentId);
@@ -80,7 +80,7 @@ public class CommentController {
     @PostMapping("/{ticketId}/comments/attachment")
     public ApiResponse<CommentAttachmentResponse> uploadCommentAttachment(
             @AuthenticationPrincipal CustomUser user,
-            @PathVariable("ticketId") Long ticketId,
+            @PathVariable("ticketId") String ticketId,
             @RequestParam("file") MultipartFile file) {
 
         CommentAttachmentResponse response = commentService.uploadCommentAttachment(user, ticketId, file);

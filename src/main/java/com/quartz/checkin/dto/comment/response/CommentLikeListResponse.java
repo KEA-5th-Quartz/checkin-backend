@@ -9,7 +9,7 @@ import lombok.Getter;
 @Builder
 @JsonPropertyOrder({"ticketId", "commentId", "totalLikes", "likes"})
 public class CommentLikeListResponse {
-    private Long ticketId;
+    private String ticketId;
 
     private Long commentId;
 

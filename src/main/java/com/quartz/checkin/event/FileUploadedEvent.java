@@ -1,13 +1,12 @@
 package com.quartz.checkin.event;
 
-import com.quartz.checkin.entity.Comment;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Getter
 @AllArgsConstructor
-public class CommentAddedEvent {
+public class FileUploadedEvent {
     private String ticketId;
     private Long agitId;
-    private Comment comment;
+    private String username;
 }

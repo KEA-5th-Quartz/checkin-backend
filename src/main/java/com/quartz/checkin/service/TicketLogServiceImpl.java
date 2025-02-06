@@ -226,22 +226,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     @Transactional
     @Override
-    public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
-        // 티켓 & 담당자 조회
-        Ticket ticket = getValidTicket(ticketId);
-        Member manager = getValidMember(memberId);
-
-        // 예외 검증 (담당자 본인인지 확인)
-        validateTicketForUpdate(ticket, manager, false, false, false);
-
-        // 중요도 변경
-        ticket.updatePriority(request.getPriority());
-        ticketRepository.save(ticket);
-    }
-
-    @Transactional
-    @Override
-    public TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername) {
+    public TicketLogResponse reassignManager(Long memberId, String ticketId, String newManagerUsername) {
         // 티켓 & 기존 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
         Member currentManager = ticket.getManager();

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.dto.statisitics.response.StatCategoryCountResponse;
 import com.quartz.checkin.dto.statisitics.response.StatCategoryRateResponse;
-import com.quartz.checkin.dto.statisitics.response.StatDueTodayResponse;
 import com.quartz.checkin.dto.statisitics.response.StatTotalProgressResponse;
 import com.quartz.checkin.repository.StatsMemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,19 +26,6 @@ public class StatsMemberService {
         this.objectMapper = objectMapper;
     }
 
-    public StatDueTodayResponse getTicketCountByManagerId(Long managerId) { // DTO 제거
-        List<Map<String, Object>> result = statsMemberRepository.findTicketCountByManagerId(managerId);
-
-        if (result.isEmpty()) {
-            return new StatDueTodayResponse("담당자 없음", 0);
-        }
-
-        Map<String, Object> data = result.get(0);
-        return new StatDueTodayResponse(
-                (String) data.get("userName"),
-                ((Number) data.get("ticketCount")).intValue()
-        );
-    }
 
     // 2. 카테고리별 진행률 조회
     public List<StatCategoryRateResponse> getStatsByCategory() {

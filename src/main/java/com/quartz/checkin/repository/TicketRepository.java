@@ -10,7 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // Todo: QueryDSL로 구현
 
@@ -80,5 +82,11 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     WHERE t.deletedAt IS NULL
 """)
     List<Object[]> getManagerTicketStatistics(@Param("managerId") Long managerId);
+
+    @Query("SELECT t FROM Ticket t WHERE t.deletedAt IS NOT NULL")
+    Page<Ticket> findAllSoftDeleted(Pageable pageable);
+
+    @Query("SELECT t FROM Ticket t WHERE t.id IN :ticketIds AND t.deletedAt IS NOT NULL")
+    List<Ticket> findAllByIdAndDeletedAtIsNotNull(@Param("ticketIds") List<Long> ticketIds);
 
 }

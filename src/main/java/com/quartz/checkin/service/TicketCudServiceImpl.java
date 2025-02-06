@@ -5,6 +5,7 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
+import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
@@ -17,12 +18,16 @@ import com.quartz.checkin.event.NotificationEvent;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
+
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -259,4 +264,73 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
         }
     }
+
+    @Override
+    public SoftDeletedTicketResponse getSoftDeletedTickets(Pageable pageable) {
+        // soft delete된 티켓 조회
+        Page<Ticket> softDeletedTickets = ticketRepository.findAllSoftDeleted(pageable);
+
+        // 응답 DTO로 변환
+        List<SoftDeletedTicketResponse.TicketDetail> ticketDetails = softDeletedTickets.stream()
+                .map(ticket -> {
+                    SoftDeletedTicketResponse.TicketDetail detail = new SoftDeletedTicketResponse.TicketDetail();
+                    detail.setTicketId(ticket.getId());
+                    detail.setTitle(ticket.getTitle());
+                    detail.setFirstCategory(ticket.getFirstCategory().getName());
+                    detail.setSecondCategory(ticket.getSecondCategory().getName());
+                    detail.setManager(ticket.getManager() != null ? ticket.getManager().getUsername() : null);
+                    detail.setManagerProfilePic(ticket.getManager() != null ? ticket.getManager().getProfilePic() : null);
+                    detail.setContent(ticket.getContent());
+                    detail.setDueDate(ticket.getDueDate().toString());
+                    detail.setPriority(ticket.getPriority().name());
+                    detail.setStatus(ticket.getStatus().name());
+                    return detail;
+                })
+                .toList();
+
+        // 응답 객체 생성
+        SoftDeletedTicketResponse response = new SoftDeletedTicketResponse();
+        response.setPage(softDeletedTickets.getNumber() + 1);
+        response.setSize(softDeletedTickets.getSize());
+        response.setTotalPages(softDeletedTickets.getTotalPages());
+        response.setTotalElements(softDeletedTickets.getTotalElements());
+        response.setTickets(ticketDetails);
+
+        return response;
+    }
+
+
+    public void permanentlyDeleteTickets(Long memberId, List<Long> ticketIds) {
+        // 1. 사용자 조회
+        Member member = memberService.getMemberByIdOrThrow(memberId);
+
+        // 2. 소프트 삭제된 티켓만 조회 (t.deletedAt IS NOT NULL)
+        List<Ticket> tickets = ticketRepository.findAllByIdAndDeletedAtIsNotNull(ticketIds);
+
+        // 3. 조회된 티켓 수 검증
+        if (tickets.size() != ticketIds.size()) {
+            throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
+        }
+
+        // 4. 소유자 검증
+        tickets.forEach(ticket -> {
+            if (!ticket.getUser().getId().equals(member.getId())) {
+                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+            }
+        });
+
+        // 5. 첨부파일 및 연결 관계 삭제
+        List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
+        if (!attachmentIds.isEmpty()) {
+            ticketAttachmentRepository.deleteAllByTicketIds(ticketIds); // 연결 제거
+            attachmentRepository.deleteAllById(attachmentIds); // 파일 영구 삭제
+        }
+
+        // 6. 티켓 영구 삭제 (하드 딜리트)
+        ticketRepository.deleteAllInBatch(tickets);
+
+    }
+
+
+
 }

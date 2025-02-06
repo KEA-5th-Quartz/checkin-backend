@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class CommentAddedEvent {
-    private Long ticketId;
+    private String ticketId;
     private Long agitId;
     private Comment comment;
 }

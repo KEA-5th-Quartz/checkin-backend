@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class TicketStatusChangedEvent {
-    private final Long ticketId;
+    private final String ticketId;
     private Long agitId;
     private final int status;
 }

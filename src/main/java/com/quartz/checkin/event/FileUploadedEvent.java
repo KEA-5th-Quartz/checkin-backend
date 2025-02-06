@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class FileUploadedEvent {
-    private Long ticketId;
+    private String ticketId;
     private Long agitId;
     private String username;
 }

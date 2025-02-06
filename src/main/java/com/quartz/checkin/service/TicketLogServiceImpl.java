@@ -5,16 +5,15 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
-import com.quartz.checkin.entity.*;
-import com.quartz.checkin.event.TicketAssigneeChangedEvent;
-import com.quartz.checkin.event.TicketCategoryChangedEvent;
-import com.quartz.checkin.event.TicketStatusChangedEvent;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.LogType;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketLog;
+import com.quartz.checkin.event.TicketAssigneeChangedEvent;
+import com.quartz.checkin.event.TicketCategoryChangedEvent;
+import com.quartz.checkin.event.TicketStatusChangedEvent;
 import com.quartz.checkin.repository.CategoryRepository;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketLogRepository;
@@ -23,9 +22,9 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.stereotype.Service;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -36,6 +35,7 @@ public class TicketLogServiceImpl implements TicketLogService {
     private final TicketLogRepository ticketLogRepository;
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final WebhookService webhookService;
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',

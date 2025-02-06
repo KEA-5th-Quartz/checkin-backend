@@ -5,7 +5,7 @@ import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
-import com.quartz.checkin.dto.ticket.request.TicketDeleteRequest;
+import com.quartz.checkin.dto.ticket.request.TicketDeleteOrRestoreOrPurgeRequest;
 import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
@@ -20,6 +20,7 @@ import com.quartz.checkin.security.annotation.ManagerOrUser;
 import com.quartz.checkin.security.annotation.User;
 import com.quartz.checkin.service.AttachmentService;
 import com.quartz.checkin.service.TicketCudService;
+import com.quartz.checkin.service.TicketDeleteService;
 import com.quartz.checkin.service.TicketQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,6 +49,7 @@ public class TicketController {
     private final AttachmentService attachmentService;
     private final TicketCudService ticketCudService;
     private final TicketQueryService ticketQueryService;
+    private final TicketDeleteService ticketDeleteService;
 
     @User
     @Operation(summary = "API 명세서 v0.3 line 29", description = "티켓 생성")
@@ -88,7 +91,7 @@ public class TicketController {
     @Operation(summary = "API 명세서 V0.3 line 32", description = "사용자가 다중 티켓 삭제")
     public ApiResponse<Void> deleteMultipleTickets(
             @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid TicketDeleteRequest request) {
+            @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
 
         ticketCudService.deleteTickets(user.getId(), request.getTicketIds());
 
@@ -196,6 +199,30 @@ public class TicketController {
             @RequestBody @Valid PriorityUpdateRequest request) {
 
         ticketCudService.updatePriority(user.getId(), ticketId, request);
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @User
+    @Operation(summary = "API 명세서 v0.3 line 34", description = "사용자가 다중 티켓 복구")
+    @PatchMapping("/trash/restore")
+    public ApiResponse<Void> restoreTickets(
+            @AuthenticationPrincipal CustomUser user,
+            @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
+
+        ticketDeleteService.restoreTickets(user.getId(), request.getTicketIds());
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @User
+    @Operation(summary = "API 명세서 v0.3 line 35", description = "사용자가 다중 티켓 영구삭제")
+    @DeleteMapping
+    public ApiResponse<Void> purgeTickets(
+            @AuthenticationPrincipal CustomUser user,
+            @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
+
+        ticketDeleteService.purgeTickets(user.getId(), request.getTicketIds());
+
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 }

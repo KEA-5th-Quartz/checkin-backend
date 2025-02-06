@@ -21,9 +21,12 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
             + " ON c2.parent = c1 WHERE c1.parent IS NULL ORDER BY c1.id, c2.id ")
     List<Object[]> findAllCategoriesWithSecondCategories();
 
-    boolean existsByNameAndParentIsNullAndIdNot(String name, Long excludeId);
-    boolean existsByNameAndParentAndIdNot(String name, Category parent, Long excludeId);
+    boolean existsByNameAndParentIsNullAndIdNot(String name, Long id);
+    boolean existsByAliasAndIdNot(String alias, Long id);
+    boolean existsByNameAndParentIsNull(String name);
+    boolean existsByAlias(String alias);
+    boolean existsByNameAndParentAndIdNot(String name, Category parent, Long id);
     boolean existsByParent(Category parent);
-    boolean existsByAliasAndIdNot(String alias, Long excludeId);
+    boolean existsByNameAndParent(String name, Category parent);
 }
 

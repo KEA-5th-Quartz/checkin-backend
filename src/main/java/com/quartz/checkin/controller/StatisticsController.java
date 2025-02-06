@@ -4,7 +4,6 @@ import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.statisitics.request.StatClosedRateRequest;
 import com.quartz.checkin.dto.statisitics.request.StatProgressRequest;
 import com.quartz.checkin.dto.statisitics.response.*;
-import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.security.annotation.AdminOrManager;
 import com.quartz.checkin.security.annotation.Manager;
 import com.quartz.checkin.service.*;
@@ -18,12 +17,6 @@ import java.util.List;
 @RequestMapping("/stats")
 public class StatisticsController {
 
-    /*private final StatsTicketService statTotalProgressService;
-    private final StatsTicketService statProgressService;
-    private final StatsTicketService statClosedRateService;
-    private final StatsTicketService statCategoryTicketService;
-    private final StatsMemberService statCategoryRateService;
-    private final StatsMemberService statDueTodayService;*/
     private final StatsMemberService statsMemberService;
     private final StatsTicketService statsTicketService;
 
@@ -46,14 +39,15 @@ public class StatisticsController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
-    @Admin
+    @AdminOrManager
     @GetMapping("/status-rate")
-    public ApiResponse<StatTotalProgressResponse> getStatTotalProgress() {
-        StatTotalProgressResponse response = statsTicketService.getStatTotalProgress();
+    public ApiResponse<List<StatTotalProgressResponse>> getTotalProgress() {
+        List<StatTotalProgressResponse> response = statsMemberService.getStatTotalProgress();
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
-    @Admin
+
+    @AdminOrManager
     @GetMapping("/closed-rate")
     public ApiResponse<StatClosedRateResponse> getCompletionRate(@RequestBody StatClosedRateRequest request) {
         StatClosedRateResponse response = statsTicketService.getCompletionRate(request);

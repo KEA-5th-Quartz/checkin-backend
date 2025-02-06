@@ -30,7 +30,7 @@ public class StatsTicketService {
         this.objectMapper = objectMapper;
     }
 
-    public StatTotalProgressResponse getStatTotalProgress() {
+   /* public StatTotalProgressResponse getStatTotalProgress() {
         List<Object[]> result = statsTicketRepository.findStatTotalProgress();
         if (result.isEmpty()) return new StatTotalProgressResponse();
 
@@ -40,7 +40,7 @@ public class StatsTicketService {
 
         List<StatTotalProgressResponse.StatusCount> state = parseStateJson(stateJson);
         return new StatTotalProgressResponse(overdue, state);
-    }
+    }*/
 
     // 2. 유형별 진행률 조회
     public List<StatProgressResponse> getProgressRates(StatProgressRequest request) {
@@ -48,7 +48,7 @@ public class StatsTicketService {
         List<StatProgressResponse> response = new ArrayList<>();
 
         for (Map<String, Object> row : result) {
-            String username = (String) row.get("username");
+            String username = (String) row.get("userName");
             String stateJson = (String) row.get("state");
 
             try {
@@ -70,7 +70,7 @@ public class StatsTicketService {
         return new StatClosedRateResponse(closedRate.orElse(0.0));
     }
 
-    // 4. 카테고리별 티켓 통계 조회
+    // 4. 담당자의 카테고리별 티켓수
     public List<StatCategoryTicketResponse> getCategoryTicketStats() {
         return statsTicketRepository.findCategoryTicketStats().stream()
                 .map(result -> new StatCategoryTicketResponse(
@@ -80,12 +80,5 @@ public class StatsTicketService {
                 .collect(Collectors.toList());
     }
 
-    // JSON 파싱 유틸리티 메서드
-    private List<StatTotalProgressResponse.StatusCount> parseStateJson(String stateJson) {
-        try {
-            return objectMapper.readValue(stateJson, new TypeReference<>() {});
-        } catch (IOException e) {
-            throw new RuntimeException("JSON 파싱 실패", e);
-        }
-    }
+
 }

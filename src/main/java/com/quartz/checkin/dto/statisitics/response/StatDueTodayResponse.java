@@ -1,19 +1,15 @@
 package com.quartz.checkin.dto.statisitics.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
+@AllArgsConstructor
 public class StatDueTodayResponse {
-    // Getters and Setters
-    private String username;
-    private int ticketCount;
 
-    // Constructor
-    public StatDueTodayResponse(String username, int ticketCount) {
-        this.username = username;
-        this.ticketCount = ticketCount;
-    }
+    private String userName;
+    private int ticketCount;
 
 }

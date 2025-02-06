@@ -143,6 +143,10 @@ public class Ticket extends BaseEntity {
         this.content = content;
     }
 
+    public void updateCustomId(String customId) {
+        this.customId = customId;
+    }
+
     public void updateCategories(Category firstCategory, Category secondCategory) {
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;

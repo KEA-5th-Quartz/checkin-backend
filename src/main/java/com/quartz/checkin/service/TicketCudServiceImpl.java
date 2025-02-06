@@ -142,6 +142,29 @@ public class TicketCudServiceImpl implements TicketCudService {
         Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
 
+        // 기존 정보 저장
+        Category oldFirstCategory = ticket.getFirstCategory();
+        Category oldSecondCategory = ticket.getSecondCategory();
+
+        // 기존 createdAt을 기준으로 날짜 유지
+        String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
+
+        // **1차 카테고리 또는 2차 카테고리가 변경되었을 경우만 customId 변경**
+        if (!oldFirstCategory.equals(firstCategory) || !oldSecondCategory.equals(secondCategory)) {
+            String firstCategoryAlias = firstCategory.getAlias();
+            String secondCategoryAlias = secondCategory.getAlias();
+            String prefix = datePart + firstCategoryAlias + "-" + secondCategoryAlias;
+
+            // 기존 티켓 중 같은 날짜, 카테고리 조합의 마지막 ID 찾기
+            String lastCustomId = ticketRepository.findLastTicketId(prefix);
+            int lastTicketNumber = (lastCustomId != null && lastCustomId.startsWith(prefix))
+                    ? Integer.parseInt(lastCustomId.substring(lastCustomId.length() - 3)) + 1
+                    : 1;
+
+            String newCustomId = prefix + String.format("%03d", lastTicketNumber);
+            ticket.updateCustomId(newCustomId);
+        }
+
         // 첨부파일 검증 및 변경 사항 반영 (null 체크 추가)
         List<Long> newAttachmentIds = request.getAttachmentIds() != null ? request.getAttachmentIds() : Collections.emptyList();
         List<Attachment> newAttachments = newAttachmentIds.isEmpty() ? Collections.emptyList() : attachmentRepository.findAllById(newAttachmentIds);

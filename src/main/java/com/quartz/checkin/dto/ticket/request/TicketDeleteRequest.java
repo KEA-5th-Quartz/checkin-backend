@@ -8,6 +8,6 @@ import lombok.Getter;
 public class TicketDeleteRequest {
 
     @NotNull
-    private List<String> ticketIds;
+    private List<Long> ticketIds;
 }
 

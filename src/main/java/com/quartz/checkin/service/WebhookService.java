@@ -3,9 +3,9 @@ package com.quartz.checkin.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.repository.MemberRepository;
-import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
@@ -60,7 +60,7 @@ public class WebhookService {
         }
     }
 
-    public Long createAgitPost(String ticketId, String title, String content, List<String> assignees) {
+    public Long createAgitPost(Long ticketId, String title, String content, List<String> assignees) {
         // URL 중복 제거
         String url = webhookUrl + "/wall_messages";
 
@@ -241,8 +241,8 @@ public class WebhookService {
     }
 
     @Transactional
-    public void updateAgitIdInTicket(String ticketId, Long agitId) {
-        Ticket ticket = ticketRepository.findById(String.valueOf(ticketId))
+    public void updateAgitIdInTicket(Long ticketId, Long agitId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
 
         ticket.updateAgitId(agitId);

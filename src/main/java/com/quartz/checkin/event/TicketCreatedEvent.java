@@ -9,7 +9,8 @@ import lombok.Getter;
 @Data
 @AllArgsConstructor
 public class TicketCreatedEvent {
-    private String ticketId;
+    private Long id;
+    private String customId;
     private Long userId;
     private Long agitId;
     private String title;
@@ -17,8 +18,9 @@ public class TicketCreatedEvent {
     @Getter
     private final List<String> assignees;
 
-    public TicketCreatedEvent(String ticketId, Long userId, String title, String content, List<String> assignees) {
-        this.ticketId = ticketId;
+    public TicketCreatedEvent(Long id, String customId, Long userId, String title, String content, List<String> assignees) {
+        this.id = id;
+        this.customId = customId;
         this.userId = userId;
         this.title = title;
         this.content = content;

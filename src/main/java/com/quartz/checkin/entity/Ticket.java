@@ -93,6 +93,14 @@ public class Ticket extends BaseEntity {
         this.agitId = agitId;
     }
 
+    public void unlinkFromAgit() {
+        this.agitId = null;
+    }
+
+    public void updateAgitId(Long agitId) {
+        this.agitId = agitId;
+    }
+
     // 담당자 할당 메서드
     public void assignManager(Member manager) {
         this.manager = manager;

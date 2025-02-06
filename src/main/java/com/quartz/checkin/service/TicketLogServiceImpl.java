@@ -2,8 +2,8 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.request.FirstCategoryPatchRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryPatchRequest;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.LogType;
@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TicketLogServiceImpl implements TicketLogService {
 
     private final TicketRepository ticketRepository;
@@ -42,7 +43,6 @@ public class TicketLogServiceImpl implements TicketLogService {
             'A', 'E', 'I', 'O', 'U');
 
     // 담당자 배정
-    @Transactional
     @Override
     public TicketLogResponse assignManager(Long memberId, String ticketId) {
 
@@ -98,7 +98,6 @@ public class TicketLogServiceImpl implements TicketLogService {
     }
 
     // 티켓 상태 변경: 진행 중 → 완료
-    @Transactional
     @Override
     public TicketLogResponse closeTicket(Long memberId, String ticketId) {
 
@@ -138,7 +137,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     // 1차 카테고리 변경
     @Override
-    public TicketLogResponse updateFirstCategory(Long memberId, String ticketId, FirstCategoryUpdateRequest request) {
+    public TicketLogResponse updateFirstCategory(Long memberId, String ticketId, FirstCategoryPatchRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -149,7 +148,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 기존 카테고리 정보 저장
         String oldFirstCategory = ticket.getFirstCategory().getName();
-        Category newFirstCategory = categoryRepository.findByNameAndParentIsNull(request.getName())
+        Category newFirstCategory = categoryRepository.findByNameAndParentIsNull(request.getFirstCategory())
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
 
         List<Category> secondCategories = categoryRepository.findByParentOrderByIdAsc(newFirstCategory);
@@ -190,9 +189,8 @@ public class TicketLogServiceImpl implements TicketLogService {
         return new TicketLogResponse(ticketLog);
     }
 
-    @Transactional
     @Override
-    public TicketLogResponse updateSecondCategory(Long memberId, String ticketId, Long firstCategoryId, SecondCategoryUpdateRequest request) {
+    public TicketLogResponse updateSecondCategory(Long memberId, String ticketId, Long firstCategoryId, SecondCategoryPatchRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);

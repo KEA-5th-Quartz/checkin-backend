@@ -35,12 +35,20 @@ public class CategoryServiceImpl implements CategoryService {
             Category secondCategory = (Category) row[1];
 
             categoryMap.putIfAbsent(firstCategory.getId(),
-                    new CategoryResponse(firstCategory.getId(), firstCategory.getName(),
-                            firstCategory.getAlias(), firstCategory.getContentGuide(), new ArrayList<>()));
+                    new CategoryResponse(
+                            firstCategory.getId(),
+                            firstCategory.getName(),
+                            firstCategory.getAlias(),
+                            firstCategory.getContentGuide(),
+                            new ArrayList<>()
+                    ));
 
             if (secondCategory != null) {
                 categoryMap.get(firstCategory.getId()).getSecondCategories()
-                        .add(new SecondCategoryResponse(secondCategory.getId(), secondCategory.getName()));
+                        .add(new SecondCategoryResponse(
+                                secondCategory.getId(),
+                                secondCategory.getName()
+                        ));
             }
         }
 

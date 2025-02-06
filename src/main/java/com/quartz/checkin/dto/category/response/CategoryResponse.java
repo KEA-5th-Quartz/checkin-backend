@@ -8,8 +8,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public class CategoryResponse {
     private Long firstCategoryId;
+    private String firstCategoryName;
     private String alias;
     private String contentGuide;
-    private String firstCategoryName;
     private List<SecondCategoryResponse> secondCategories;
 }

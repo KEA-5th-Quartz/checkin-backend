@@ -3,25 +3,26 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
-import com.quartz.checkin.entity.*;
+import com.quartz.checkin.entity.Category;
+import com.quartz.checkin.entity.LogType;
+import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Status;
+import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.entity.TicketLog;
 import com.quartz.checkin.repository.CategoryRepository;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketLogRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import jakarta.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpMethod;
-import org.springframework.stereotype.Service;
-import org.springframework.context.ApplicationEventPublisher;
-
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -129,7 +130,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 기존 카테고리 정보 저장
         String oldFirstCategory = ticket.getFirstCategory().getName();
-        Category newFirstCategory = categoryRepository.findByNameAndParentIsNull(request.getFirstCategory())
+        Category newFirstCategory = categoryRepository.findByNameAndParentIsNull(request.getName())
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
 
         List<Category> secondCategories = categoryRepository.findByParentOrderByIdAsc(newFirstCategory);

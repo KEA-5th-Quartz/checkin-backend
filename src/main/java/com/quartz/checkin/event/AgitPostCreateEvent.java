@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class AgitPostCreateEvent {
-    private Long ticketId;
+    private String ticketId;
     private String title;
     private String content;
     private String username;

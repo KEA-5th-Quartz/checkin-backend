@@ -11,10 +11,10 @@ public class TicketAssigneeChangedEvent {
     private final Long agitId;
     private final Long managerId;
     private final Long assigneeId;
-    private final Long ticketId;
+    private final String ticketId;
     private final List<String> assigneesForInProgress;
 
-    public TicketAssigneeChangedEvent(Long agitId, Long managerId, Long assigneeId, Long ticketId, List<String> assigneesForInProgress) {
+    public TicketAssigneeChangedEvent(Long agitId, Long managerId, Long assigneeId, String ticketId, List<String> assigneesForInProgress) {
         this.agitId = agitId;
         this.managerId = managerId;
         this.assigneeId = assigneeId;

@@ -94,14 +94,15 @@ public class TicketDeleteServiceImpl implements TicketDeleteService {
     private Ticket replaceTicket(Ticket ticket, LocalDate dueDateTime) {
         Ticket temp;
 
-        // ticket id를 가져와서 첫 네 글자를 오늘 날짜로 변경(MMDD)
-        String id = ticket.getId();
-        String today = LocalDate.now().toString().substring(5).replace("-", "");
-        String tempId = today + id.substring(4);
+//        // ticket id를 가져와서 첫 네 글자를 오늘 날짜로 변경(MMDD)
+//        String id = ticket.getId();
+//        String today = LocalDate.now().toString().substring(5).replace("-", "");
+//        String tempId = today + id.substring(4);
 
         // temp에 ticket 깊은 복사
         temp = Ticket.builder()
-                .id(tempId)
+//                .id(tempId)
+                .id(ticket.getId())
                 .user(ticket.getUser())
                 .firstCategory(ticket.getFirstCategory())
                 .secondCategory(ticket.getSecondCategory())

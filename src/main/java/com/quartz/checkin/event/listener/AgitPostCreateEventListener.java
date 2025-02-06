@@ -25,6 +25,7 @@ public class AgitPostCreateEventListener {
     public void handleAgitPostCreateEvent(AgitPostCreateEvent event) {
         try {
             Long agitId = webhookService.createAgitPost(
+                    event.getTicketId(),
                     event.getTitle(),
                     event.getContent(),
                     List.of(event.getUsername())

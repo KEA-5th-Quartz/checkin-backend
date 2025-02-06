@@ -14,6 +14,7 @@ import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.event.TicketCreatedEvent;
+import com.quartz.checkin.event.TicketDeletedEvent;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
@@ -78,13 +79,6 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
         }
 
-        // 요청 보낸 사용자를 담당자로 설정하여 웹훅으로 게시물 생성
-        Long agitId = webhookService.createAgitPost(
-                request.getTitle(),
-                request.getContent(),
-                List.of(member.getUsername()) // 요청한 사용자 지정
-        );
-
         // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
                 .id(newTicketId) // 수정된 티켓 ID 적용
@@ -96,7 +90,7 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .priority(Priority.UNDEFINED)
                 .status(Status.OPEN)
                 .dueDate(request.getDueDate())
-                .agitId(agitId)
+                .agitId(null)
                 .build();
 
         Ticket savedTicket = ticketRepository.save(ticket);
@@ -111,8 +105,9 @@ public class TicketCudServiceImpl implements TicketCudService {
         eventPublisher.publishEvent(new TicketCreatedEvent(
                 savedTicket.getId(),
                 savedTicket.getUser().getId(),
-                savedTicket.getAgitId(),
-                savedTicket.getTitle()
+                savedTicket.getTitle(),
+                savedTicket.getContent(),
+                List.of(member.getUsername())
         ));
 
         return new TicketCreateResponse(savedTicket.getId());
@@ -191,6 +186,21 @@ public class TicketCudServiceImpl implements TicketCudService {
         ticket.updateCategories(firstCategory, secondCategory);
         ticket.updateDueDate(request.getDueDate());
 
+        Ticket savedTicket = ticketRepository.save(ticket);
+
+        if (ticket.getAgitId() != null) {
+            eventPublisher.publishEvent(new TicketDeletedEvent(ticket.getId(), ticket.getAgitId()));
+            ticket.unlinkFromAgit();
+        }
+
+        eventPublisher.publishEvent(new TicketCreatedEvent(
+                savedTicket.getId(),
+                savedTicket.getUser().getId(),
+                savedTicket.getTitle(),
+                savedTicket.getContent(),
+                List.of(member.getUsername())
+        ));
+
         ticketRepository.save(ticket);
     }
 
@@ -233,8 +243,24 @@ public class TicketCudServiceImpl implements TicketCudService {
             attachmentService.deleteAttachments(attachmentIds); // 첨부파일 삭제
         }
 
-        // 티켓 소프트 삭제
-        tickets.forEach(Ticket::softDelete);
+        List<Long> agitIdsToDelete = new ArrayList<>();
+
+        for (Ticket ticket : tickets) {
+            if (ticket.getAgitId() != null && ticket.getStatus() == Status.OPEN) {
+                agitIdsToDelete.add(ticket.getAgitId()); // 나중에 이벤트로 삭제 처리
+                ticket.unlinkFromAgit(); // 기존 agitId 제거
+            }
+            tickets.forEach(Ticket::softDelete);
+        }
+
+        List<String> ticketIdsToDelete = tickets.stream()
+                .map(Ticket::getId)
+                .toList();
+
+        if (!agitIdsToDelete.isEmpty()) {
+            eventPublisher.publishEvent(new TicketDeletedEvent(String.valueOf(ticketIdsToDelete), agitIdsToDelete));
+        }
+
         ticketRepository.saveAll(tickets);
     }
 

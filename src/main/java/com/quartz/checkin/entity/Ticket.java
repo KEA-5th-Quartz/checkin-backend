@@ -6,8 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -25,9 +23,8 @@ import lombok.NoArgsConstructor;
 public class Ticket extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ticket_id")
-    private Long id;
+    private String id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
@@ -74,8 +71,9 @@ public class Ticket extends BaseEntity {
     private List<TicketAttachment> attachments;
 
     @Builder
-    public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
+    public Ticket(String id, Member user, Category firstCategory, Category secondCategory, String title, String content,
                   Priority priority,Status status, LocalDate dueDate, Long agitId) {
+        this.id = id;
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;

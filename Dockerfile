@@ -8,4 +8,4 @@ WORKDIR /app
 COPY build/libs/*.jar app.jar
 
 # 4. JAR 파일 실행 명령어
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djava.net.preferIPv4Stack=true", "-jar", "app.jar"]

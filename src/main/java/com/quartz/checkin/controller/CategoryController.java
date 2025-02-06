@@ -4,13 +4,12 @@ import com.quartz.checkin.dto.category.request.FirstCategoryCreateRequest;
 import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.category.request.SecondCategoryCreateRequest;
 import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
-import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.category.response.CategoryResponse;
 import com.quartz.checkin.dto.category.response.FirstCategoryCreateResponse;
 import com.quartz.checkin.dto.category.response.SecondCategoryCreateResponse;
+import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Admin;
-import com.quartz.checkin.security.annotation.AdminOrManager;
 import com.quartz.checkin.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -34,7 +33,7 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @Operation(summary = "API 명세서 v0.2 line 52", description = "전체 카테고리 조회")
+    @Operation(summary = "API 명세서 v0.3 line 51", description = "전체 카테고리 조회")
     @GetMapping
     public ApiResponse<List<CategoryResponse>> getAllCategories(
             @AuthenticationPrincipal CustomUser user) {
@@ -43,7 +42,7 @@ public class CategoryController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.2 line 53", description = "관리자가 1차 카테고리 작성")
+    @Operation(summary = "API 명세서 v0.3 line 52", description = "관리자가 1차 카테고리 작성")
     @PostMapping
     public ApiResponse<FirstCategoryCreateResponse> createFirstCategory(
             @RequestBody @Valid FirstCategoryCreateRequest request,
@@ -54,7 +53,7 @@ public class CategoryController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.2 line 54", description = "관리자가 1차 카테고리 수정")
+    @Operation(summary = "API 명세서 v0.3 line 53", description = "관리자가 1차 카테고리 수정")
     @PutMapping("/{firstCategoryId}")
     public ApiResponse<Void> updateFirstCategory(
             @PathVariable Long firstCategoryId,
@@ -66,7 +65,7 @@ public class CategoryController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.2 line 55", description = "관리자가 1차 카테고리 삭제")
+    @Operation(summary = "API 명세서 v0.3 line 54", description = "관리자가 1차 카테고리 삭제")
     @DeleteMapping("/{firstCategoryId}")
     public ApiResponse<Void> deleteFirstCategory(
             @PathVariable Long firstCategoryId,
@@ -76,7 +75,7 @@ public class CategoryController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.2 line 56", description = "관리자가 2차 카테고리 작성")
+    @Operation(summary = "API 명세서 v0.3 line 55", description = "관리자가 2차 카테고리 작성")
     @PostMapping("/{firstCategoryId}/second-categories")
     public ApiResponse<SecondCategoryCreateResponse> createSecondCategory(
             @PathVariable Long firstCategoryId,
@@ -88,7 +87,7 @@ public class CategoryController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.2 line 57", description = "관리자가 2차 카테고리 수정")
+    @Operation(summary = "API 명세서 v0.3 line 56", description = "관리자가 2차 카테고리 수정")
     @PutMapping("/{firstCategoryId}/second-categories/{secondCategoryId}")
     public ApiResponse<Void> updateSecondCategory(
             @PathVariable Long firstCategoryId,
@@ -101,7 +100,7 @@ public class CategoryController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.2 line 58", description = "관리자가 2차 카테고리 삭제")
+    @Operation(summary = "API 명세서 v0.3 line 57", description = "관리자가 2차 카테고리 삭제")
     @DeleteMapping("/{firstCategoryId}/second-categories/{secondCategoryId}")
     public ApiResponse<Void> deleteSecondCategory(
             @PathVariable Long firstCategoryId,

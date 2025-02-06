@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,9 +27,13 @@ import org.springframework.context.annotation.Configuration;
 )
 public class SwaggerConfig {
 
+    @Value("${springdoc.baseurl}")
+    private String baseUrl;
+
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
+                .servers(List.of(new Server().url(baseUrl)))
                 .info(new io.swagger.v3.oas.models.info.Info()
                         .title("CheckIn API Docs")
                 );

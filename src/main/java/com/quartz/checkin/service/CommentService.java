@@ -43,6 +43,7 @@ public class CommentService {
     private final TicketLogRepository ticketLogRepository;
     private final LikeRepository likeRepository;
     private final MemberRepository memberRepository;
+    private final WebhookService webhookService;
 
     private final S3UploadService s3UploadService;
 
@@ -79,6 +80,21 @@ public class CommentService {
         comment.writeContent(content);
 
         Comment savedComment = commentRepository.save(comment);
+
+        if (ticket.getAgitId() != null) {
+            try {
+                String commenterName = member.getUsername();
+                String formattedComment = commenterName + "님의 댓글: \"" + content + "\"";
+
+                log.info("웹훅에 댓글 추가 요청: ticketId={}, agitId={}, comment={}", ticketId, ticket.getAgitId(), formattedComment);
+                webhookService.addCommentToWebhookPost(ticket.getAgitId(), formattedComment);
+            } catch (Exception e) {
+                log.error("웹훅 댓글 추가 실패: {}", e.getMessage());
+            }
+        } else {
+            log.warn("아지트 게시글 ID가 없음 (댓글 추가 안됨): ticketId={}", ticketId);
+        }
+
         return CommentResponse.builder()
                 .commentId(savedComment.getId())
                 .build();
@@ -246,8 +262,6 @@ public class CommentService {
                     return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
                 });
 
-
-
         Comment comment = new Comment();
         comment.setTicket(ticket);
         comment.setMember(member);
@@ -257,6 +271,24 @@ public class CommentService {
             String attachmentUrl = s3UploadService.uploadFile(file, S3Config.COMMENT_DIR);
             comment.addAttachment(attachmentUrl);
             Comment savedComment = commentRepository.save(comment);
+
+            // 🔹 웹훅에 "ㅇㅇ님이 첨부파일을 업로드했습니다." 메시지 전송
+            if (ticket.getAgitId() != null) {
+                try {
+                    String commenterName = member.getUsername();
+                    String fileName = file.getOriginalFilename();
+                    String formattedMessage = commenterName + "님이 첨부파일을 업로드했습니다.";
+
+                    log.info("웹훅에 첨부파일 업로드 알림 요청: ticketId={}, agitId={}, message={}",
+                            ticketId, ticket.getAgitId(), formattedMessage);
+
+                    webhookService.addCommentToWebhookPost(ticket.getAgitId(), formattedMessage);
+                } catch (Exception e) {
+                    log.error("웹훅 첨부파일 업로드 알림 실패: {}", e.getMessage());
+                }
+            } else {
+                log.warn("아지트 게시글 ID가 없음 (첨부파일 업로드 알림 안됨): ticketId={}", ticketId);
+            }
 
             return CommentAttachmentResponse.builder()
                     .commentId(savedComment.getId())

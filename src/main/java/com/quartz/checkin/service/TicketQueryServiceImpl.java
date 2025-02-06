@@ -5,12 +5,13 @@ import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.converter.TicketResponseConverter;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
+import com.quartz.checkin.dto.ticket.response.TicketProgressResponse;
 import com.quartz.checkin.dto.ticket.response.UserTicketListResponse;
+import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Priority;
+import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
-import com.quartz.checkin.entity.Member;
-import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
@@ -31,9 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TicketQueryServiceImpl implements TicketQueryService {
 
-    private final MemberRepository memberRepository;
     private final TicketRepository ticketRepository;
     private final TicketAttachmentRepository ticketAttachmentRepository;
+    private final MemberRepository memberRepository;
 
     @Transactional(readOnly = true)
     @Override
@@ -54,19 +55,13 @@ public class TicketQueryServiceImpl implements TicketQueryService {
 
         return TicketDetailResponse.from(ticket, attachments);
     }
-
     @Transactional(readOnly = true)
     @Override
     public ManagerTicketListResponse getManagerTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                                        List<String> categories, List<Priority> priorities,
                                                        Boolean dueToday, Boolean dueThisWeek, int page, int size) {
         Page<Ticket> ticketPage = getTickets(null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size);
-        List<Ticket> allTickets = ticketRepository.findAllByManagerId(memberId);
-
-
-        int totalTickets = (int) ticketRepository.count();
-        int openTicketCount = (int) ticketRepository.countByStatus(Status.OPEN);
-        return TicketResponseConverter.toManagerTicketListResponse(ticketPage, allTickets, totalTickets, openTicketCount);
+        return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
     @Transactional(readOnly = true)
@@ -87,10 +82,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
                 Sort.by(Sort.Direction.ASC, "dueDate").and(Sort.by(Sort.Direction.ASC, "title")));
 
         Page<Ticket> ticketPage = ticketRepository.searchTickets(keyword == null || keyword.isBlank() ? "" : keyword.toLowerCase(), pageable);
-        List<Ticket> allTickets = ticketRepository.findAllByManagerId(memberId);
-        int totalTickets = (int) ticketRepository.count();
-        int openTicketCount = (int) ticketRepository.countByStatus(Status.OPEN);
-        return TicketResponseConverter.toManagerTicketListResponse(ticketPage, allTickets, totalTickets, openTicketCount);
+        return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
     @Transactional(readOnly = true)
@@ -104,6 +96,39 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         Page<Ticket> ticketPage = ticketRepository.searchMyTickets(memberId, (keyword != null && !keyword.isBlank()) ? keyword : null, pageable);
         return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
+
+    @Override
+    public TicketProgressResponse getManagerProgress(Long memberId) {
+        List<Object[]> resultList = ticketRepository.getManagerTicketStatistics(memberId);
+
+        // 만약 결과가 비어있다면 기본값 반환
+        if (resultList.isEmpty()) {
+            return new TicketProgressResponse(0, 0, 0, 0, "0 / 0");
+        }
+
+        // Object 배열에서 각 값 추출
+        Object[] result = resultList.get(0);
+
+        int dueTodayCount = ((Number) result[0]).intValue();
+        int openTicketCount = ((Number) result[1]).intValue();
+        int inProgressTicketCount = ((Number) result[2]).intValue();
+        int closedTicketCount = ((Number) result[3]).intValue();
+        int totalTickets = ((Number) result[4]).intValue();
+
+        String progressExpression = totalTickets > 0
+                ? String.format("%d / %d", inProgressTicketCount + closedTicketCount, totalTickets)
+                : "0 / 0";
+
+        return new TicketProgressResponse(
+                dueTodayCount,
+                openTicketCount,
+                inProgressTicketCount,
+                closedTicketCount,
+                progressExpression
+        );
+    }
+
+
 
     private Page<Ticket> getTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                     List<String> categories, List<Priority> priorities,

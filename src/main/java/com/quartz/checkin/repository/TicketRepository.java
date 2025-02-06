@@ -14,14 +14,13 @@ import org.springframework.data.repository.query.Param;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // Todo: QueryDSL로 구현
 
-    List<Ticket> findAllByManagerId(Long managerId);
-
     @Query("SELECT t FROM Ticket t " +
             "LEFT JOIN t.manager m " +
-            "WHERE (:statuses IS NULL OR t.status IN :statuses) " +
+            "WHERE t.deletedAt IS NULL " +
+            "AND (:statuses IS NULL OR t.status IN :statuses) " +
             "AND (:categories IS NULL OR LOWER(TRIM(t.firstCategory.name)) IN :categories) " +
             "AND (:priorities IS NULL OR t.priority IN :priorities) " +
-            "AND (:usernames IS NULL OR t.manager.username IN :usernames OR (t.status = 'OPEN' AND t.manager IS NULL)) " +
+            "AND (:usernames IS NULL OR (t.manager IS NOT NULL AND t.manager.username IN :usernames)) " +
             "AND (:dueToday = false OR t.dueDate = CAST(NOW() AS DATE)) " +
             "AND (:dueThisWeek = false OR (t.dueDate BETWEEN CAST(NOW() AS DATE) AND :endOfWeek))")
     Page<Ticket> findManagerTickets(
@@ -37,7 +36,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     @Query("SELECT t FROM Ticket t " +
             "LEFT JOIN t.manager m " +
-            "WHERE (:userId IS NULL OR t.user.id = :userId) " +
+            "WHERE t.deletedAt IS NULL " +
+            "AND (:userId IS NULL OR t.user.id = :userId) " +
             "AND (:statuses IS NULL OR t.status IN :statuses) " +
             "AND (:categories IS NULL OR LOWER(TRIM(t.firstCategory.name)) IN :categories) " +
             "AND (:priorities IS NULL OR t.priority IN :priorities) " +
@@ -56,15 +56,29 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     );
 
     @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
-            "WHERE (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "WHERE t.deletedAt IS NULL " +
+            "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchTickets(@Param("keyword") String keyword, Pageable pageable);
 
     @Query("SELECT t FROM Ticket t LEFT JOIN FETCH t.manager " +
             "WHERE t.user.id = :memberId " +
+            "AND t.deletedAt IS NULL " +
             "AND (:keyword IS NULL OR LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(t.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Ticket> searchMyTickets(@Param("memberId") Long memberId, @Param("keyword") String keyword, Pageable pageable);
 
-    long countByStatus(Status status);
+
+    @Query("""
+    SELECT 
+        COALESCE(COUNT(CASE WHEN t.dueDate = CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0) AS dueTodayCount,
+        COALESCE(COUNT(CASE WHEN t.status = 'OPEN' AND t.dueDate >= CURRENT_DATE THEN 1 END), 0) AS openTicketCount,
+        COALESCE(COUNT(CASE WHEN t.status = 'IN_PROGRESS' AND t.dueDate >= CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0) AS inProgressTicketCount,
+        COALESCE(COUNT(CASE WHEN t.status = 'CLOSED' AND t.dueDate >= CURRENT_DATE AND t.manager.id = :managerId THEN 1 END), 0) AS closedTicketCount,
+        COALESCE(COUNT(CASE WHEN t.dueDate >= CURRENT_DATE THEN 1 END), 0) AS totalTickets
+    FROM Ticket t
+    WHERE t.deletedAt IS NULL
+""")
+    List<Object[]> getManagerTicketStatistics(@Param("managerId") Long managerId);
+
 }

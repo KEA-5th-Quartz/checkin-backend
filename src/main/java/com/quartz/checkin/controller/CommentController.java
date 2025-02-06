@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,8 +36,8 @@ public class CommentController {
     private final CommentService commentService;
 
     @ManagerOrUser
+    @Operation(summary = "API 명세서 v0.3 line 45", description = "티켓에 텍스트 타입 댓글 작성")
     @PostMapping("/{ticketId}/comments")
-    @Operation(summary = "댓글 작성", description = "특정 티켓에 댓글을 작성합니다.")
     public ApiResponse<CommentResponse> writeComment(
             @AuthenticationPrincipal CustomUser customUser,
             @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId,
@@ -45,40 +46,46 @@ public class CommentController {
                 request.getContent()));
     }
 
+    @Operation(summary = "API 명세서 v0.3 line 47", description = "티켓의 로그와 댓글 전체 조회")
     @GetMapping("/{ticketId}/comments")
-    @Operation(summary = "티켓의 댓글 및 로그 전체 조회", description = "특정 티켓의 댓글 및 로그를 전부 조회합니다.")
     public ApiResponse<TicketActivityResponse> getCommentsAndLogs(
             @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId) {
         return ApiResponse.createSuccessResponseWithData(200, commentService.getCommentsAndLogs(ticketId));
     }
 
     @ManagerOrUser
+    @Operation(summary = "API 명세서 v0.3 line 48", description = "특정 댓글에 좋아요 토글")
     @PutMapping("/{ticketId}/comments/{commentId}/likes")
-    @Operation(summary = "댓글 좋아요 토글", description = "특정 댓글에 좋아요를 토글합니다.")
     public ApiResponse<CommentLikeResponse> toggleLike(
-            @AuthenticationPrincipal CustomUser customUser,
-            @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId,
-            @Parameter(description = "댓글 ID", required = true) @PathVariable("commentId") Long commentId) {
-        return ApiResponse.createSuccessResponseWithData(200, commentService.toggleLike(customUser, ticketId, commentId));
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable("ticketId") Long ticketId,
+            @PathVariable("commentId") Long commentId) {
+
+        CommentLikeResponse response = commentService.toggleLike(user, ticketId, commentId);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
+    @Operation(summary = "API 명세서 v0.3 line 49", description = "특정 댓글에 좋아요 누른 멤버 조회")
     @GetMapping("/{ticketId}/comments/{commentId}/likes")
-    @Operation(summary = "댓글 좋아요 누른 멤버 조회", description = "특정 댓글에 좋아요를 누른 멤버를 조회합니다.")
     public ApiResponse<CommentLikeListResponse> getLikingMembersList(
-            @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId,
-            @Parameter(description = "댓글 ID", required = true) @PathVariable("commentId") Long commentId) {
-        return ApiResponse.createSuccessResponseWithData(200, commentService.getLikingMembersList(ticketId, commentId));
+            @PathVariable("ticketId") Long ticketId,
+            @PathVariable("commentId") Long commentId) {
+
+        CommentLikeListResponse response = commentService.getLikingMembersList(ticketId, commentId);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @ManagerOrUser
+    @Operation(summary = "API 명세서 v0.3 line 46", description = "티켓 댓글에 파일 첨부")
     @PostMapping("/{ticketId}/comments/attachment")
-    @Operation(summary = "댓글 첨부파일 업로드", description = "특정 티켓에 첨부파일을 댓글로서 업로드합니다.")
     public ApiResponse<CommentAttachmentResponse> uploadCommentAttachment(
-            @AuthenticationPrincipal CustomUser customUser,
-            @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId,
+            @AuthenticationPrincipal CustomUser user,
+            @PathVariable("ticketId") Long ticketId,
             @RequestParam("file") MultipartFile file) {
-        return ApiResponse.createSuccessResponseWithData(200, commentService.uploadCommentAttachment(customUser,
-                ticketId, file));
+
+        CommentAttachmentResponse response = commentService.uploadCommentAttachment(user, ticketId, file);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
+
 
 }

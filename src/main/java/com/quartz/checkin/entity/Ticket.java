@@ -1,5 +1,6 @@
 package com.quartz.checkin.entity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,10 +11,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-
+import jakarta.persistence.OneToMany;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -65,9 +66,16 @@ public class Ticket extends BaseEntity {
 
     private LocalDateTime deletedAt;
 
+    @Column(name = "agit_id", nullable = true)
+    private Long agitId;
+
+    @Getter
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TicketAttachment> attachments;
+
     @Builder
     public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
-                  Priority priority, Status status, LocalDate dueDate) {
+                  Priority priority,Status status, LocalDate dueDate, Long agitId) {
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;
@@ -76,6 +84,7 @@ public class Ticket extends BaseEntity {
         this.priority = priority;
         this.status = status;
         this.dueDate = dueDate;
+        this.agitId = agitId;
     }
 
     // 담당자 할당 메서드
@@ -105,5 +114,26 @@ public class Ticket extends BaseEntity {
     // 중요도 변경 메서드
     public void updatePriority(Priority newPriority) {
         this.priority = newPriority;
+    }
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
+    public void updateCategories(Category firstCategory, Category secondCategory) {
+        this.firstCategory = firstCategory;
+        this.secondCategory = secondCategory;
+    }
+
+    public void updateDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
     }
 }

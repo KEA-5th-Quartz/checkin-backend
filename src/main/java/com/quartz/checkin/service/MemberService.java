@@ -12,6 +12,7 @@ import com.quartz.checkin.dto.member.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
+import com.quartz.checkin.dto.member.response.MemberRoleCount;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
@@ -47,6 +48,14 @@ public class MemberService {
 
     public Member getMemberByIdOrThrow(Long id) {
         return memberRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 사용자입니다.");
+                    return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
+                });
+    }
+
+    public Member getMemberByUsernameOrThrow(String username) {
+        return memberRepository.findByUsername(username)
                 .orElseThrow(() -> {
                     log.error("존재하지 않는 사용자입니다.");
                     return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
@@ -213,6 +222,10 @@ public class MemberService {
             log.error("사용중인 사용자 이름입니다. {}", username);
             throw new ApiException(ErrorCode.DUPLICATE_USERNAME);
         }
+    }
+    
+    public MemberRoleCount getMemberRoleCounts() {
+        return memberRepository.findRoleCounts();
     }
 
 }

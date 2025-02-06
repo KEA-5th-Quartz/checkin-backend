@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UserTicketSummaryResponse {
-    private Long ticketId;
+    private String ticketId;
     private String title;
     private String firstCategory;
     private String secondCategory;

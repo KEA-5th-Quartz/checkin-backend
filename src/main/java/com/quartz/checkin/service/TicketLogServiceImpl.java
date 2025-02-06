@@ -4,7 +4,6 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
 import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
-import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.entity.*;
 import com.quartz.checkin.event.TicketAssigneeChangedEvent;
@@ -27,7 +26,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,7 +36,6 @@ public class TicketLogServiceImpl implements TicketLogService {
     private final TicketLogRepository ticketLogRepository;
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
-    private final ApplicationEventPublisher eventPublisher;
     private final WebhookService webhookService;
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',
@@ -47,11 +44,11 @@ public class TicketLogServiceImpl implements TicketLogService {
     // 담당자 배정
     @Transactional
     @Override
-    public TicketLogResponse assignManager(Long memberId, Long ticketId) {
+    public TicketLogResponse assignManager(Long memberId, String ticketId) {
 
         // 티켓 & 담당자 조회
-        Ticket ticket = getValidTicket(ticketId);
         Member manager = getValidMember(memberId);
+        Ticket ticket = getValidTicket(ticketId);
 
         // 예외 검증
         validateTicketForUpdate(ticket, manager, false, false, true);
@@ -103,7 +100,7 @@ public class TicketLogServiceImpl implements TicketLogService {
     // 티켓 상태 변경: 진행 중 → 완료
     @Transactional
     @Override
-    public TicketLogResponse closeTicket(Long memberId, Long ticketId) {
+    public TicketLogResponse closeTicket(Long memberId, String ticketId) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -140,9 +137,8 @@ public class TicketLogServiceImpl implements TicketLogService {
     }
 
     // 1차 카테고리 변경
-    @Transactional
     @Override
-    public TicketLogResponse updateFirstCategory(Long memberId, Long ticketId, FirstCategoryUpdateRequest request) {
+    public TicketLogResponse updateFirstCategory(Long memberId, String ticketId, FirstCategoryUpdateRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -196,7 +192,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     @Transactional
     @Override
-    public TicketLogResponse updateSecondCategory(Long memberId, Long ticketId, Long firstCategoryId, SecondCategoryUpdateRequest request) {
+    public TicketLogResponse updateSecondCategory(Long memberId, String ticketId, Long firstCategoryId, SecondCategoryUpdateRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -252,22 +248,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     @Transactional
     @Override
-    public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
-        // 티켓 & 담당자 조회
-        Ticket ticket = getValidTicket(ticketId);
-        Member manager = getValidMember(memberId);
-
-        // 예외 검증 (담당자 본인인지 확인)
-        validateTicketForUpdate(ticket, manager, false, false, false);
-
-        // 중요도 변경
-        ticket.updatePriority(request.getPriority());
-        ticketRepository.save(ticket);
-    }
-
-    @Transactional
-    @Override
-    public TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername) {
+    public TicketLogResponse reassignManager(Long memberId, String ticketId, String newManagerUsername) {
         // 티켓 & 기존 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
         Member currentManager = ticket.getManager();
@@ -317,7 +298,7 @@ public class TicketLogServiceImpl implements TicketLogService {
     }
 
     // 특정 티켓 조회
-    private Ticket getValidTicket(Long ticketId) {
+    private Ticket getValidTicket(String ticketId) {
         return ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
     }
@@ -325,12 +306,6 @@ public class TicketLogServiceImpl implements TicketLogService {
     // 특정 담당자 조회
     private Member getValidMember(Long memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
-    }
-
-    // 특정 담당자 조회 (Username 기반)
-    private Member getValidMemberByUsername(String username) {
-        return memberRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
     }
 

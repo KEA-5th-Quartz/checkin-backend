@@ -1,4 +1,4 @@
 package com.quartz.checkin.dto.ticket.response;
 
-public record TicketCreateResponse(Long ticketId) {
+public record TicketCreateResponse(String ticketId) {
 }

@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface TicketAttachmentRepository extends JpaRepository<TicketAttachment, Long> {
-    List<TicketAttachment> findByTicketId(Long ticketId);
+    List<TicketAttachment> findByTicketId(String ticketId);
 
     @Modifying
     @Query("DELETE FROM TicketAttachment ta WHERE ta.ticket = :ticket AND ta.attachment.id IN :attachmentIds")
@@ -19,5 +19,9 @@ public interface TicketAttachmentRepository extends JpaRepository<TicketAttachme
     List<Long> findAttachmentIdsInUse(@Param("attachmentIds") List<Long> attachmentIds);
 
     @Query("SELECT ta.attachment.id FROM TicketAttachment ta WHERE ta.ticket.id IN :ticketIds")
-    List<Long> findAttachmentIdsByTicketIds(@Param("ticketIds") List<Long> ticketIds);
+    List<Long> findAttachmentIdsByTicketIds(@Param("ticketIds") List<String> ticketIds);
+
+    @Modifying
+    @Query("DELETE FROM TicketAttachment ta WHERE ta.ticket.id IN :ticketIds")
+    void deleteAllByTicketIds(@Param("ticketIds") List<String> ticketIds);
 }

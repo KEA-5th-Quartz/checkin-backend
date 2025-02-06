@@ -75,7 +75,7 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.3 line 31", description = "사용자가 티켓 수정")
     @PutMapping("/{ticketId}")
     public ApiResponse<Void> updateTicket(
-            @PathVariable Long ticketId,
+            @PathVariable String ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketUpdateRequest request) {
 
@@ -100,10 +100,10 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.3 line 33", description = "티켓 상세 조회")
     @GetMapping("/{ticketId}")
     public ApiResponse<TicketDetailResponse> getTicketDetail(
-            @PathVariable Long ticketId,
+            @PathVariable String ticketId,
             @AuthenticationPrincipal CustomUser user) {
 
-        TicketDetailResponse response = ticketQueryService.getTicketDetail(user.getId(), ticketId);
+        TicketDetailResponse response = ticketQueryService.getTicketDetail(user.getId(),  ticketId);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -191,7 +191,7 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.3 line 44", description = "중요도 변경")
     @PatchMapping("/{ticketId}/priority")
     public ApiResponse<Void> updateTicketPriority(
-            @PathVariable Long ticketId,
+            @PathVariable String ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid PriorityUpdateRequest request) {
 

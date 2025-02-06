@@ -1,17 +1,16 @@
 package com.quartz.checkin.dto.ticket.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.quartz.checkin.entity.TicketLog;
 import com.quartz.checkin.entity.LogType;
-import lombok.Getter;
-
+import com.quartz.checkin.entity.TicketLog;
 import java.time.LocalDateTime;
+import lombok.Getter;
 
 @Getter
 public class TicketLogResponse {
 
     private final Long logId;
-    private final Long ticketId;
+    private final String ticketId;
     private final LogType logType;
     private final String content;
 

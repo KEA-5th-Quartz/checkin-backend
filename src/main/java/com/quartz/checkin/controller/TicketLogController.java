@@ -30,7 +30,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 40", description = "티켓 완료 처리")
     @PatchMapping("/{ticketId}/close")
     public ApiResponse<TicketLogResponse> closeTicket(
-            @PathVariable Long ticketId,
+            @PathVariable String ticketId,
             @AuthenticationPrincipal CustomUser user) {
         TicketLogResponse response = ticketLogService.closeTicket(user.getId(), ticketId);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
@@ -40,7 +40,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 41", description = "1차 카테고리 수정")
     @PatchMapping("/{ticketId}/category")
     public ApiResponse<TicketLogResponse> updateFirstCategory(
-            @PathVariable Long ticketId,
+            @PathVariable String ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid FirstCategoryUpdateRequest request) {
 
@@ -52,7 +52,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 42", description = "2차 카테고리 수정")
     @PatchMapping("/{ticketId}/category/{firstCategoryId}")
     public ApiResponse<TicketLogResponse> updateSecondCategory(
-            @PathVariable Long ticketId,
+            @PathVariable String ticketId,
             @PathVariable Long firstCategoryId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid SecondCategoryUpdateRequest request) {
@@ -65,7 +65,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 43", description = "담당자 변경")
     @PatchMapping("/{ticketId}/reassign")
     public ApiResponse<TicketLogResponse> reassignManager(
-            @PathVariable Long ticketId,
+            @PathVariable String ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody Map<String, String> request) {
 
@@ -77,7 +77,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 39", description = "담당자 할당")
     @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> assignManager(
-            @PathVariable Long ticketId,
+            @PathVariable String ticketId,
             @AuthenticationPrincipal CustomUser user
     ) {
         TicketLogResponse response = ticketLogService.assignManager(user.getId(), ticketId);

@@ -9,12 +9,13 @@ import java.util.ArrayList;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -25,7 +26,7 @@ public class NotificationEventListener {
     private final AlertLogRepository alertLogRepository;
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleNotificationEvent(NotificationEvent event) {
         if (("CATEGORY_CHANGED".equals(event.getType()) || "COMMENT_ADDED".equals(event.getType()))
                 && event.getLogMessage() != null && event.getAgitId() != null) {

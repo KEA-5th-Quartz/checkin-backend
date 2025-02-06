@@ -5,13 +5,12 @@ import com.quartz.checkin.event.TicketCategoryChangedEvent;
 import com.quartz.checkin.repository.AlertLogRepository;
 import com.quartz.checkin.service.WebhookService;
 import java.time.LocalDateTime;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
-import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -22,7 +21,7 @@ public class TicketCategoryChangedEventListener {
     private final AlertLogRepository alertLogRepository;
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTicketCategoryChangedEvent(TicketCategoryChangedEvent event) {
         try {
             log.info("Processing TicketCategoryChangedEvent: AgitId={}, LogMessage={}", event.getAgitId(), event.getLogMessage());

@@ -7,9 +7,10 @@ import com.quartz.checkin.service.WebhookService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -20,7 +21,7 @@ public class CommentAddedEventListener {
     private final AlertLogRepository alertLogRepository;
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCommentAddedEvent(CommentAddedEvent event) {
         try {
             Long parentId = event.getAgitId();

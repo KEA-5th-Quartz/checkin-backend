@@ -1,22 +1,16 @@
 package com.quartz.checkin.event.listener;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.entity.AlertLog;
 import com.quartz.checkin.event.TicketAssigneeChangedEvent;
 import com.quartz.checkin.repository.AlertLogRepository;
-import com.quartz.checkin.service.MemberService;
 import com.quartz.checkin.service.WebhookService;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
-import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -27,7 +21,7 @@ public class TicketAssigneeChangedEventListener {
     private final AlertLogRepository alertLogRepository;
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTicketAssigneeChangedEvent(TicketAssigneeChangedEvent event) {
         try {
             webhookService.updateAssigneeInWebhook(event.getAgitId(), event.getManagerId(), event.getAssigneeId());

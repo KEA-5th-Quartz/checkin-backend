@@ -7,9 +7,10 @@ import com.quartz.checkin.service.WebhookService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -20,7 +21,7 @@ public class AgitPostCreateEventListener {
     private final TicketRepository ticketRepository;
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleAgitPostCreateEvent(AgitPostCreateEvent event) {
         try {
             Long agitId = webhookService.createAgitPost(
@@ -32,7 +33,7 @@ public class AgitPostCreateEventListener {
             Ticket ticket = ticketRepository.findById(event.getTicketId())
                     .orElseThrow(() -> new RuntimeException("Ticket not found!"));
 
-            ticket.setAgitId(agitId);
+            ticket.linkToAgit(agitId);
             ticketRepository.save(ticket);
 
             log.info("AgitId updated for TicketId={} -> agitId={}", event.getTicketId(), agitId);

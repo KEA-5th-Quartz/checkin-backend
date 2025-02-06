@@ -67,7 +67,6 @@ public class Ticket extends BaseEntity {
 
     private LocalDateTime deletedAt;
 
-    @Setter
     @Column(name = "agit_id", nullable = true)
     private Long agitId;
 
@@ -86,6 +85,13 @@ public class Ticket extends BaseEntity {
         this.priority = priority;
         this.status = status;
         this.dueDate = dueDate;
+        this.agitId = agitId;
+    }
+
+    public void linkToAgit(Long agitId) {
+        if (this.agitId != null) {
+            throw new IllegalStateException("아지트 ID는 이미 설정되어 있습니다.");
+        }
         this.agitId = agitId;
     }
 

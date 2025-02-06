@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.webhook.WebhookRequest;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.entity.Member;
 import java.util.ArrayList;
@@ -36,27 +37,9 @@ public class WebhookService {
     @Value("${webhook.url}")
     private String webhookUrl;
 
-    /**
-     * Webhook 요청 전송
-     *
-     * @param request    전송할 데이터 (이벤트 객체)
-     * @param action     Webhook 엔드포인트
-     * @param receiverId 수신자 ID
-     */
-    @Async
-    public void sendWebhook(Object request, String action, Long receiverId) {
-        String url = webhookUrl;
-        if (action != null && !action.isEmpty()) {
-            if (!url.endsWith("/")) {
-                url += "/";
-            }
-            url += action;
-        }
-
+    public void sendWebhook(String relativeUrl, HttpMethod method, Object payload) {
         try {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("data", request);
-            payload.put("receiverId", receiverId);
+            String fullUrl = webhookUrl + relativeUrl;
 
             String payloadJson = objectMapper.writeValueAsString(payload);
 
@@ -64,19 +47,14 @@ public class WebhookService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<String> entity = new HttpEntity<>(payloadJson, headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(fullUrl, method, entity, String.class);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("Failed to send webhook. Status: " + response.getStatusCode());
+                throw new RuntimeException("웹훅 전송 실패: " + response.getStatusCode());
             }
-
-            log.info("Webhook sent successfully to {} for receiverId: {}", url, receiverId);
-
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize webhook request: {}", e.getMessage());
-            throw new RuntimeException(e);
+            log.info("웹훅 성공: {}", fullUrl);
         } catch (Exception e) {
-            log.error("Error while sending webhook: {}", e.getMessage());
+            log.error("웹훅 전송 중 오류 발생: {}", e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -103,7 +81,7 @@ public class WebhookService {
             log.info("웹훅 응답 데이터: {}", responseBody);
 
             if (responseBody != null && responseBody.containsKey("id")) {
-                return Long.valueOf(responseBody.get("id").toString()); // ✅ 'agit_id' 대신 'id' 사용
+                return Long.valueOf(responseBody.get("id").toString());
             } else {
                 log.warn("agit_id가 응답에 포함되지 않음. 게시물 ID 없이 진행.");
                 return null;
@@ -221,7 +199,7 @@ public class WebhookService {
 
     public void addCommentToWebhookPost(Long parentId, String commentText) {
         try {
-            String url = webhookUrl + "/wall_messages/add_comment";
+            String url = webhookUrl;
 
             Map<String, Object> payload = Map.of(
                     "parent_id", parentId,

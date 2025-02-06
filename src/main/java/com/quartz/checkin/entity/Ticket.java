@@ -19,6 +19,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
@@ -67,6 +68,7 @@ public class Ticket extends BaseEntity {
 
     private LocalDateTime deletedAt;
 
+    @Setter
     @Column(name = "agit_id", nullable = true)
     private Long agitId;
 

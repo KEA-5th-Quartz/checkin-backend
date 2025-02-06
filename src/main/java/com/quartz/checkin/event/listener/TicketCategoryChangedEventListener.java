@@ -1,7 +1,10 @@
 package com.quartz.checkin.event.listener;
 
+import com.quartz.checkin.entity.AlertLog;
 import com.quartz.checkin.event.TicketCategoryChangedEvent;
+import com.quartz.checkin.repository.AlertLogRepository;
 import com.quartz.checkin.service.WebhookService;
+import java.time.LocalDateTime;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,22 +16,37 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-class TicketCategoryChangedEventListener {
+public class TicketCategoryChangedEventListener {
 
     private final WebhookService webhookService;
+    private final AlertLogRepository alertLogRepository;
 
     @Async
     @EventListener
     public void handleTicketCategoryChangedEvent(TicketCategoryChangedEvent event) {
-        String logMessage = String.format("카테고리가 변경되었습니다: '%s' → '%s'", event.getOldCategory(), event.getNewCategory());
+        try {
+            log.info("Processing TicketCategoryChangedEvent: AgitId={}, LogMessage={}", event.getAgitId(), event.getLogMessage());
 
-        Map<String, Object> payload = Map.of(
-                "parent_id", event.getTicketId(),
-                "text", logMessage
-        );
+            webhookService.addCommentToWebhookPost(event.getAgitId(), event.getLogMessage());
 
-        webhookService.sendWebhookRequest("/wall_messages/" + event.getTicketId() + "/comments", payload, HttpMethod.POST);
-        log.info("Ticket Category Changed Event Processed: TicketId={}", event.getTicketId());
+            alertLogRepository.save(AlertLog.builder()
+                    .createdAt(LocalDateTime.now())
+                    .relatedId(event.getTicketId())
+                    .relatedTable("ticket")
+                    .status("SUCCESS")
+                    .type("STATUS_CHANGED")
+                    .build());
+
+        } catch (Exception e) {
+            log.error("Failed to process TicketCategoryChangedEvent: {}", e.getMessage());
+
+            alertLogRepository.save(AlertLog.builder()
+                    .createdAt(LocalDateTime.now())
+                    .relatedId(event.getTicketId())
+                    .relatedTable("ticket")
+                    .status("FAILURE")
+                    .type("ASSIGNEE_CHANGED")
+                    .build());
+        }
     }
 }
-

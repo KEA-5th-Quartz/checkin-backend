@@ -7,6 +7,9 @@ import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.entity.*;
+import com.quartz.checkin.event.TicketAssigneeChangedEvent;
+import com.quartz.checkin.event.TicketCategoryChangedEvent;
+import com.quartz.checkin.event.TicketStatusChangedEvent;
 import com.quartz.checkin.repository.CategoryRepository;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketLogRepository;
@@ -14,9 +17,7 @@ import com.quartz.checkin.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -56,12 +57,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         ticket.assignManager(manager);
         ticketRepository.save(ticket);
 
-        // 상태 변경 요청
-        webhookService.updateStatusInWebhook(ticket.getAgitId(), 1);
-
-        // 웹훅 담당자 변경 요청
-        webhookService.updateAssigneeInWebhook(ticket.getAgitId(), manager.getId(), ticket.getUser().getId());
-
         // 로그 기록
         String logContent = String.format("%s%s %s에게 배정되었습니다.",
                 ticket.getTitle(), subjectParticle, manager.getUsername());
@@ -73,6 +68,29 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getAgitId(), 1));
+
+        List<String> assigneesForInProgress = new ArrayList<>();
+
+        // 사용자는 항상 포함
+        if (ticket.getUser() != null) {
+            assigneesForInProgress.add(ticket.getUser().getUsername());
+        }
+
+        // 현재 담당자 추가 (변경이 발생했을 경우 새로운 담당자로 대체됨)
+        if (ticket.getManager() != null) {
+            assigneesForInProgress.add(ticket.getManager().getUsername());
+        }
+
+        eventPublisher.publishEvent(new TicketAssigneeChangedEvent(
+                ticket.getAgitId(),
+                ticket.getManager() != null ? ticket.getManager().getId() : null,
+                ticket.getUser() != null ? ticket.getUser().getId() : null,
+                ticket.getId(),
+                new ArrayList<>(assigneesForInProgress)
+        ));
+
         return new TicketLogResponse(ticketLog);
     }
 
@@ -92,9 +110,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         ticket.closeTicket();
         ticketRepository.save(ticket);
 
-        // 웹훅 상태 변경 요청
-        webhookService.updateStatusInWebhook(ticket.getAgitId(), 2);
-
         // 조사 처리
         String subjectParticle = getSubjectParticle(manager.getUsername());
         String objectParticle = getObjectParticle(ticket.getTitle());
@@ -112,6 +127,9 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getAgitId(), 2));
+
         return new TicketLogResponse(ticketLog);
     }
 
@@ -153,9 +171,6 @@ public class TicketLogServiceImpl implements TicketLogService {
                 newSecondCategory.getName()
         );
 
-        // 웹훅 댓글로 카테고리 변경 알림
-        webhookService.addCommentToWebhookPost(ticket.getAgitId(), logContent);
-
         // 로그 저장
         TicketLog ticketLog = TicketLog.builder()
                 .ticket(ticket)
@@ -165,6 +180,11 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        eventPublisher.publishEvent(
+                new TicketCategoryChangedEvent(ticket.getId(), ticket.getAgitId(), memberId, oldFirstCategory, newFirstCategory.getName(), logContent)
+        );
+
         return new TicketLogResponse(ticketLog);
     }
 
@@ -208,9 +228,6 @@ public class TicketLogServiceImpl implements TicketLogService {
                 newSecondCategory.getName()
         );
 
-        // 웹훅 댓글로 카테고리 변경 알림
-        webhookService.addCommentToWebhookPost(ticket.getAgitId(), logContent);
-
         // 로그 저장
         TicketLog ticketLog = TicketLog.builder()
                 .ticket(ticket)
@@ -220,6 +237,10 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        eventPublisher.publishEvent(new TicketCategoryChangedEvent(ticket.getId(), ticket.getAgitId(), memberId, oldSecondCategory, newSecondCategory.getName(), logContent));
+
+
         return new TicketLogResponse(ticketLog);
     }
 
@@ -254,9 +275,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         ticket.reassignManager(newManager);
         ticketRepository.save(ticket);
 
-        // 웹훅 담당자 업데이트 요청
-        webhookService.updateAssigneeInWebhook(ticket.getAgitId(), newManager.getId(), ticket.getUser().getId());
-
         // 로그 기록
         String logContent = String.format("담당자가 변경되었습니다. %s → %s",
                 currentManager != null ? currentManager.getUsername() : "없음",
@@ -270,6 +288,25 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        List<String> assigneesForInProgress = new ArrayList<>();
+
+        if (ticket.getUser() != null) {
+            assigneesForInProgress.add(ticket.getUser().getUsername());
+        }
+
+        if (newManager != null) {
+            assigneesForInProgress.add(newManager.getUsername());
+        }
+
+        eventPublisher.publishEvent(new TicketAssigneeChangedEvent(
+                ticket.getAgitId(),
+                newManager.getId(),
+                ticket.getUser().getId(),
+                ticket.getId(),
+                new ArrayList<>(assigneesForInProgress)
+                ));
+
         return new TicketLogResponse(ticketLog);
     }
 

@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class NotificationEvent {
-    private String relatedId;      // 관련 엔터티 ID
+    private Long relatedId;      // 관련 엔터티 ID
     private String type;         // 알림 유형 (예: COMMENT, STATUS_CHANGE, ASSIGNEE_CHANGED 등)
     private String relatedTable; // 관련 테이블 이름
     private Long memberId;       // 이벤트를 발생시킨 사람 (댓글 작성자)

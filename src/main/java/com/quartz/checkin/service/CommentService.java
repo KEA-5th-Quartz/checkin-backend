@@ -60,7 +60,7 @@ public class CommentService {
      * @return 댓글 ID
      */
     @Transactional
-    public CommentResponse writeComment(CustomUser user, String ticketId, String content) {
+    public CommentResponse writeComment(CustomUser user, Long ticketId, String content) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> {
                     log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
@@ -85,7 +85,7 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        eventPublisher.publishEvent(new CommentAddedEvent(ticket.getId(), ticket.getAgitId(), comment));
+        eventPublisher.publishEvent(new CommentAddedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), comment));
 
         return CommentResponse.builder()
                 .commentId(savedComment.getId())
@@ -98,8 +98,8 @@ public class CommentService {
      * @param ticketId 티켓 ID
      * @return 댓글과 로그
      */
-    public TicketActivityResponse getCommentsAndLogs(String ticketId) {
-        if (!ticketRepository.existsById(ticketId)) { // Long → String
+    public TicketActivityResponse getCommentsAndLogs(Long ticketId) {
+        if (!ticketRepository.existsById(ticketId)) {
             log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
             throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
         }
@@ -113,7 +113,7 @@ public class CommentService {
                 .collect(Collectors.toList());
 
         return TicketActivityResponse.builder()
-                .ticketId(ticketId)
+                .id(ticketId)
                 .activities(activities)
                 .build();
     }
@@ -170,7 +170,7 @@ public class CommentService {
      * @return 좋아요 여부, 좋아요 ID, 댓글 ID
      */
     @Transactional
-    public CommentLikeResponse toggleLike(CustomUser user, String ticketId, Long commentId) {
+    public CommentLikeResponse toggleLike(CustomUser user, Long ticketId, Long commentId) {
         if (!ticketRepository.existsById(ticketId)) {
             log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
             throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
@@ -215,7 +215,7 @@ public class CommentService {
      * @param commentId 댓글 ID
      * @return 좋아요 누른 회원 목록
      */
-    public CommentLikeListResponse getLikingMembersList(String ticketId, Long commentId) {
+    public CommentLikeListResponse getLikingMembersList(Long ticketId, Long commentId) {
         if (!ticketRepository.existsById(ticketId)) {
             log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
             throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
@@ -240,7 +240,7 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentAttachmentResponse uploadCommentAttachment(CustomUser user, String ticketId, MultipartFile file) {
+    public CommentAttachmentResponse uploadCommentAttachment(CustomUser user, Long ticketId, MultipartFile file) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> {
                     log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
@@ -265,6 +265,7 @@ public class CommentService {
 
             eventPublisher.publishEvent(new FileUploadedEvent(
                     ticket.getId(),
+                    ticket.getCustomId(),
                     ticket.getAgitId(),
                     member.getUsername()
             ));

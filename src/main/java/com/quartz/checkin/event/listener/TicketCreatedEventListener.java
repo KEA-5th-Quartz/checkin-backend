@@ -5,7 +5,6 @@ import com.quartz.checkin.event.TicketCreatedEvent;
 import com.quartz.checkin.repository.AlertLogRepository;
 import com.quartz.checkin.service.WebhookService;
 import java.time.LocalDateTime;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -26,32 +25,32 @@ public class TicketCreatedEventListener {
     public void handleTicketCreatedEvent(TicketCreatedEvent event) {
         try {
             Long agitId = webhookService.createAgitPost(
-                    event.getTicketId(),
+                    event.getId(),
                     event.getTitle(),
                     event.getContent(),
                     event.getAssignees()
             );
 
-            webhookService.updateAgitIdInTicket(String.valueOf(event.getTicketId()), agitId);
+            webhookService.updateAgitIdInTicket(event.getId(), agitId);
 
             AlertLog alertLog = AlertLog.builder()
                     .createdAt(LocalDateTime.now())
                     .memberId(event.getUserId())
-                    .relatedId(event.getTicketId())
+                    .relatedId(event.getId())
                     .relatedTable("ticket")
                     .status("SUCCESS")
                     .type("TICKET_CREATED")
                     .build();
             alertLogRepository.save(alertLog);
 
-            log.info("Ticket Created Event Processed: TicketId={}", event.getTicketId());
+            log.info("Ticket Created Event Processed: TicketId={}", event.getId());
         } catch (Exception e) {
             log.error("Failed to process TicketCreatedEvent: {}", e.getMessage());
 
             AlertLog alertLog = AlertLog.builder()
                     .createdAt(LocalDateTime.now())
                     .memberId(event.getUserId())
-                    .relatedId(event.getTicketId())
+                    .relatedId(event.getId())
                     .relatedTable("ticket")
                     .status("FAILURE")
                     .type("TICKET_CREATED")

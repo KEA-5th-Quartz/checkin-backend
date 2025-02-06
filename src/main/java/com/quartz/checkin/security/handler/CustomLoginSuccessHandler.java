@@ -1,5 +1,6 @@
 package com.quartz.checkin.security.handler;
 
+import com.quartz.checkin.common.ServletRequestUtils;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.MemberAccessLogService;
@@ -27,8 +28,6 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
 
-        //TODO 사용자 로그인 잠금 여부 확인 -> 잠금 상태 일시 인증 불허
-
         log.info("로그인에 성공하였습니다.");
         CustomUser user = (CustomUser) authentication.getPrincipal();
         jwtService.setAuthenticationResponse(response, user);
@@ -37,7 +36,7 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
         jwtService.setRefreshToken(response, refreshToken);
         memberService.updateMemberRefreshToken(user.getId(), refreshToken);
 
-        String clientIp = memberAccessLogService.getClientIp(request);
+        String clientIp = ServletRequestUtils.getClientIp(request);
         memberAccessLogService.writeLoginSuccessAccessLog(user.getId(), clientIp);
 
     }

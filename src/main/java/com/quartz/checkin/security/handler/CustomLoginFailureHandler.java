@@ -1,5 +1,6 @@
 package com.quartz.checkin.security.handler;
 
+import com.quartz.checkin.common.ServletRequestUtils;
 import com.quartz.checkin.common.cache.LoginFailureInfo;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.common.ServletResponseUtils;
@@ -36,7 +37,7 @@ public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
             log.warn("비밀번호가 틀렸습니다.");
 
             String username = (String) request.getAttribute("username");
-            String clientIp = memberAccessLogService.getClientIp(request);
+            String clientIp = ServletRequestUtils.getClientIp(request);
             memberAccessLogService.writeWrongPasswordAccessLog(username, clientIp);
 
             String key = clientIp + ":" + username;

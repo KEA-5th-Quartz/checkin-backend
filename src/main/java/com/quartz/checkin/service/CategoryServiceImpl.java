@@ -13,10 +13,12 @@ import com.quartz.checkin.dto.category.response.SecondCategoryResponse;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.repository.CategoryRepository;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +52,8 @@ public class CategoryServiceImpl implements CategoryService {
                 categoryMap.get(firstCategory.getId()).getSecondCategories()
                         .add(new SecondCategoryResponse(
                                 secondCategory.getId(),
-                                secondCategory.getName()
+                                secondCategory.getName(),
+                                secondCategory.getAlias()
                         ));
             }
         }
@@ -107,9 +110,9 @@ public class CategoryServiceImpl implements CategoryService {
     public SecondCategoryCreateResponse createSecondCategory(Long memberId, Long firstCategoryId, SecondCategoryCreateRequest request) {
         Category firstCategory = getValidFirstCategory(firstCategoryId);
         checkDuplicateSecondCategory(request.getName(), firstCategory, null);
+        validateDuplicateSecondCategoryAlias(firstCategory, request.getAlias(), null);
 
-
-        Category secondCategory = new Category(firstCategory, request.getName(), null, null);
+        Category secondCategory = new Category(firstCategory, request.getName(), request.getAlias(), null);
         categoryRepository.save(secondCategory);
 
         return new SecondCategoryCreateResponse(secondCategory.getId());
@@ -124,7 +127,11 @@ public class CategoryServiceImpl implements CategoryService {
             checkDuplicateSecondCategory(request.getSecondCategory(), secondCategory.getParent(), secondCategoryId);
         }
 
-        secondCategory.updateCategory(request.getSecondCategory(), null, null);
+        if (!secondCategory.getAlias().equals(request.getAlias())) {
+            validateDuplicateSecondCategoryAlias(secondCategory.getParent(), request.getAlias(), secondCategoryId);
+        }
+
+        secondCategory.updateCategory(request.getSecondCategory(), request.getAlias(), null);
     }
 
     @Override
@@ -173,6 +180,23 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElse(categoryRepository.existsByAlias(alias));
 
         if (exists) {
+            throw new ApiException(ErrorCode.DUPLICATE_ALIAS);
+        }
+    }
+
+    // 같은 1차 카테고리 내에서 alias 단일 검증
+    private void validateDuplicateSecondCategoryAlias(Category firstCategory, String alias, Long excludeId) {
+        List<Category> secondCategories = categoryRepository.findByParentId(firstCategory.getId());
+
+        Set<String> existingAliases = new HashSet<>();
+        for (Category secondCategory : secondCategories) {
+            if (!secondCategory.getId().equals(excludeId)) {
+                existingAliases.add(secondCategory.getAlias());
+            }
+        }
+
+        // 새로운 alias가 기존에 존재하는 경우 예외 발생
+        if (existingAliases.contains(alias)) {
             throw new ApiException(ErrorCode.DUPLICATE_ALIAS);
         }
     }

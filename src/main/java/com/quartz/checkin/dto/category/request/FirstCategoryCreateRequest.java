@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class FirstCategoryCreateRequest {
-    @NotBlank(message = "카테고리 이름을 입력하세요")
+    @NotBlank(message = "1차 카테고리 이름을 입력하세요")
     private String name;
 
     @NotBlank

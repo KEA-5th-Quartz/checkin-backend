@@ -35,7 +35,8 @@ public class CategoryServiceImpl implements CategoryService {
             Category secondCategory = (Category) row[1];
 
             categoryMap.putIfAbsent(firstCategory.getId(),
-                    new CategoryResponse(firstCategory.getId(), firstCategory.getName(), new ArrayList<>()));
+                    new CategoryResponse(firstCategory.getId(), firstCategory.getName(),
+                            firstCategory.getAlias(), firstCategory.getContentGuide(), new ArrayList<>()));
 
             if (secondCategory != null) {
                 categoryMap.get(firstCategory.getId()).getSecondCategories()
@@ -49,17 +50,23 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public FirstCategoryCreateResponse createFirstCategory(Long memberId, FirstCategoryCreateRequest request) {
         checkDuplicateFirstCategory(request.getName());
-        Category firstCategory = new Category(null, request.getName());
+
+        // Alias 자동 변환 로직
+        String formattedAlias = formatAlias(request.getAlias());
+
+        // 카테고리 생성 및 저장
+        Category firstCategory = new Category(null, request.getName(), formattedAlias, request.getContentGuide());
         categoryRepository.save(firstCategory);
+
         return new FirstCategoryCreateResponse(firstCategory.getId());
     }
 
     @Transactional
     public void updateFirstCategory(Long memberId, Long firstCategoryId, FirstCategoryUpdateRequest request) {
         Category firstCategory = getValidFirstCategory(firstCategoryId);
-        checkDuplicateFirstCategory(request.getFirstCategory());
+        checkDuplicateFirstCategory(request.getName());
 
-        firstCategory.updateName(request.getFirstCategory());
+        firstCategory.updateCategory(request.getName(),request.getAlias(),request.getContentGuide());
     }
 
     @Transactional
@@ -78,7 +85,7 @@ public class CategoryServiceImpl implements CategoryService {
         Category firstCategory = getValidFirstCategory(firstCategoryId);
         checkDuplicateSecondCategory(request.getName(), firstCategory);
 
-        Category secondCategory = new Category(firstCategory, request.getName());
+        Category secondCategory = new Category(firstCategory, request.getName(), null, null);
         categoryRepository.save(secondCategory);
 
         return new SecondCategoryCreateResponse(secondCategory.getId());
@@ -89,7 +96,7 @@ public class CategoryServiceImpl implements CategoryService {
         Category secondCategory = getValidSecondCategory(firstCategoryId, secondCategoryId);
         checkDuplicateSecondCategory(request.getSecondCategory(), secondCategory.getParent());
 
-        secondCategory.updateName(request.getSecondCategory());
+        secondCategory.updateCategory(request.getSecondCategory(), null, null);
     }
 
     @Transactional
@@ -145,4 +152,17 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findByNameAndParent(secondCategory, firstCategory)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
     }
+
+    private String formatAlias(String alias) {
+        if (alias.length() == 2) {
+            return alias + "__";
+        } else if (alias.length() == 3) {
+            return alias + "_";
+        } else if (alias.length() == 4) {
+            return alias;  // 4글자는 그대로 사용
+        } else {
+            throw new ApiException(ErrorCode.INVALID_ALIAS_FORMAT);
+        }
+    }
+
 }

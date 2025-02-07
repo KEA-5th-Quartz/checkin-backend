@@ -5,7 +5,7 @@ import java.util.List;
 import lombok.Getter;
 
 @Getter
-public class TicketDeleteRequest {
+public class TicketDeleteOrRestoreOrPurgeRequest {
 
     @NotNull
     private List<Long> ticketIds;

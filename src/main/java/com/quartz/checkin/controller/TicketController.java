@@ -77,13 +77,18 @@ public class TicketController {
 
     @ManagerOrUser
     @Operation(summary = "API 명세서 v0.3 line 34", description = "티켓 첨부파일 다운로드")
-    @GetMapping("/{ticketId}/{attachmentId}")
-    public ApiResponse<AttachmentResponse> getAttachment(
-            @PathVariable String ticketId,
-            @PathVariable Long attachmentId) {
+    @GetMapping("/{ticketId}/{attachmentUrl}")
+    public ApiResponse<AttachmentResponse> downloadAttachment(
+            @PathVariable Long ticketId,
+            @RequestParam String attachmentUrl
+    ) {
+        AttachmentResponse response =
+                attachmentService.getAttachmentInfo(ticketId, attachmentUrl);
 
-        AttachmentResponse response = attachmentService.getAttachment(ticketId, attachmentId);
-        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+        return ApiResponse.createSuccessResponseWithData(
+                HttpStatus.OK.value(),
+                response
+        );
     }
 
 

@@ -18,14 +18,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketTrashServiceImpl implements TicketTrashService {
@@ -150,8 +148,6 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         List<Ticket> expiredTickets = ticketQueryRepository.findTicketsToDelete(thresholdDate);
 
         if (!expiredTickets.isEmpty()) {
-            log.info("Soft deleting {} expired tickets.", expiredTickets.size());
-
             // SoftDelete 수행
             expiredTickets.forEach(Ticket::softDelete);
             ticketRepository.saveAll(expiredTickets);
@@ -174,11 +170,8 @@ public class TicketTrashServiceImpl implements TicketTrashService {
                 .fetch();
 
         if (!oldTickets.isEmpty()) {
-            log.info("Soft deleting {} closed tickets older than 6 months.", oldTickets.size());
-
             // SoftDelete 처리
             oldTickets.forEach(Ticket::softDelete);
-
             // 변경 사항 저장
             ticketRepository.saveAll(oldTickets);
         }
@@ -229,5 +222,21 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         );
     }
 
+
+    @Transactional
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void deleteOldSoftDeletedTickets() {
+        QTicket ticket = QTicket.ticket;
+        // 30일이 지난 삭제된 티켓 조회
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+
+        List<Ticket> expiredTickets = queryFactory
+                .selectFrom(ticket)
+                .where(ticket.deletedAt.isNotNull()
+                        .and(ticket.deletedAt.before(thirtyDaysAgo)))
+                .fetch();
+        // 영구 삭제 실행
+        ticketRepository.deleteAll(expiredTickets);
+    }
 
 }

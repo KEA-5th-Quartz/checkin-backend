@@ -72,7 +72,7 @@ public class AttachmentService {
     @Transactional(readOnly = true)
     public AttachmentResponse getAttachment(String ticketId, Long attachmentId) {
         // 특정 ticketId와 attachmentId를 가진 첨부파일이 있는지 조회
-        Optional<TicketAttachment> ticketAttachment = ticketAttachmentRepository.findByTicketId(ticketId)
+        Optional<TicketAttachment> ticketAttachment = ticketAttachmentRepository.findByTicketId(Long.valueOf(ticketId))
                 .stream()
                 .filter(ta -> ta.getAttachment().getId().equals(attachmentId))
                 .findFirst();

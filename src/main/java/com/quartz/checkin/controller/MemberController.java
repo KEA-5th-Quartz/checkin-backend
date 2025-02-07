@@ -15,9 +15,6 @@ import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
-import com.quartz.checkin.dto.member.response.MemberRoleCount;
-import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
-
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.security.annotation.AdminOrManager;
@@ -30,8 +27,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -161,6 +160,33 @@ public class MemberController {
             @ModelAttribute @Valid SimplePageRequest simplePageRequest,
             @RequestParam(defaultValue = "DESC") String order) {
         AccessLogListResponse response = memberAccessLogService.getAccessLogList(simplePageRequest, order);
+
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @Admin
+    @Operation(summary = "API 명세서 v0.3 line 21", description = "관리자가 회원 소프트 딜리트")
+    @DeleteMapping("/{memberId}")
+    public ApiResponse<Void> delete(@PathVariable(name = "memberId") Long memberId) {
+        memberService.softDeleteMember(memberId);
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @Admin
+    @Operation(summary = "API 명세서 v0.3 line 14", description = "관리자가 소프트 딜리트된 회원 복구")
+    @PatchMapping("/trash/{memberId}/restore")
+    public ApiResponse<Void> restore(@PathVariable(name = "memberId") Long memberId) {
+        memberService.restoreMember(memberId);
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @Admin
+    @Operation(summary = "API 명세서 v0.3 line 15", description = "관리자가 소프트 딜리트된 회원 조회")
+    @GetMapping("/trash")
+    public ApiResponse<MemberInfoListResponse> trash(@ModelAttribute @Valid SimplePageRequest pageRequest) {
+        MemberInfoListResponse response = memberService.getSoftDeletedMemberInfoList(pageRequest);
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }

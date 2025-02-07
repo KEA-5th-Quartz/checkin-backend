@@ -4,6 +4,7 @@ import com.quartz.checkin.common.PasswordGenerator;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
+import com.quartz.checkin.dto.common.request.SimplePageRequest;
 import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
@@ -80,10 +81,22 @@ public class MemberService {
 
         Page<Member> memberPage = null;
         if (username == null || username.isBlank()) {
-            memberPage = memberRepository.findByRole(role, pageable);
+            memberPage = memberRepository.findByRoleAndDeletedAtIsNull(role, pageable);
         } else {
-            memberPage = memberRepository.findByRoleAndUsernameContaining(role, username, pageable);
+            memberPage = memberRepository.findByRoleAndUsernameContainingAndDeletedAtIsNull(role, username, pageable);
         }
+
+        return MemberInfoListResponse.from(memberPage);
+    }
+
+    public MemberInfoListResponse getSoftDeletedMemberInfoList(SimplePageRequest simplePageRequest) {
+
+        int page = simplePageRequest.getPage();
+        int size = simplePageRequest.getSize();
+
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("deletedAt").ascending());
+
+        Page<Member> memberPage = memberRepository.findByDeletedAtIsNotNull(pageable);
 
         return MemberInfoListResponse.from(memberPage);
     }
@@ -204,6 +217,30 @@ public class MemberService {
         member.updateRole(newRole);
 
         eventPublisher.publishEvent(new RoleUpdateEvent(member.getUsername()));
+    }
+
+    @Transactional
+    public void softDeleteMember(Long id) {
+        Member member = getMemberByIdOrThrow(id);
+
+        if (member.getDeletedAt() != null) {
+            log.error("이미 소프트 딜리트된 사용자입니다.");
+            throw new ApiException(ErrorCode.MEMBER_ALREADY_SOFT_DELETED);
+        }
+
+        member.softDelete();
+    }
+
+    @Transactional
+    public void restoreMember(Long id) {
+        Member member = getMemberByIdOrThrow(id);
+
+        if (member.getDeletedAt() == null) {
+            log.error("소프트 딜리트된 사용자가 아닙니다.");
+            throw new ApiException(ErrorCode.MEMBER_NOT_SOFT_DELETED);
+        }
+
+        member.restore();
     }
 
     private void checkMemberOwnsResource(Member member, CustomUser customUser) {

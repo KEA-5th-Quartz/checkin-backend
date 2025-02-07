@@ -12,18 +12,6 @@ import java.util.*;
 @Repository
 public interface StatsMemberRepository extends JpaRepository<Member, Long> {
 
-    // due-today
-    @Query(value = """
-        SELECT m.username, COALESCE(COUNT(t.ticket_id), 0) AS ticketCount 
-        FROM member m 
-        LEFT JOIN ticket t ON m.member_id = t.manager_id 
-        AND t.status = 'IN_PROGRESS' 
-        AND t.due_date = CURRENT_DATE() 
-        WHERE m.member_id = :managerId 
-        GROUP BY m.member_id, m.username
-        """, nativeQuery = true)
-    List<Map<String, Object>> findTicketCountByManagerId(@Param("managerId") Long managerId);
-
     // 각 담당자의 카테고리별 티켓수
     @Query(value = """
         SELECT 

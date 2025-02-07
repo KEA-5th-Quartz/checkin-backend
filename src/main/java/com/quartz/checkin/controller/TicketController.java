@@ -26,7 +26,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +42,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -70,6 +74,17 @@ public class TicketController {
 
         List<UploadAttachmentsResponse> response =
                 attachmentService.uploadAttachments(multipartFiles, S3Config.TICKET_DIR);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @ManagerOrUser
+    @Operation(summary = "API 명세서 v0.3 line 39", description = "티켓 첨부파일 다운로드")
+    @GetMapping("/{ticketId}/{attachmentId}")
+    public ApiResponse<AttachmentResponse> getAttachment(
+            @PathVariable String ticketId,
+            @PathVariable Long attachmentId) {
+
+        AttachmentResponse response = attachmentService.getAttachment(ticketId, attachmentId);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -201,7 +216,7 @@ public class TicketController {
         ticketCudService.updatePriority(user.getId(), ticketId, request);
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
-
+  
     @User
     @Operation(summary = "API 명세서 v0.3 line 34", description = "사용자가 다중 티켓 복구")
     @PatchMapping("/trash/restore")

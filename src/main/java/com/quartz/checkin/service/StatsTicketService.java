@@ -2,8 +2,6 @@ package com.quartz.checkin.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quartz.checkin.dto.statisitics.request.StatClosedRateRequest;
-import com.quartz.checkin.dto.statisitics.request.StatProgressRequest;
 import com.quartz.checkin.dto.statisitics.response.StatCategoryTicketResponse;
 import com.quartz.checkin.dto.statisitics.response.StatClosedRateResponse;
 import com.quartz.checkin.dto.statisitics.response.StatProgressResponse;
@@ -30,21 +28,9 @@ public class StatsTicketService {
         this.objectMapper = objectMapper;
     }
 
-   /* public StatTotalProgressResponse getStatTotalProgress() {
-        List<Object[]> result = statsTicketRepository.findStatTotalProgress();
-        if (result.isEmpty()) return new StatTotalProgressResponse();
-
-        Object[] row = result.get(0);
-        int overdue = ((Number) row[0]).intValue(); // 첫 번째 컬럼이 overdue
-        String stateJson = (String) row[1]; // 두 번째 컬럼이 state_json
-
-        List<StatTotalProgressResponse.StatusCount> state = parseStateJson(stateJson);
-        return new StatTotalProgressResponse(overdue, state);
-    }*/
-
     // 2. 유형별 진행률 조회
-    public List<StatProgressResponse> getProgressRates(StatProgressRequest request) {
-        List<Map<String, Object>> result = statsTicketRepository.findProgressRatesByType(request);
+    public List<StatProgressResponse> getProgressRates(String type) {
+        List<Map<String, Object>> result = statsTicketRepository.findProgressRatesByType(type);
         List<StatProgressResponse> response = new ArrayList<>();
 
         for (Map<String, Object> row : result) {
@@ -65,8 +51,8 @@ public class StatsTicketService {
     }
 
     // 3. 티켓 완료율 조회
-    public StatClosedRateResponse getCompletionRate(StatClosedRateRequest request) {
-        Optional<Double> closedRate = statsTicketRepository.findCompletionRateByType(request);
+    public StatClosedRateResponse getCompletionRate(String type) {
+        Optional<Double> closedRate = statsTicketRepository.findCompletionRateByType(type);
         return new StatClosedRateResponse(closedRate.orElse(0.0));
     }
 

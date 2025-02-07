@@ -3,10 +3,15 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
+import com.quartz.checkin.dto.ticket.response.AttachmentResponse;
 import com.quartz.checkin.entity.Attachment;
+import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.repository.AttachmentRepository;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+
+import com.quartz.checkin.repository.TicketAttachmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +25,7 @@ public class AttachmentService {
 
     private final AttachmentRepository attachmentRepository;
     private final S3Service s3Service;
+    private final TicketAttachmentRepository ticketAttachmentRepository;
 
     @Transactional
     public List<UploadAttachmentsResponse> uploadAttachments(List<MultipartFile> multipartFiles, String dirName) {
@@ -61,5 +67,26 @@ public class AttachmentService {
             }
         }
         attachmentRepository.deleteAllByIdInBatch(attachmentIdsToRemove);
+    }
+
+    @Transactional(readOnly = true)
+    public AttachmentResponse getAttachment(String ticketId, Long attachmentId) {
+        // 특정 ticketId와 attachmentId를 가진 첨부파일이 있는지 조회
+        Optional<TicketAttachment> ticketAttachment = ticketAttachmentRepository.findByTicketId(Long.valueOf(ticketId))
+                .stream()
+                .filter(ta -> ta.getAttachment().getId().equals(attachmentId))
+                .findFirst();
+
+        if (ticketAttachment.isEmpty()) {
+            throw new ApiException(ErrorCode.NOT_FOUND, "해당 첨부파일을 찾을 수 없습니다.");
+        }
+
+        Attachment attachment = ticketAttachment.get().getAttachment();
+
+        return new AttachmentResponse(attachment.getId(), extractFileName(attachment.getUrl()), attachment.getUrl());
+    }
+
+    private String extractFileName(String url) {
+        return url.substring(url.lastIndexOf("/") + 1);
     }
 }

@@ -125,4 +125,23 @@ public class TicketTrashServiceImpl implements TicketTrashService {
 //                .build();
 //
 //    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 3 * * ?") // 매일 새벽 3시 실행
+    public void deleteExpiredTickets() {
+        LocalDate today = LocalDate.now();
+        LocalDate thresholdDate = today.minusDays(7);
+
+        // QueryDSL을 활용하여 만료된 티켓 조회
+        List<Ticket> expiredTickets = ticketQueryRepository.findTicketsToDelete(thresholdDate);
+
+        if (!expiredTickets.isEmpty()) {
+            log.info("Soft deleting {} expired tickets.", expiredTickets.size());
+
+            // SoftDelete 수행
+            expiredTickets.forEach(Ticket::softDelete);
+            ticketRepository.saveAll(expiredTickets);
+        }
+    }
+
 }

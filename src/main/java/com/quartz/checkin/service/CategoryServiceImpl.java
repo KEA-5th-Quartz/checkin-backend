@@ -11,7 +11,10 @@ import com.quartz.checkin.dto.category.response.FirstCategoryCreateResponse;
 import com.quartz.checkin.dto.category.response.SecondCategoryCreateResponse;
 import com.quartz.checkin.dto.category.response.SecondCategoryResponse;
 import com.quartz.checkin.entity.Category;
+import com.quartz.checkin.entity.QCategory;
 import com.quartz.checkin.repository.CategoryRepository;
+import com.querydsl.core.Tuple;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -28,38 +31,54 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
+    private final JPAQueryFactory queryFactory;
 
 
     @Override
     public List<CategoryResponse> getAllCategories(Long memberId) {
-        List<Object[]> result = categoryRepository.findAllCategoriesWithSecondCategories();
+        return findAllCategoriesWithSecondCategories();
+    }
+
+    public List<CategoryResponse> findAllCategoriesWithSecondCategories() {
+        QCategory firstCategory = new QCategory("firstCategory");
+        QCategory secondCategory = new QCategory("secondCategory");
+
+        List<Tuple> result = queryFactory
+                .select(firstCategory, secondCategory)
+                .from(firstCategory)
+                .leftJoin(secondCategory).on(secondCategory.parent.eq(firstCategory))
+                .where(firstCategory.parent.isNull())
+                .orderBy(firstCategory.id.asc(), secondCategory.id.asc())
+                .fetch();
+
         Map<Long, CategoryResponse> categoryMap = new LinkedHashMap<>();
 
-        for (Object[] row : result) {
-            Category firstCategory = (Category) row[0];
-            Category secondCategory = (Category) row[1];
+        for (Tuple row : result) {
+            Category first = row.get(firstCategory);
+            Category second = row.get(secondCategory);
 
-            categoryMap.putIfAbsent(firstCategory.getId(),
+            categoryMap.putIfAbsent(first.getId(),
                     new CategoryResponse(
-                            firstCategory.getId(),
-                            firstCategory.getName(),
-                            firstCategory.getAlias(),
-                            firstCategory.getContentGuide(),
+                            first.getId(),
+                            first.getName(),
+                            first.getAlias(),
+                            first.getContentGuide(),
                             new ArrayList<>()
                     ));
 
-            if (secondCategory != null) {
-                categoryMap.get(firstCategory.getId()).getSecondCategories()
+            if (second != null) {
+                categoryMap.get(first.getId()).getSecondCategories()
                         .add(new SecondCategoryResponse(
-                                secondCategory.getId(),
-                                secondCategory.getName(),
-                                secondCategory.getAlias()
+                                second.getId(),
+                                second.getName(),
+                                second.getAlias()
                         ));
             }
         }
 
         return new ArrayList<>(categoryMap.values());
     }
+
 
     @Override
     public FirstCategoryCreateResponse createFirstCategory(Long memberId, FirstCategoryCreateRequest request) {

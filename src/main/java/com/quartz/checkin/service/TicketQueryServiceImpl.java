@@ -170,10 +170,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
 
     private Page<Ticket> fetchSearchedTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
         validatePagination(page, size);
-
-        Sort.Direction createdAtSortDirection = "asc".equalsIgnoreCase(sortByCreatedAt) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Sort sort = Sort.by(createdAtSortDirection, "createdAt");
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
 
         QTicket ticket = QTicket.ticket;
         QMember manager = QMember.member;
@@ -221,11 +218,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
                                       Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
 
         validatePagination(page, size);
-
-        Sort.Direction createdAtSortDirection = "asc".equalsIgnoreCase(sortByCreatedAt) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Sort sort = Sort.by(createdAtSortDirection, "createdAt");
-
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
 
         QTicket ticket = QTicket.ticket;
         QMember manager = QMember.member;

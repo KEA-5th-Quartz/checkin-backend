@@ -14,15 +14,15 @@ public interface TicketQueryService {
 
     ManagerTicketListResponse getManagerTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                                 List<String> categories, List<Priority> priorities,
-                                                Boolean dueToday, Boolean dueThisWeek, int page, int size);
+                                                Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt);
 
     UserTicketListResponse getUserTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                           List<String> categories, List<Priority> priorities,
-                                          Boolean dueToday, Boolean dueThisWeek, int page, int size);
+                                          Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt);
 
-    ManagerTicketListResponse searchManagerTickets(Long memberId, String keyword, int page, int size);
+    ManagerTicketListResponse searchManagerTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt);
 
-    UserTicketListResponse searchUserTickets(Long memberId, String keyword, int page, int size);
+    UserTicketListResponse searchUserTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt);
 
     TicketProgressResponse getManagerProgress(Long memberId);
 }

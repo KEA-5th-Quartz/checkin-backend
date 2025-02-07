@@ -135,10 +135,11 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "desc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.getManagerTickets(
-                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
+                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt
         );
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
@@ -161,9 +162,10 @@ public class TicketController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "desc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size);
+        ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size, sortByCreatedAt);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -180,10 +182,11 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "desc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.getUserTickets(
-                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
+                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt
         );
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
@@ -197,9 +200,10 @@ public class TicketController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "desc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
-        UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size);
+        UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size, sortByCreatedAt);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
@@ -239,7 +243,7 @@ public class TicketController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 35", description = "사용자가 다중 티켓 영구삭제")
+    @Operation(summary = "API 명세서 v0.3 line 35", description = "휴지통 조회")
     @GetMapping("/trash")
     public ApiResponse<SoftDeletedTicketResponse> getDeletedTickets(
             @AuthenticationPrincipal CustomUser user,

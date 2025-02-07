@@ -9,6 +9,7 @@ import com.quartz.checkin.dto.ticket.request.TicketDeleteOrRestoreOrPurgeRequest
 import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.AttachmentResponse;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
+import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
 import com.quartz.checkin.dto.ticket.response.TicketProgressResponse;
@@ -53,7 +54,7 @@ public class TicketController {
     private final TicketTrashService ticketTrashService;
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 29", description = "티켓 생성")
+    @Operation(summary = "API 명세서 v0.3 line 32", description = "티켓 생성")
     @PostMapping
     public ApiResponse<TicketCreateResponse> createTicket(
             @AuthenticationPrincipal CustomUser user,
@@ -64,7 +65,7 @@ public class TicketController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 30", description = "티켓에 첨부파일 업로드")
+    @Operation(summary = "API 명세서 v0.3 line 33", description = "티켓에 첨부파일 업로드")
     @PostMapping("/attachment")
     public ApiResponse<List<UploadAttachmentsResponse>> uploadAttachment(
             @RequestPart("files") List<MultipartFile> multipartFiles) {
@@ -75,19 +76,24 @@ public class TicketController {
     }
 
     @ManagerOrUser
-    @Operation(summary = "API 명세서 v0.3 line 39", description = "티켓 첨부파일 다운로드")
-    @GetMapping("/{ticketId}/{attachmentId}")
-    public ApiResponse<AttachmentResponse> getAttachment(
-            @PathVariable String ticketId,
-            @PathVariable Long attachmentId) {
+    @Operation(summary = "API 명세서 v0.3 line 34", description = "티켓 첨부파일 다운로드")
+    @GetMapping("/{ticketId}/{attachmentUrl}")
+    public ApiResponse<AttachmentResponse> downloadAttachment(
+            @PathVariable Long ticketId,
+            @RequestParam String attachmentUrl
+    ) {
+        AttachmentResponse response =
+                attachmentService.getAttachmentInfo(ticketId, attachmentUrl);
 
-        AttachmentResponse response = attachmentService.getAttachment(ticketId, attachmentId);
-        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+        return ApiResponse.createSuccessResponseWithData(
+                HttpStatus.OK.value(),
+                response
+        );
     }
 
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 31", description = "사용자가 티켓 수정")
+    @Operation(summary = "API 명세서 v0.3 line 35", description = "사용자가 티켓 수정")
     @PutMapping("/{ticketId}")
     public ApiResponse<Void> updateTicket(
             @PathVariable Long ticketId,
@@ -100,19 +106,19 @@ public class TicketController {
 
     @PatchMapping
     @User
-    @Operation(summary = "API 명세서 V0.3 line 32", description = "사용자가 다중 티켓 삭제")
-    public ApiResponse<Void> deleteMultipleTickets(
+    @Operation(summary = "API 명세서 V0.3 line 36", description = "사용자가 다중 티켓 삭제")
+    public ApiResponse<Void> tempDeleteTickets(
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
 
-        ticketCudService.deleteTickets(user.getId(), request.getTicketIds());
+        ticketCudService.tempDeleteTickets(user.getId(), request.getTicketIds());
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
 
     @ManagerOrUser
-    @Operation(summary = "API 명세서 v0.3 line 33", description = "티켓 상세 조회")
+    @Operation(summary = "API 명세서 v0.3 line 40", description = "티켓 상세 조회")
     @GetMapping("/{ticketId}")
     public ApiResponse<TicketDetailResponse> getTicketDetail(
             @PathVariable Long ticketId,
@@ -123,7 +129,7 @@ public class TicketController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 34", description = "담당자가 전체 티켓 조회")
+    @Operation(summary = "API 명세서 v0.3 line 41", description = "담당자가 전체 티켓 조회")
     @GetMapping
     public ApiResponse<ManagerTicketListResponse> getTickets(
             @RequestParam(required = false) List<Status> statuses,
@@ -134,17 +140,18 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.getManagerTickets(
-                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
+                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt
         );
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 35", description = "담당자가 자신의 데이터 조회(내 티켓 현황)")
+    @Operation(summary = "API 명세서 v0.3 line 42", description = "담당자가 자신의 데이터 조회(내 티켓 현황)")
     @GetMapping("/progress")
     public ApiResponse<TicketProgressResponse> getManagerProgress(
             @AuthenticationPrincipal CustomUser user) {
@@ -154,21 +161,22 @@ public class TicketController {
     }
 
 @Manager
-    @Operation(summary = "API 명세서 v0.3 line 37", description = "담당자 티켓 검색")
+    @Operation(summary = "API 명세서 v0.3 line 44", description = "담당자 티켓 검색")
     @GetMapping("/search")
     public ApiResponse<ManagerTicketListResponse> searchTickets(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
-        ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size);
+        ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size, sortByCreatedAt);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 36", description = "사용자 전체 티켓 조회")
+    @Operation(summary = "API 명세서 v0.3 line 43", description = "사용자 전체 티켓 조회")
     @GetMapping("/my-tickets")
     public ApiResponse<UserTicketListResponse> getUserTickets(
             @RequestParam(required = false) List<Status> statuses,
@@ -179,10 +187,11 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.getUserTickets(
-                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size
+                user.getId(), statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt
         );
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
@@ -190,20 +199,21 @@ public class TicketController {
 
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 38", description = "사용자 티켓 검색")
+    @Operation(summary = "API 명세서 v0.3 line 45", description = "사용자 티켓 검색")
     @GetMapping("/my-tickets/search")
     public ApiResponse<UserTicketListResponse> searchUserTickets(
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
-        UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size);
+        UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size, sortByCreatedAt);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 44", description = "중요도 변경")
+    @Operation(summary = "API 명세서 v0.3 line 51", description = "중요도 변경")
     @PatchMapping("/{ticketId}/priority")
     public ApiResponse<Void> updateTicketPriority(
             @PathVariable Long ticketId,
@@ -215,7 +225,7 @@ public class TicketController {
     }
   
     @User
-    @Operation(summary = "API 명세서 v0.3 line 34", description = "사용자가 다중 티켓 복구")
+    @Operation(summary = "API 명세서 v0.3 line 38", description = "사용자가 다중 티켓 복구")
     @PatchMapping("/trash/restore")
     public ApiResponse<Void> restoreTickets(
             @AuthenticationPrincipal CustomUser user,
@@ -226,15 +236,27 @@ public class TicketController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 35", description = "사용자가 다중 티켓 영구삭제")
+    @Operation(summary = "API 명세서 v0.3 line 39", description = "사용자가 다중 티켓 영구삭제")
     @DeleteMapping
-    public ApiResponse<Void> purgeTickets(
+    public ApiResponse<Void> deleteTickets(
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
 
-        ticketTrashService.purgeTickets(user.getId(), request.getTicketIds());
+        ticketTrashService.deleteTickets(user.getId(), request.getTicketIds());
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @User
+    @Operation(summary = "API 명세서 v0.3 line 35", description = "휴지통 조회")
+    @GetMapping("/trash")
+    public ApiResponse<SoftDeletedTicketResponse> getDeletedTickets(
+            @AuthenticationPrincipal CustomUser user,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        SoftDeletedTicketResponse response = ticketTrashService.getDeletedTickets(user.getId(), page, size);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }
 

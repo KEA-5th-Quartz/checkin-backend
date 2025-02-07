@@ -1,6 +1,7 @@
 package com.quartz.checkin.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quartz.checkin.common.cache.LoginBlockCache;
 import com.quartz.checkin.security.filter.CustomUsernamePasswordAuthenticationFilter;
 import com.quartz.checkin.security.filter.JwtAuthenticationFilter;
 import com.quartz.checkin.security.handler.CustomAccessDeniedHandler;
@@ -10,8 +11,10 @@ import com.quartz.checkin.security.handler.CustomLoginSuccessHandler;
 import com.quartz.checkin.security.handler.CustomLogoutHandler;
 import com.quartz.checkin.security.handler.CustomLogoutSuccessHandler;
 import com.quartz.checkin.security.service.CustomUserDetailsService;
+import com.quartz.checkin.service.LoginBlockCacheService;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,6 +45,7 @@ public class SecurityConfig {
     private final CustomLogoutSuccessHandler customLogoutSuccessHandler;
     private final CustomLogoutHandler customLogoutHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final LoginBlockCacheService loginBlockCacheService;
     private final ObjectMapper objectMapper;
 
     @Bean
@@ -93,7 +97,7 @@ public class SecurityConfig {
     @Bean
     public CustomUsernamePasswordAuthenticationFilter customUsernamePasswordAuthenticationFilter() {
         CustomUsernamePasswordAuthenticationFilter customUsernamePasswordAuthenticationFilter =
-                new CustomUsernamePasswordAuthenticationFilter(objectMapper);
+                new CustomUsernamePasswordAuthenticationFilter(objectMapper, loginBlockCacheService);
 
         customUsernamePasswordAuthenticationFilter.setAuthenticationManager(authenticationManager());
         customUsernamePasswordAuthenticationFilter.setAuthenticationSuccessHandler(customLoginSuccessHandler);

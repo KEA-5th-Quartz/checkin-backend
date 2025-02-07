@@ -5,6 +5,8 @@ import com.quartz.checkin.common.exception.InValidAccessTokenException;
 import com.quartz.checkin.security.service.CustomUserDetailsService;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.common.ServletResponseUtils;
+import com.quartz.checkin.service.RoleUpdateCacheService;
+import com.quartz.checkin.service.TokenBlackListCacheService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +42,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
+    private final TokenBlackListCacheService tokenBlackListCacheService;
+    private final RoleUpdateCacheService roleUpdateCacheService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -66,7 +70,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throw new InValidAccessTokenException();
         }
 
+        if (tokenBlackListCacheService.isBlackList(accessToken)) {
+            log.error("블랙리스트에 속한 토큰으로 접근하려 합니다.");
+            throw new InValidAccessTokenException();
+        }
+
         UserDetails userDetails = customUserDetailsService.loadUserByAccessToken(accessToken);
+        if (roleUpdateCacheService.isRoleUpdated(userDetails.getUsername())) {
+            log.error("권한 변경 기록이 있는 사용자입니다. 재발급이 필요합니다.");
+            throw new InValidAccessTokenException();
+        }
+
         Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
                 userDetails.getAuthorities());
 

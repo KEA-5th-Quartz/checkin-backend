@@ -76,14 +76,4 @@ public class MemberAccessLogService {
 
     }
 
-
-    public String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip != null && !ip.isBlank() && !"unknown".equalsIgnoreCase(ip)) {
-            return ip.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
-    }
-
-
 }

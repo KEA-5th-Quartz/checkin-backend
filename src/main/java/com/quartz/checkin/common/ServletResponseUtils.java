@@ -29,6 +29,12 @@ public class ServletResponseUtils {
         write(response, ApiErrorResponse.createErrorResponse(errorCode));
     }
 
+    public static void writeApiErrorResponseWithData(HttpServletResponse response, ErrorCode errorCode, Object value) {
+        response.setStatus(errorCode.getStatus().value());
+        write(response, ApiErrorResponse.createErrorResponseWithData(errorCode, value));
+    }
+
+
     private static void write(HttpServletResponse response, Object value) {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());

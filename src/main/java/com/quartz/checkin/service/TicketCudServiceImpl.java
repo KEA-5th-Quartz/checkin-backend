@@ -238,7 +238,7 @@ public class TicketCudServiceImpl implements TicketCudService {
     }
 
     @Override
-    public void deleteTickets(Long memberId, List<Long> ticketIds) {
+    public void tempDeleteTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 

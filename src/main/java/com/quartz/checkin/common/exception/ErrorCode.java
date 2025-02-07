@@ -27,6 +27,7 @@ public enum ErrorCode {
     INVALID_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "MEMBER_4007", "페이지 번호가 유효하지 않습니다."),
     INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "MEMBER_4008", "페이지 크기가 유효하지 않습니다."),
     INVALID_PASSWORD_RESET_TOKEN(HttpStatus.UNAUTHORIZED, "MEMBER_4009", "비밀번호 초기화 토큰이 유효하지 않습니다."),
+    BLOCKED_MEMBER(HttpStatus.FORBIDDEN, "MEMBER_4012", "로그인이 잠긴 사용자입니다."),
     INVALID_USERNAME_OR_PASSWORD(HttpStatus.UNAUTHORIZED, "MEMBER_4013", "일치하는 회원 정보가 없습니다. 아이디 혹은 비밀번호를 다시 확인해주세요."),
     UNSUPPORTED_FILE_TYPE(HttpStatus.UNAUTHORIZED, "MEMBER_4015", "지원하지 않는 파일 형식입니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_4040", "존재하지 않는 회원입니다."),
@@ -56,6 +57,10 @@ public enum ErrorCode {
     TICKET_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "TICKET_4090", "이미 담당자가 할당된 상태입니다."),
     TICKET_ALREADY_ASSIGNED_TO_SELF(HttpStatus.CONFLICT, "TICKET_4091", "이미 본인이 담당자로 할당된 상태입니다."),
 
+    // 티켓 첨부파일 서비스 예외
+    ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "ATTACHMENT_4040", "존재하지 않는 첨부파일입니다."),
+
+
     // 댓글 서비스 예외
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_4040", "존재하지 않는 댓글입니다."),
 
@@ -75,6 +80,7 @@ public enum ErrorCode {
     INVALID_STATS_DATE_FORMAT(HttpStatus.BAD_REQUEST, "STATS_4001", "날짜 형식이 올바르지 않습니다."),
     INVALID_STATS_DATE_RANGE(HttpStatus.BAD_REQUEST, "STATS_4002", "시작 날짜가 종료 날짜보다 큽니다."),
     STATS_MANAGER_NOT_FOUND(HttpStatus.NOT_FOUND, "STATS_4041", "존재하지 않는 담당자입니다.");
+
 
     private final HttpStatus status;
     private final String code;

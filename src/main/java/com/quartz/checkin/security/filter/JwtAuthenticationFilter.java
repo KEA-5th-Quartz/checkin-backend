@@ -5,6 +5,7 @@ import com.quartz.checkin.common.exception.InValidAccessTokenException;
 import com.quartz.checkin.security.service.CustomUserDetailsService;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.common.ServletResponseUtils;
+import com.quartz.checkin.service.TokenBlackListCacheService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
+    private final TokenBlackListCacheService tokenBlackListCacheService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -63,6 +65,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (!jwtService.isValidToken(accessToken)) {
+            throw new InValidAccessTokenException();
+        }
+
+        if (tokenBlackListCacheService.isBlackList(accessToken)) {
+            log.error("블랙리스트에 속한 토큰으로 접근하려 합니다.");
             throw new InValidAccessTokenException();
         }
 

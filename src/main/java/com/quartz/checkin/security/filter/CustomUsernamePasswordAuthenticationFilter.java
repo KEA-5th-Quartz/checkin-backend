@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.ServletRequestUtils;
 import com.quartz.checkin.common.ServletResponseUtils;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.auth.response.LoginBlockTimeLeftResponse;
 import com.quartz.checkin.service.LoginBlockCacheService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -66,12 +67,15 @@ public class CustomUsernamePasswordAuthenticationFilter extends AbstractAuthenti
         String key = ip + ":" + username;
         log.info("{}가 로그인을 시도합니다.", key);
 
-        if(loginBlockCacheService.isBlockedMember(key)) {
-            log.error("로그인이 잠긴 ip와 아이디입니다.");
-            ServletResponseUtils.writeApiErrorResponse(response, ErrorCode.BLOCKED_MEMBER);
+        if (loginBlockCacheService.isBlockedMember(key)) {
+            long blockTimeLeft = loginBlockCacheService.getBlockTimeLeft(key) / 1000;
+            String blockTime = String.format("%d분 %d초", blockTimeLeft / 60, blockTimeLeft % 60);
+            log.error("로그인이 잠긴 ip와 아이디입니다. 남은 시간 {}", blockTime);
+
+            LoginBlockTimeLeftResponse data = new LoginBlockTimeLeftResponse(blockTime);
+            ServletResponseUtils.writeApiErrorResponseWithData(response, ErrorCode.BLOCKED_MEMBER, data);
             return null;
         }
-
 
         // 로그인 실패 핸들러에서 사용자 정보를 얻기 위해 저장
         request.setAttribute("username", username);

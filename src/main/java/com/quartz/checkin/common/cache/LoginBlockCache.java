@@ -15,6 +15,12 @@ public class LoginBlockCache extends ConcurrentMapCache {
         super(name);
     }
 
+    public long getBlockTimeLeft(String key) {
+        long time = (Long) get(key).get();
+        long now = System.currentTimeMillis();
+        return (time + TTL) - now;
+    }
+
     @Override
     public ValueWrapper get(Object key) {
         Object value = lookup(key);

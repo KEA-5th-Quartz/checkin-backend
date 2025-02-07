@@ -22,6 +22,12 @@ public class LoginBlockCacheService {
         return wrapper != null;
     }
 
+    public Long getBlockTimeLeft(String key) {
+        return loginBlockCache.getBlockTimeLeft(key);
+    }
+
+
+
     public void block(String key) {
         loginBlockCache.put(key, System.currentTimeMillis());
     }

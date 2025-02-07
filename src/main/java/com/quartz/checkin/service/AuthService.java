@@ -23,6 +23,7 @@ public class AuthService {
 
     private final JwtService jwtService;
     private final MemberRepository memberRepository;
+    private final RoleUpdateCacheService roleUpdateCacheService;
 
 
     @Transactional
@@ -45,6 +46,11 @@ public class AuthService {
         String profilePic = member.getProfilePic();
         Role role = member.getRole();
         LocalDateTime passwordChangedAt = member.getPasswordChangedAt();
+
+        if (roleUpdateCacheService.isRoleUpdated(username)) {
+            log.info("권한 변경 기록이 있는 사용자 {}가 새로 로그인했습니다. 권한 변경 기록을 삭제합니다.", username);
+            roleUpdateCacheService.evict(username);
+        }
 
         String accessToken = jwtService.createAccessToken(memberId, username, profilePic, role);
         refreshToken = jwtService.createRefreshToken();

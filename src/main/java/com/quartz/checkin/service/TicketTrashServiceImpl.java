@@ -2,29 +2,43 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.ticket.response.DeletedTicketDetail;
+import com.quartz.checkin.dto.ticket.response.QDeletedTicketDetail;
+import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.QMember;
+import com.quartz.checkin.entity.QTicket;
+import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
-import com.quartz.checkin.repository.TicketAttachmentRepository;
+import com.quartz.checkin.repository.TicketQueryRepository;
 import com.quartz.checkin.repository.TicketRepository;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class TicketTrashServiceImpl implements TicketTrashService {
     private final MemberService memberService;
     private final TicketRepository ticketRepository;
-    private final TicketAttachmentRepository ticketAttachmentRepository;
-    private final AttachmentService attachmentService;
+    private final TicketQueryRepository ticketQueryRepository;
+    private final JPAQueryFactory queryFactory;
 
+    private static final QTicket ticket = QTicket.ticket;
+    private static final QMember manager = new QMember("manager");
+
+
+    @Transactional
     @Override
     public void restoreTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
@@ -61,8 +75,9 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         ticketRepository.saveAll(tickets);
     }
 
+    @Transactional
     @Override
-    public void purgeTickets(Long memberId, List<Long> ticketIds) {
+    public void deleteTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
@@ -79,15 +94,6 @@ public class TicketTrashServiceImpl implements TicketTrashService {
             if (!ticket.getUser().getId().equals(member.getId())) {
                 throw new ApiException(ErrorCode.UNAUTHENTICATED);
             }
-        }
-
-        // 티켓에 연결된 첨부파일 ID 조회
-        List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
-
-        // 첨부파일 영구 삭제
-        if (!attachmentIds.isEmpty()) {
-            ticketAttachmentRepository.deleteAllByTicketIds(ticketIds); // 연결 데이터 삭제
-            attachmentService.deleteAttachments(attachmentIds); // 첨부파일 삭제
         }
 
         // 티켓 영구 삭제
@@ -133,4 +139,95 @@ public class TicketTrashServiceImpl implements TicketTrashService {
 //                .build();
 //
 //    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 3 * * ?") // 매일 새벽 3시 실행
+    public void deleteExpiredTickets() {
+        LocalDate today = LocalDate.now();
+        LocalDate thresholdDate = today.minusDays(7);
+
+        // QueryDSL을 활용하여 만료된 티켓 조회
+        List<Ticket> expiredTickets = ticketQueryRepository.findTicketsToDelete(thresholdDate);
+
+        if (!expiredTickets.isEmpty()) {
+            log.info("Soft deleting {} expired tickets.", expiredTickets.size());
+
+            // SoftDelete 수행
+            expiredTickets.forEach(Ticket::softDelete);
+            ticketRepository.saveAll(expiredTickets);
+        }
+    }
+
+    // 매일 자정 실행 (자동 삭제)
+    @Scheduled(cron = "0 0 0 * * ?")  // 매일 00:00:00에 실행
+    @Transactional
+    public void softDeleteOldClosedTickets() {
+        // 6개월 전 날짜 계산
+        LocalDate sixMonthsAgo = LocalDate.now().minusMonths(6);
+
+        // 6개월 이상 지난 Closed 상태의 티켓 조회
+        List<Ticket> oldTickets = queryFactory
+                .selectFrom(ticket)
+                .where(ticket.status.eq(Status.CLOSED)
+                        .and(ticket.dueDate.before(sixMonthsAgo))
+                        .and(ticket.deletedAt.isNull()))  // SoftDelete 되지 않은 것만 조회
+                .fetch();
+
+        if (!oldTickets.isEmpty()) {
+            log.info("Soft deleting {} closed tickets older than 6 months.", oldTickets.size());
+
+            // SoftDelete 처리
+            oldTickets.forEach(Ticket::softDelete);
+
+            // 변경 사항 저장
+            ticketRepository.saveAll(oldTickets);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public SoftDeletedTicketResponse getDeletedTickets(Long memberId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 삭제된 티켓 개수 조회
+        Long totalCount = queryFactory
+                .select(ticket.count())
+                .from(ticket)
+                .where(ticket.deletedAt.isNotNull()
+                        .and(ticket.user.id.eq(memberId)))
+                .fetchOne();
+
+        long safeTotalCount = (totalCount != null) ? totalCount : 0L; // Null 방지
+
+        // 삭제된 티켓 리스트 조회 (Pagination 적용)
+        List<DeletedTicketDetail> tickets = queryFactory
+                .select(new QDeletedTicketDetail(
+                        ticket.id,
+                        ticket.customId,
+                        ticket.title,
+                        manager.username,
+                        manager.profilePic,
+                        ticket.content,
+                        ticket.dueDate.stringValue(),
+                        ticket.status.stringValue()
+                ))
+                .from(ticket)
+                .leftJoin(manager).on(ticket.manager.id.eq(manager.id))
+                .where(ticket.deletedAt.isNotNull()
+                        .and(ticket.user.id.eq(memberId)))
+                .orderBy(ticket.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        return new SoftDeletedTicketResponse(
+                page + 1,
+                size,
+                (int) Math.ceil((double) safeTotalCount / size),
+                safeTotalCount,
+                tickets
+        );
+    }
+
+
 }

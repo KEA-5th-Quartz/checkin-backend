@@ -10,5 +10,5 @@ public interface TicketCudService {
     TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request);
     void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request);
     void updateTicket(Long memberId, TicketUpdateRequest request, Long ticketId);
-    void deleteTickets(Long memberId, List<Long> ticketIds);
+    void tempDeleteTickets(Long memberId, List<Long> ticketIds);
 }

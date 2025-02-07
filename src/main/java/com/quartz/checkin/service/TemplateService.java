@@ -20,6 +20,7 @@ import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TemplateAttachmentRepository;
 import com.quartz.checkin.repository.TemplateRepository;
 import com.quartz.checkin.security.CustomUser;
+import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class TemplateService {
 
     private final AttachmentRepository attachmentRepository;
+    private final AttachmentService attachmentService;
     private final CategoryServiceImpl categoryService;
+    private final EntityManager entityManager;
     private final MemberService memberService;
     private final TemplateAttachmentRepository templateAttachmentRepository;
     private final TemplateRepository templateRepository;
@@ -173,9 +176,11 @@ public class TemplateService {
 
         templateAttachmentRepository.saveAll(newTemplateAttachments);
 
-        // 해당 첨부파일이 티켓에서 사용 중일 수 있기에, 중간 테이블에서만 삭제
+        // 중간테이블 삭제 후, 첨부파일 테이블, S3 삭제
         if (!attachmentIdsToRemove.isEmpty()) {
             templateAttachmentRepository.deleteByTemplateAndAttachmentIds(template, attachmentIdsToRemove);
+
+            attachmentService.deleteAttachments(attachmentIdsToRemove);
         }
 
     }
@@ -190,12 +195,24 @@ public class TemplateService {
         List<Template> templates = templateRepository.findAllByIdAndMember(templateIdsToDelete, member);
 
         if (templates.size() != templateIdsToDelete.size()) {
-            log.error("다른 사용자의 템플릿을 삭제하려합니다.");
+            log.error("요청한 템플릿 중 유효하지 않은 템플릿이 있습니다.");
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
 
-        // 해당 템플릿들과 관련된 템플릿_첨부파일 레코드들 삭제
+        // 삭제할 템플릿들이 참조하고 있는 첨부파일 ID 리스트
+        List<Long> attachmentIdsToDelete =
+                templateAttachmentRepository.findAllByTemplatesJoinFetch(templateIdsToDelete).stream()
+                        .map(ta -> ta.getAttachment().getId())
+                        .toList();
+
+        // 중간 테이블 삭제
         templateAttachmentRepository.deleteByTemplates(templates);
+        //  벌크 쿼라로 인한 영속성 컨텍스트와 DB의 싱크가 맞지 않게 되기에, 영속성 컨텍스트를 초기화
+        entityManager.flush();
+        entityManager.clear();
+
+        // s3, 첨부파일 삭제
+        attachmentService.deleteAttachments(attachmentIdsToDelete);
 
         // 템플릿 삭제
         templateRepository.deleteByTemplateIds(templateIdsToDelete);

@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ManagerTicketSummaryResponse {
     private Long ticketId;
+    private String customId;
     private String title;
     private String firstCategory;
     private String secondCategory;
@@ -32,6 +33,7 @@ public class ManagerTicketSummaryResponse {
     public static ManagerTicketSummaryResponse from(Ticket ticket) {
         return ManagerTicketSummaryResponse.builder()
                 .ticketId(ticket.getId())
+                .customId(ticket.getCustomId())
                 .title(ticket.getTitle())
                 .firstCategory(ticket.getFirstCategory().getName())
                 .secondCategory(ticket.getSecondCategory().getName())

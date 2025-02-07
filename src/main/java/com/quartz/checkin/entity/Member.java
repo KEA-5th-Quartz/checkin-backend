@@ -49,7 +49,7 @@ public class Member extends BaseEntity {
 
     private LocalDateTime passwordChangedAt;
 
-    private LocalDateTime deleted_at;
+    private LocalDateTime deletedAt;
 
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
@@ -66,6 +66,15 @@ public class Member extends BaseEntity {
 
     public void updateProfilePic(String profilePic) {
         this.profilePic = profilePic;
+    }
+
+    public void softDelete() {
+        this.refreshToken = null;
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        this.deletedAt = null;
     }
 
     @PrePersist

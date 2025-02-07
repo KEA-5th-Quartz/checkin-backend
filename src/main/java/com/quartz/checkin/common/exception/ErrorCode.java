@@ -27,9 +27,12 @@ public enum ErrorCode {
     INVALID_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "MEMBER_4007", "페이지 번호가 유효하지 않습니다."),
     INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "MEMBER_4008", "페이지 크기가 유효하지 않습니다."),
     INVALID_PASSWORD_RESET_TOKEN(HttpStatus.UNAUTHORIZED, "MEMBER_4009", "비밀번호 초기화 토큰이 유효하지 않습니다."),
+    BLOCKED_MEMBER(HttpStatus.FORBIDDEN, "MEMBER_4012", "로그인이 잠긴 사용자입니다."),
     INVALID_USERNAME_OR_PASSWORD(HttpStatus.UNAUTHORIZED, "MEMBER_4013", "일치하는 회원 정보가 없습니다. 아이디 혹은 비밀번호를 다시 확인해주세요."),
     UNSUPPORTED_FILE_TYPE(HttpStatus.UNAUTHORIZED, "MEMBER_4015", "지원하지 않는 파일 형식입니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "MEMBER_4040", "존재하지 않는 회원입니다."),
+    MEMBER_ALREADY_SOFT_DELETED(HttpStatus.NOT_FOUND, "MEMBER_4041", "이미 소프트 딜리트된 회원입니다."),
+    MEMBER_NOT_SOFT_DELETED(HttpStatus.BAD_REQUEST, "MEMBER_4042", "소프트 딜리트된 회원이 아닙니다."),
     DUPLICATE_USERNAME(HttpStatus.CONFLICT, "MEMBER_4090", "이미 사용 중인 아이디입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "MEMBER_4091", "이미 사용 중인 이메일 주소입니다."),
     ADMIN_PERMISSION_REQUIRED(HttpStatus.CONFLICT, "MEMBER_4093", "관리자 권한이 없는 회원에게 최고 관리자 권한을 줄 수 없습니다."),
@@ -53,8 +56,12 @@ public enum ErrorCode {
     TICKET_FILE_TOO_LARGE(HttpStatus.UNAUTHORIZED, "TICKET_4016", "파일 크기가 초과되었습니다."),
     TICKET_FILE_NOT_FOUND(HttpStatus.UNAUTHORIZED, "TICKET_4017", "파일이 존재하지 않습니다."),
     TICKET_NOT_FOUND(HttpStatus.NOT_FOUND, "TICKET_4040", "존재하지 않는 티켓입니다."),
-    TICKET_KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "TICKET_4041", "해당 키워드를 가진 티켓이 존재하지 않습니다."),
+    TICKET_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "TICKET_4090", "이미 담당자가 할당된 상태입니다."),
     TICKET_ALREADY_ASSIGNED_TO_SELF(HttpStatus.CONFLICT, "TICKET_4091", "이미 본인이 담당자로 할당된 상태입니다."),
+
+    // 티켓 첨부파일 서비스 예외
+    ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "ATTACHMENT_4040", "존재하지 않는 첨부파일입니다."),
+
 
     // 댓글 서비스 예외
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_4040", "존재하지 않는 댓글입니다."),
@@ -62,17 +69,20 @@ public enum ErrorCode {
     // 카테고리 서비스 예외
     CATEGORY_NAME_MISSING(HttpStatus.BAD_REQUEST, "CATEGORY_4000", "카테고리 이름이 누락되었습니다."),
     INVALID_CATEGORY_NAME_FORMAT(HttpStatus.BAD_REQUEST, "CATEGORY_4001", "카테고리 이름 형식이 올바르지 않습니다."),
+    INVALID_ALIAS_FORMAT(HttpStatus.BAD_REQUEST,"CATEGORY_4002", "약어 형식이 올바르지 않습니다."),
     CATEGORY_NOT_FOUND_FIRST(HttpStatus.NOT_FOUND, "CATEGORY_4040", "존재하지 않는 1차 카테고리입니다."),
     CATEGORY_NOT_FOUND_SECOND(HttpStatus.NOT_FOUND, "CATEGORY_4041", "존재하지 않는 2차 카테고리입니다."),
     DUPLICATE_CATEGORY_FIRST(HttpStatus.CONFLICT, "CATEGORY_4090", "동일한 이름의 1차 카테고리가 이미 존재합니다."),
     DUPLICATE_CATEGORY_SECOND(HttpStatus.CONFLICT, "CATEGORY_4091", "동일한 이름의 2차 카테고리가 이미 존재합니다."),
     CATEGORY_HAS_SUBCATEGORIES(HttpStatus.CONFLICT, "CATEGORY_4092", "1차 카테고리에 속한 2차 카테고리가 존재하여 삭제할 수 없습니다."),
+    DUPLICATE_ALIAS(HttpStatus.CONFLICT,"CATEGORY_4093", "동일한 이름의 약어가 존재합니다."),
 
     // 통계 서비스 예외
     STATS_MISSING_DATE(HttpStatus.BAD_REQUEST, "STATS_4000", "시작 날짜 또는 종료 날짜가 누락되었습니다."),
     INVALID_STATS_DATE_FORMAT(HttpStatus.BAD_REQUEST, "STATS_4001", "날짜 형식이 올바르지 않습니다."),
     INVALID_STATS_DATE_RANGE(HttpStatus.BAD_REQUEST, "STATS_4002", "시작 날짜가 종료 날짜보다 큽니다."),
     STATS_MANAGER_NOT_FOUND(HttpStatus.NOT_FOUND, "STATS_4041", "존재하지 않는 담당자입니다.");
+
 
     private final HttpStatus status;
     private final String code;

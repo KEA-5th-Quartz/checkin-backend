@@ -1,7 +1,7 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.request.FirstCategoryPatchRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryPatchRequest;
 import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.security.CustomUser;
@@ -27,7 +27,7 @@ public class TicketLogController {
     private final TicketLogService ticketLogService;
 
     @Manager
-    @Operation(summary = "API 명세서 v0.2 line 43", description = "티켓 완료 처리")
+    @Operation(summary = "API 명세서 v0.3 line 47", description = "티켓 완료 처리")
     @PatchMapping("/{ticketId}/close")
     public ApiResponse<TicketLogResponse> closeTicket(
             @PathVariable Long ticketId,
@@ -37,32 +37,32 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.2 line 44", description = "1차 카테고리 수정")
+    @Operation(summary = "API 명세서 v0.3 line 48", description = "1차 카테고리 수정")
     @PatchMapping("/{ticketId}/category")
     public ApiResponse<TicketLogResponse> updateFirstCategory(
             @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid FirstCategoryUpdateRequest request) {
+            @RequestBody @Valid FirstCategoryPatchRequest request) {
 
         TicketLogResponse response = ticketLogService.updateFirstCategory(user.getId(), ticketId, request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.2 line 45", description = "2차 카테고리 수정")
+    @Operation(summary = "API 명세서 v0.3 line 49", description = "2차 카테고리 수정")
     @PatchMapping("/{ticketId}/category/{firstCategoryId}")
     public ApiResponse<TicketLogResponse> updateSecondCategory(
             @PathVariable Long ticketId,
             @PathVariable Long firstCategoryId,
             @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid SecondCategoryUpdateRequest request) {
+            @RequestBody @Valid SecondCategoryPatchRequest request) {
 
         TicketLogResponse response = ticketLogService.updateSecondCategory(user.getId(), ticketId, firstCategoryId, request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
   
     @Manager
-    @Operation(summary = "API 명세서 v0.2 line 46", description = "담당자 변경")
+    @Operation(summary = "API 명세서 v0.3 line 50", description = "담당자 변경")
     @PatchMapping("/{ticketId}/reassign")
     public ApiResponse<TicketLogResponse> reassignManager(
             @PathVariable Long ticketId,
@@ -74,7 +74,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.2 line 42", description = "담당자 할당")
+    @Operation(summary = "API 명세서 v0.3 line 46", description = "담당자 할당")
     @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> assignManager(
             @PathVariable Long ticketId,

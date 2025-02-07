@@ -43,7 +43,7 @@ public class TemplateController {
     private final AttachmentService attachmentService;
 
     @User
-    @Operation(summary = "API 명세서 v0.2 line 21", description = "사용자가 템플릿 생성")
+    @Operation(summary = "API 명세서 v0.3 line 24", description = "사용자가 템플릿 생성")
     @PostMapping("/templates")
     public ApiResponse<TemplateCreateResponse> createTemplate(
             @RequestBody @Valid TemplateSaveRequest templateSaveRequest,
@@ -54,7 +54,7 @@ public class TemplateController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.2 line 24", description = "사용자가 템플릿 다중 삭제")
+    @Operation(summary = "API 명세서 v0.3 line 27", description = "사용자가 템플릿 다중 삭제")
     @DeleteMapping("/templates")
     public ApiResponse<TemplateDeleteResponse> deleteTemplates(
             @RequestBody @Valid TemplateDeleteRequest templateDeleteRequest,
@@ -65,7 +65,7 @@ public class TemplateController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.2 line 22", description = "사용자가 템플릿에 들어갈 첨부파일 등록")
+    @Operation(summary = "API 명세서 v0.3 line 25", description = "사용자가 템플릿에 들어갈 첨부파일 등록")
     @PostMapping("/templates/attachment")
     public ApiResponse<List<UploadAttachmentsResponse>> uploadAttachments(
             @RequestPart(name = "files") List<MultipartFile> multipartFiles) {
@@ -76,7 +76,7 @@ public class TemplateController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.2 line 23", description = "사용자가 템플릿 수정")
+    @Operation(summary = "API 명세서 v0.3 line 26", description = "사용자가 템플릿 수정")
     @PutMapping("/templates/{templateId}")
     public ApiResponse<Void> updateTemplate(
             @PathVariable Long templateId,
@@ -88,7 +88,7 @@ public class TemplateController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.2 line 25", description = "사용자가 템플릿 단건 조회, 첨부파일 포함")
+    @Operation(summary = "API 명세서 v0.3 line 28", description = "사용자가 템플릿 단건 조회, 첨부파일 포함")
     @GetMapping("/templates/{templateId}")
     public ApiResponse<TemplateDetailResponse> template(
             @PathVariable Long templateId,
@@ -99,7 +99,7 @@ public class TemplateController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.2 line 26", description = "사용자의 템플릿 목록 조회, 첨부파일의 경우 단건조회에서 확인")
+    @Operation(summary = "API 명세서 v0.3 line 29", description = "사용자의 템플릿 목록 조회, 첨부파일의 경우 단건조회에서 확인")
     @GetMapping("/{memberId}/templates")
     public ApiResponse<TemplateListResponse> templates(
             @PathVariable Long memberId,

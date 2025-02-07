@@ -23,6 +23,7 @@ public class AuthService {
 
     private final JwtService jwtService;
     private final MemberRepository memberRepository;
+    private final RoleUpdateCacheService roleUpdateCacheService;
 
 
     @Transactional
@@ -40,11 +41,21 @@ public class AuthService {
                     return new ApiException(ErrorCode.INVALID_REFRESH_TOKEN);
                 });
 
+        if (member.getDeletedAt() != null) {
+            log.error("소프트 딜리트된 사용자가 재발급하려고 합니다.");
+            throw new ApiException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+
         Long memberId = member.getId();
         String username = member.getUsername();
         String profilePic = member.getProfilePic();
         Role role = member.getRole();
         LocalDateTime passwordChangedAt = member.getPasswordChangedAt();
+
+        if (roleUpdateCacheService.isRoleUpdated(username)) {
+            log.info("권한 변경 기록이 있는 사용자 {}가 새로 로그인했습니다. 권한 변경 기록을 삭제합니다.", username);
+            roleUpdateCacheService.evict(username);
+        }
 
         String accessToken = jwtService.createAccessToken(memberId, username, profilePic, role);
         refreshToken = jwtService.createRefreshToken();

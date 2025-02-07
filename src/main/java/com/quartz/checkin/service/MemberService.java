@@ -4,6 +4,7 @@ import com.quartz.checkin.common.PasswordGenerator;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
+import com.quartz.checkin.dto.common.request.SimplePageRequest;
 import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
@@ -13,14 +14,30 @@ import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
 import com.quartz.checkin.dto.member.response.MemberRoleCount;
+import com.quartz.checkin.entity.Comment;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
+import com.quartz.checkin.entity.Template;
+import com.quartz.checkin.entity.TemplateAttachment;
+import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.event.MemberHardDeletedEvent;
 import com.quartz.checkin.event.MemberRegisteredEvent;
+import com.quartz.checkin.event.MemberRestoredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
+import com.quartz.checkin.event.RoleUpdateEvent;
+import com.quartz.checkin.event.SoftDeletedEvent;
+import com.quartz.checkin.repository.CommentRepository;
+import com.quartz.checkin.repository.LikeRepository;
+import com.quartz.checkin.repository.MemberAccessLogRepository;
 import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.repository.TemplateAttachmentRepository;
+import com.quartz.checkin.repository.TemplateRepository;
+import com.quartz.checkin.repository.TicketRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
-import java.io.IOException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +46,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,14 +58,29 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class MemberService {
 
+    private final AttachmentService attachmentService;
     private final ApplicationEventPublisher eventPublisher;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private final S3UploadService s3UploadService;
+    private final S3Service s3Service;
     private final JwtService jwtService;
+    private final CommentRepository commentRepository;
+    private final LikeRepository likeRepository;
+    private final MemberAccessLogRepository memberAccessLogRepository;
+    private final TemplateRepository templateRepository;
+    private final TemplateAttachmentRepository templateAttachmentRepository;
+    private final TicketRepository ticketRepository;
 
     public Member getMemberByIdOrThrow(Long id) {
         return memberRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 사용자입니다.");
+                    return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
+                });
+    }
+
+    public Member getMemberByUsernameOrThrow(String username) {
+        return memberRepository.findByUsername(username)
                 .orElseThrow(() -> {
                     log.error("존재하지 않는 사용자입니다.");
                     return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
@@ -71,10 +104,22 @@ public class MemberService {
 
         Page<Member> memberPage = null;
         if (username == null || username.isBlank()) {
-            memberPage = memberRepository.findByRole(role, pageable);
+            memberPage = memberRepository.findByRoleAndDeletedAtIsNull(role, pageable);
         } else {
-            memberPage = memberRepository.findByRoleAndUsernameContaining(role, username, pageable);
+            memberPage = memberRepository.findByRoleAndUsernameContainingAndDeletedAtIsNull(role, username, pageable);
         }
+
+        return MemberInfoListResponse.from(memberPage);
+    }
+
+    public MemberInfoListResponse getSoftDeletedMemberInfoList(SimplePageRequest simplePageRequest) {
+
+        int page = simplePageRequest.getPage();
+        int size = simplePageRequest.getSize();
+
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("deletedAt").ascending());
+
+        Page<Member> memberPage = memberRepository.findByDeletedAtIsNotNull(pageable);
 
         return MemberInfoListResponse.from(memberPage);
     }
@@ -156,7 +201,7 @@ public class MemberService {
 
     @Transactional
     public String updateMemberProfilePic(Long id, CustomUser customUser, MultipartFile file) {
-        if (file.isEmpty() || !s3UploadService.isImageType(file.getContentType())) {
+        if (file.isEmpty() || !s3Service.isImageType(file.getContentType())) {
             log.error("파일이 누락되었거나, 이미지 타입이 아닙니다.");
             throw new ApiException(ErrorCode.INVALID_DATA);
         }
@@ -172,18 +217,18 @@ public class MemberService {
         checkMemberOwnsResource(member, customUser);
 
         try {
-            String profilePic = s3UploadService.uploadFile(file, S3Config.PROFILE_DIR);
+            String profilePic = s3Service.uploadFile(file, S3Config.PROFILE_DIR);
             member.updateProfilePic(profilePic);
 
             return profilePic;
-        } catch (IOException exception) {
+        } catch (Exception exception) {
             log.error("S3에 파일을 업로드할 수 없습니다. {}", exception.getMessage());
             throw new ApiException(ErrorCode.OBJECT_STORAGE_ERROR);
         }
     }
 
     @Transactional
-    public void updateMemberRole(Long id, RoleUpdateRequest roleUpdateRequest) {
+    public void updateMemberRole(Long id, HttpServletRequest request, RoleUpdateRequest roleUpdateRequest) {
         Member member = getMemberByIdOrThrow(id);
 
         Role newRole = Role.fromValue(roleUpdateRequest.getRole());
@@ -193,6 +238,107 @@ public class MemberService {
         }
 
         member.updateRole(newRole);
+
+        eventPublisher.publishEvent(new RoleUpdateEvent(member.getUsername()));
+    }
+
+    @Transactional
+    public void softDeleteMember(Long id) {
+        Member member = getMemberByIdOrThrow(id);
+
+        if (member.getDeletedAt() != null) {
+            log.error("이미 소프트 딜리트된 사용자입니다.");
+            throw new ApiException(ErrorCode.MEMBER_ALREADY_SOFT_DELETED);
+        }
+
+        member.softDelete();
+        eventPublisher.publishEvent(new SoftDeletedEvent(member.getUsername()));
+    }
+
+    @Transactional
+    public void hardDeleteMember(Long id) {
+        Member member = getMemberByIdOrThrow(id);
+
+        if (member.getDeletedAt() == null) {
+            throw new ApiException(ErrorCode.MEMBER_NOT_SOFT_DELETED);
+        }
+
+        Member deletedUser = getMemberByIdOrThrow(-1L);
+
+        List<Ticket> tickets = ticketRepository.findByUser(member);
+        for (Ticket ticket : tickets) {
+            log.info("티켓 {}의 요청자 초기화", ticket.getId());
+            ticket.hardDeleteUser(deletedUser);
+        }
+
+        tickets = ticketRepository.findByManager(member);
+        for (Ticket ticket : tickets) {
+            log.info("티켓 {}의 담당자 초기화", ticket.getId());
+            ticket.hardDeleteManager(deletedUser);
+        }
+
+        List<Comment> comments = commentRepository.findByMember(member);
+        for (Comment comment : comments) {
+            log.info("댓글 {}의 담당자 초기화", comment.getId());
+            comment.hardDeleteMember(deletedUser);
+        }
+
+        likeRepository.deleteAllByMember(member);
+
+        memberAccessLogRepository.deleteAllByMember(member);
+
+        // 템플릿 관련된 데이터는 영구삭제
+        List<Template> templates = templateRepository.findAllByMember(member);
+        List<Long> templateIds = templates.stream()
+                .map(Template::getId)
+                .toList();
+
+        List<TemplateAttachment> templateAttachments =
+                templateAttachmentRepository.findAllByTemplatesJoinFetch(templateIds);
+
+        List<Long> templateAttachmentIds = templateAttachments.stream()
+                .map(TemplateAttachment::getId)
+                .toList();
+
+        attachmentService.deleteAttachments(templateAttachmentIds);
+
+        templateAttachmentRepository.deleteByTemplates(templates);
+
+        templateRepository.deleteByTemplateIds(templateIds);
+
+        log.info("사용자 {} 완전 삭제", member.getUsername());
+
+        memberRepository.delete(member);
+        eventPublisher.publishEvent(new MemberHardDeletedEvent(member.getUsername()));
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?")
+    @Transactional
+    public void permanentlyDeleteOldSoftDeletedUsers() {
+        LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
+
+        List<Member> softDeletedMembers = memberRepository.findAllByDeletedAtIsNotNull();
+
+        for (Member member : softDeletedMembers) {
+            // 회원의 deletedAt 값이 6개월 전보다 이전인 경우, 회원 삭제
+            if (member.getDeletedAt().isBefore(sixMonthsAgo)) {
+                log.info("사용자 {}가 소트트 딜리트 된 지 6개월이 넘어 영구삭제합니다.", member.getUsername());
+                memberRepository.delete(member);
+            }
+        }
+    }
+
+    @Transactional
+    public void restoreMember(Long id) {
+        Member member = getMemberByIdOrThrow(id);
+
+        if (member.getDeletedAt() == null) {
+            log.error("소프트 딜리트된 사용자가 아닙니다.");
+            throw new ApiException(ErrorCode.MEMBER_NOT_SOFT_DELETED);
+        }
+
+        member.restore();
+        eventPublisher.publishEvent(new MemberRestoredEvent(member.getUsername()));
     }
 
     private void checkMemberOwnsResource(Member member, CustomUser customUser) {
@@ -215,7 +361,7 @@ public class MemberService {
             throw new ApiException(ErrorCode.DUPLICATE_USERNAME);
         }
     }
-    
+
     public MemberRoleCount getMemberRoleCounts() {
         return memberRepository.findRoleCounts();
     }

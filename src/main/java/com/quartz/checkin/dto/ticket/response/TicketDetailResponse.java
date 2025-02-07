@@ -10,16 +10,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class TicketDetailResponse {
 
     private Long ticketId;
+    private String customId;
     private String title;
     private String firstCategory;
     private String secondCategory;
@@ -45,6 +44,7 @@ public class TicketDetailResponse {
 
         return TicketDetailResponse.builder()
                 .ticketId(ticket.getId())
+                .customId(ticket.getCustomId())
                 .title(ticket.getTitle())
                 .firstCategory(ticket.getFirstCategory().getName())
                 .secondCategory(ticket.getSecondCategory().getName())

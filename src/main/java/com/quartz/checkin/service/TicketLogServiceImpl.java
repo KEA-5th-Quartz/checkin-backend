@@ -2,47 +2,54 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.request.FirstCategoryPatchRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryPatchRequest;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.LogType;
 import com.quartz.checkin.entity.Member;
-import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketLog;
+import com.quartz.checkin.event.TicketAssigneeChangedEvent;
+import com.quartz.checkin.event.TicketCategoryChangedEvent;
+import com.quartz.checkin.event.TicketStatusChangedEvent;
 import com.quartz.checkin.repository.CategoryRepository;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.repository.TicketLogRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TicketLogServiceImpl implements TicketLogService {
 
     private final TicketRepository ticketRepository;
     private final TicketLogRepository ticketLogRepository;
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final WebhookService webhookService;
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',
             'A', 'E', 'I', 'O', 'U');
-    // Todo: 담당자 배정 시, 자동으로 중요도 보통으로 설정
+
     // 담당자 배정
-    @Transactional
     @Override
     public TicketLogResponse assignManager(Long memberId, Long ticketId) {
 
         // 티켓 & 담당자 조회
-        Ticket ticket = getValidTicket(ticketId);
         Member manager = getValidMember(memberId);
+        Ticket ticket = getValidTicket(ticketId);
 
         // 예외 검증
         validateTicketForUpdate(ticket, manager, false, false, true);
@@ -52,9 +59,6 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 담당자 배정 처리
         ticket.assignManager(manager);
-
-        // 중요도를 보통으로 설정
-        ticket.updatePriority(Priority.MEDIUM);
         ticketRepository.save(ticket);
 
         // 로그 기록
@@ -68,11 +72,33 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), 1));
+
+        List<String> assigneesForInProgress = new ArrayList<>();
+
+        // 사용자는 항상 포함
+        if (ticket.getUser() != null) {
+            assigneesForInProgress.add(ticket.getUser().getUsername());
+        }
+
+        // 현재 담당자 추가 (변경이 발생했을 경우 새로운 담당자로 대체됨)
+        if (ticket.getManager() != null) {
+            assigneesForInProgress.add(ticket.getManager().getUsername());
+        }
+
+        eventPublisher.publishEvent(new TicketAssigneeChangedEvent(
+                ticket.getAgitId(),
+                ticket.getManager() != null ? ticket.getManager().getId() : null,
+                ticket.getUser() != null ? ticket.getUser().getId() : null,
+                ticket.getId(),
+                new ArrayList<>(assigneesForInProgress)
+        ));
+
         return new TicketLogResponse(ticketLog);
     }
 
     // 티켓 상태 변경: 진행 중 → 완료
-    @Transactional
     @Override
     public TicketLogResponse closeTicket(Long memberId, Long ticketId) {
 
@@ -104,13 +130,15 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), 2));
+
         return new TicketLogResponse(ticketLog);
     }
 
     // 1차 카테고리 변경
-    @Transactional
     @Override
-    public TicketLogResponse updateFirstCategory(Long memberId, Long ticketId, FirstCategoryUpdateRequest request) {
+    public TicketLogResponse updateFirstCategory(Long memberId, Long ticketId, FirstCategoryPatchRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -121,21 +149,39 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 기존 카테고리 정보 저장
         String oldFirstCategory = ticket.getFirstCategory().getName();
+        String oldCustomId = ticket.getCustomId(); // 기존 customId 저장
+
+        // 새로운 1차 카테고리 조회
         Category newFirstCategory = categoryRepository.findByNameAndParentIsNull(request.getFirstCategory())
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
 
+        // 새로운 1차 카테고리에 해당하는 2차 카테고리 중 첫 번째 선택
         List<Category> secondCategories = categoryRepository.findByParentOrderByIdAsc(newFirstCategory);
         if (secondCategories.isEmpty()) {
             throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND);
         }
         Category newSecondCategory = secondCategories.get(0); // 가장 첫 번째 2차 카테고리 선택
 
-        // 카테고리 업데이트
+        // **customId 변경 로직 추가**
+        String firstCategoryAlias = newFirstCategory.getAlias();
+        String secondCategoryAlias = newSecondCategory.getAlias();
+
+        // 기존 날짜 유지
+        String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
+        String numberPart = oldCustomId.substring(oldCustomId.length() - 3);
+
+        // 새 customId 생성 (날짜는 유지, 1차 & 2차 카테고리 변경, 숫자는 유지)
+        String newCustomId = datePart + firstCategoryAlias + "-" + secondCategoryAlias + numberPart;
+
+        // 카테고리 및 customId 업데이트
         ticket.updateCategory(newFirstCategory, newSecondCategory);
+        ticket.updateCustomId(newCustomId); // customId 변경 적용
         ticketRepository.save(ticket);
 
         // 이/가 조사 적용
         String subjectParticle = getSubjectParticle(manager.getUsername());
+
+        // **로그 메시지 생성**
         String logContent = String.format(
                 "%s%s 1차 카테고리를 변경하였습니다. '%s' → '%s'. (2차 카테고리 기본값: %s)",
                 manager.getUsername(),
@@ -144,6 +190,11 @@ public class TicketLogServiceImpl implements TicketLogService {
                 newFirstCategory.getName(),
                 newSecondCategory.getName()
         );
+
+        // **customId가 변경되었을 경우 로그 추가**
+        if (!oldCustomId.equals(newCustomId)) {
+            logContent += String.format("\n티켓 번호가 변경되었습니다. '%s' → '%s'", oldCustomId, newCustomId);
+        }
 
         // 로그 저장
         TicketLog ticketLog = TicketLog.builder()
@@ -154,12 +205,17 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        eventPublisher.publishEvent(
+                new TicketCategoryChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), memberId, oldFirstCategory, newFirstCategory.getName(), logContent)
+        );
+
         return new TicketLogResponse(ticketLog);
     }
 
-    @Transactional
+
     @Override
-    public TicketLogResponse updateSecondCategory(Long memberId, Long ticketId, Long firstCategoryId, SecondCategoryUpdateRequest request) {
+    public TicketLogResponse updateSecondCategory(Long memberId, Long ticketId, Long firstCategoryId, SecondCategoryPatchRequest request) {
 
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
@@ -174,21 +230,34 @@ public class TicketLogServiceImpl implements TicketLogService {
             throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST);
         }
 
-        // 기존 2차 카테고리 저장
+        // 기존 정보 저장
         String oldSecondCategory = ticket.getSecondCategory().getName();
+        String oldCustomId = ticket.getCustomId(); // 기존 customId 저장
 
         // 새로운 2차 카테고리 조회 (해당 1차 카테고리에 속하는지 확인)
         Category newSecondCategory = categoryRepository.findByNameAndParent(request.getSecondCategory(), firstCategory)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
 
-        // 카테고리 업데이트
+        // customId 변경 로직 추가
+        String firstCategoryAlias = firstCategory.getAlias();
+        String secondCategoryAlias = newSecondCategory.getAlias();
+
+        // 기존 날짜 유지
+        String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
+        String numberPart = oldCustomId.substring(oldCustomId.length() - 3);
+
+        // 새 customId 생성 (날짜는 그대로 유지하고 카테고리만 변경)
+        String newCustomId = datePart + firstCategoryAlias + "-" + secondCategoryAlias + numberPart;
+
+        // 카테고리 및 customId 업데이트
         ticket.updateCategory(firstCategory, newSecondCategory);
-        ticketRepository.save(ticket); // 변경 감지
+        ticket.updateCustomId(newCustomId); // customId 변경 적용
+        ticketRepository.save(ticket);
 
         // 이/가 조사 적용
         String subjectParticle = getSubjectParticle(manager.getUsername());
 
-        // 로그 메시지 생성
+        // **로그 메시지 생성**
         String logContent = String.format(
                 "%s%s 2차 카테고리를 변경하였습니다. '%s' → '%s'",
                 manager.getUsername(),
@@ -196,6 +265,11 @@ public class TicketLogServiceImpl implements TicketLogService {
                 oldSecondCategory,
                 newSecondCategory.getName()
         );
+
+        // customId가 변경되었을 경우 로그 추가
+        if (!oldCustomId.equals(newCustomId)) {
+            logContent += String.format("\n티켓 번호가 변경되었습니다. '%s' → '%s'", oldCustomId, newCustomId);
+        }
 
         // 로그 저장
         TicketLog ticketLog = TicketLog.builder()
@@ -206,8 +280,13 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        eventPublisher.publishEvent(new TicketCategoryChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), memberId, oldSecondCategory, newSecondCategory.getName(), logContent));
+
         return new TicketLogResponse(ticketLog);
     }
+
+
 
     @Transactional
     @Override
@@ -238,6 +317,23 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
+
+        List<String> assigneesForInProgress = new ArrayList<>();
+
+        if (ticket.getUser() != null) {
+            assigneesForInProgress.add(ticket.getUser().getUsername());
+        }
+
+        assigneesForInProgress.add(newManager.getUsername());
+
+        eventPublisher.publishEvent(new TicketAssigneeChangedEvent(
+                ticket.getAgitId(),
+                newManager.getId(),
+                ticket.getUser().getId(),
+                ticket.getId(),
+                new ArrayList<>(assigneesForInProgress)
+                ));
+
         return new TicketLogResponse(ticketLog);
     }
 

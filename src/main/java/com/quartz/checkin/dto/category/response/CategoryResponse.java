@@ -9,5 +9,7 @@ import lombok.Getter;
 public class CategoryResponse {
     private Long firstCategoryId;
     private String firstCategoryName;
+    private String alias;
+    private String contentGuide;
     private List<SecondCategoryResponse> secondCategories;
 }

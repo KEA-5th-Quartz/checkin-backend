@@ -1,7 +1,7 @@
 package com.quartz.checkin.controller;
 
-import com.quartz.checkin.dto.category.request.FirstCategoryUpdateRequest;
-import com.quartz.checkin.dto.category.request.SecondCategoryUpdateRequest;
+import com.quartz.checkin.dto.category.request.FirstCategoryPatchRequest;
+import com.quartz.checkin.dto.category.request.SecondCategoryPatchRequest;
 import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.security.CustomUser;
@@ -42,7 +42,7 @@ public class TicketLogController {
     public ApiResponse<TicketLogResponse> updateFirstCategory(
             @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid FirstCategoryUpdateRequest request) {
+            @RequestBody @Valid FirstCategoryPatchRequest request) {
 
         TicketLogResponse response = ticketLogService.updateFirstCategory(user.getId(), ticketId, request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
@@ -55,7 +55,7 @@ public class TicketLogController {
             @PathVariable Long ticketId,
             @PathVariable Long firstCategoryId,
             @AuthenticationPrincipal CustomUser user,
-            @RequestBody @Valid SecondCategoryUpdateRequest request) {
+            @RequestBody @Valid SecondCategoryPatchRequest request) {
 
         TicketLogResponse response = ticketLogService.updateSecondCategory(user.getId(), ticketId, firstCategoryId, request);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);

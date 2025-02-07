@@ -1,13 +1,14 @@
 package com.quartz.checkin.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.repository.TicketRepository;
+import jakarta.transaction.Transactional;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -32,31 +33,14 @@ public class WebhookService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MemberRepository memberRepository;
+    private final TicketRepository ticketRepository;
 
     @Value("${webhook.url}")
     private String webhookUrl;
 
-    /**
-     * Webhook 요청 전송
-     *
-     * @param request    전송할 데이터 (이벤트 객체)
-     * @param action     Webhook 엔드포인트
-     * @param receiverId 수신자 ID
-     */
-    @Async
-    public void sendWebhook(Object request, String action, Long receiverId) {
-        String url = webhookUrl;
-        if (action != null && !action.isEmpty()) {
-            if (!url.endsWith("/")) {
-                url += "/";
-            }
-            url += action;
-        }
-
+    public void sendWebhook(String relativeUrl, HttpMethod method, Object payload) {
         try {
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("data", request);
-            payload.put("receiverId", receiverId);
+            String fullUrl = webhookUrl + relativeUrl;
 
             String payloadJson = objectMapper.writeValueAsString(payload);
 
@@ -64,29 +48,24 @@ public class WebhookService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<String> entity = new HttpEntity<>(payloadJson, headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(fullUrl, method, entity, String.class);
 
             if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("Failed to send webhook. Status: " + response.getStatusCode());
+                throw new RuntimeException("웹훅 전송 실패: " + response.getStatusCode());
             }
-
-            log.info("Webhook sent successfully to {} for receiverId: {}", url, receiverId);
-
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize webhook request: {}", e.getMessage());
-            throw new RuntimeException(e);
+            log.info("웹훅 성공: {}", fullUrl);
         } catch (Exception e) {
-            log.error("Error while sending webhook: {}", e.getMessage());
+            log.error("웹훅 전송 중 오류 발생: {}", e.getMessage());
             throw new RuntimeException(e);
         }
     }
 
-    public Long createAgitPost(String title, String content, List<String> assignees) {
+    public Long createAgitPost(String CustomId, String title, String content, List<String> assignees) {
         // URL 중복 제거
         String url = webhookUrl + "/wall_messages";
 
         Map<String, Object> payload = Map.of(
-                "text", "**[티켓 생성] " + title + "**\n" + content,
+                "text", "**[" + CustomId + "] " + "**\n**" + title +  "**\n" + content,
                 "task", Map.of(
                         "template_name", "web_bug",
                         "assignees", assignees
@@ -103,7 +82,7 @@ public class WebhookService {
             log.info("웹훅 응답 데이터: {}", responseBody);
 
             if (responseBody != null && responseBody.containsKey("id")) {
-                return Long.valueOf(responseBody.get("id").toString()); // ✅ 'agit_id' 대신 'id' 사용
+                return Long.valueOf(responseBody.get("id").toString());
             } else {
                 log.warn("agit_id가 응답에 포함되지 않음. 게시물 ID 없이 진행.");
                 return null;
@@ -130,12 +109,10 @@ public class WebhookService {
                 .map(Member::getUsername)
                 .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
 
-        // assignees 리스트 생성
         List<String> assignees = new ArrayList<>();
-        assignees.add(userUsername);  // 사용자 추가
-        assignees.add(managerUsername); // 담당자 추가
+        assignees.add(userUsername);
+        assignees.add(managerUsername);
 
-        // 웹훅 요청
         String url = webhookUrl + "/wall_messages/" + agitId + "/update_assignees";
         Map<String, Object> payload = Map.of("assignees", assignees);
 
@@ -221,7 +198,7 @@ public class WebhookService {
 
     public void addCommentToWebhookPost(Long parentId, String commentText) {
         try {
-            String url = webhookUrl + "/wall_messages/add_comment";
+            String url = webhookUrl;
 
             Map<String, Object> payload = Map.of(
                     "parent_id", parentId,
@@ -235,4 +212,40 @@ public class WebhookService {
         }
     }
 
+    public void deleteAgitPost(List<Long> agitId) {
+        if (agitId == null) {
+            log.error("웹훅 삭제 실패: agitId가 null입니다.");
+            throw new IllegalArgumentException("agitId가 null일 수 없습니다.");
+        }
+
+        // 아지트 웹훅 삭제 URL (agitId를 포함하여 요청)
+        String url = webhookUrl + "/wall_messages/" + agitId;
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            // DELETE 요청 보내기
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class);
+
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new RuntimeException("웹훅 게시글 삭제 실패: " + response.getStatusCode());
+            }
+
+            log.info("웹훅 게시글 삭제 성공: agitId={}", agitId);
+        } catch (Exception e) {
+            log.error("웹훅 게시글 삭제 중 오류 발생: {}", e.getMessage());
+            throw new RuntimeException("웹훅 게시글 삭제 실패: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void updateAgitIdInTicket(Long ticketId, Long agitId) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
+
+        ticket.updateAgitId(agitId);
+        ticketRepository.save(ticket);
+    }
 }

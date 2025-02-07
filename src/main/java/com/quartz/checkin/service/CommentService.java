@@ -17,6 +17,8 @@ import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketLog;
+import com.quartz.checkin.event.CommentAddedEvent;
+import com.quartz.checkin.event.FileUploadedEvent;
 import com.quartz.checkin.repository.CommentRepository;
 import com.quartz.checkin.repository.LikeRepository;
 import com.quartz.checkin.repository.MemberRepository;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,8 +47,9 @@ public class CommentService {
     private final LikeRepository likeRepository;
     private final MemberRepository memberRepository;
     private final WebhookService webhookService;
+    private final ApplicationEventPublisher eventPublisher;
 
-    private final S3UploadService s3UploadService;
+    private final S3Service s3Service;
 
     /**
      * 회원이 작성한 댓글을 저장한다.
@@ -81,19 +85,7 @@ public class CommentService {
 
         Comment savedComment = commentRepository.save(comment);
 
-        if (ticket.getAgitId() != null) {
-            try {
-                String commenterName = member.getUsername();
-                String formattedComment = commenterName + "님의 댓글: \"" + content + "\"";
-
-                log.info("웹훅에 댓글 추가 요청: ticketId={}, agitId={}, comment={}", ticketId, ticket.getAgitId(), formattedComment);
-                webhookService.addCommentToWebhookPost(ticket.getAgitId(), formattedComment);
-            } catch (Exception e) {
-                log.error("웹훅 댓글 추가 실패: {}", e.getMessage());
-            }
-        } else {
-            log.warn("아지트 게시글 ID가 없음 (댓글 추가 안됨): ticketId={}", ticketId);
-        }
+        eventPublisher.publishEvent(new CommentAddedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), comment));
 
         return CommentResponse.builder()
                 .commentId(savedComment.getId())
@@ -114,7 +106,6 @@ public class CommentService {
 
         List<TicketLog> logs = ticketLogRepository.findByTicketId(ticketId);
         List<Comment> comments = commentRepository.findByTicketId(ticketId);
-
         List<ActivityResponse> activities = Stream.concat(
                         logs.stream().map(this::convertLogToActivity),
                         comments.stream().map(this::convertCommentToActivity)
@@ -122,7 +113,7 @@ public class CommentService {
                 .collect(Collectors.toList());
 
         return TicketActivityResponse.builder()
-                .ticketId(ticketId)
+                .id(ticketId)
                 .activities(activities)
                 .build();
     }
@@ -155,7 +146,7 @@ public class CommentService {
                     .createdAt(comment.getCreatedAt())
                     .commentId(comment.getId())
                     .memberId(comment.getMember().getId())
-                    .isImage(s3UploadService.isImageType(comment.getContent()))
+                    .isImage(s3Service.isImageType(comment.getContent()))
                     .attachmentUrl(comment.getAttachment())
                     .build();
         } else {
@@ -268,31 +259,20 @@ public class CommentService {
         comment.writeContent(file.getContentType());
 
         try {
-            String attachmentUrl = s3UploadService.uploadFile(file, S3Config.COMMENT_DIR);
+            String attachmentUrl = s3Service.uploadFile(file, S3Config.COMMENT_DIR);
             comment.addAttachment(attachmentUrl);
             Comment savedComment = commentRepository.save(comment);
 
-            // 🔹 웹훅에 "ㅇㅇ님이 첨부파일을 업로드했습니다." 메시지 전송
-            if (ticket.getAgitId() != null) {
-                try {
-                    String commenterName = member.getUsername();
-                    String fileName = file.getOriginalFilename();
-                    String formattedMessage = commenterName + "님이 첨부파일을 업로드했습니다.";
-
-                    log.info("웹훅에 첨부파일 업로드 알림 요청: ticketId={}, agitId={}, message={}",
-                            ticketId, ticket.getAgitId(), formattedMessage);
-
-                    webhookService.addCommentToWebhookPost(ticket.getAgitId(), formattedMessage);
-                } catch (Exception e) {
-                    log.error("웹훅 첨부파일 업로드 알림 실패: {}", e.getMessage());
-                }
-            } else {
-                log.warn("아지트 게시글 ID가 없음 (첨부파일 업로드 알림 안됨): ticketId={}", ticketId);
-            }
+            eventPublisher.publishEvent(new FileUploadedEvent(
+                    ticket.getId(),
+                    ticket.getCustomId(),
+                    ticket.getAgitId(),
+                    member.getUsername()
+            ));
 
             return CommentAttachmentResponse.builder()
                     .commentId(savedComment.getId())
-                    .isImage(s3UploadService.isImageType(file.getContentType()))
+                    .isImage(s3Service.isImageType(file.getContentType()))
                     .attachmentUrl(attachmentUrl)
                     .build();
         } catch (Exception e) {

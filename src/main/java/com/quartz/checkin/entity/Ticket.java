@@ -29,6 +29,9 @@ public class Ticket extends BaseEntity {
     @Column(name = "ticket_id")
     private Long id;
 
+    @Column(name = "custom_id", nullable = false)
+    private String customId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
     private Member user;
@@ -74,8 +77,9 @@ public class Ticket extends BaseEntity {
     private List<TicketAttachment> attachments;
 
     @Builder
-    public Ticket(Member user, Category firstCategory, Category secondCategory, String title, String content,
+    public Ticket(String customId, Member user, Category firstCategory, Category secondCategory, String title, String content,
                   Priority priority,Status status, LocalDate dueDate, Long agitId) {
+        this.customId = customId;
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;
@@ -84,6 +88,21 @@ public class Ticket extends BaseEntity {
         this.priority = priority;
         this.status = status;
         this.dueDate = dueDate;
+        this.agitId = agitId;
+    }
+
+    public void linkToAgit(Long agitId) {
+        if (this.agitId != null) {
+            throw new IllegalStateException("아지트 ID는 이미 설정되어 있습니다.");
+        }
+        this.agitId = agitId;
+    }
+
+    public void unlinkFromAgit() {
+        this.agitId = null;
+    }
+
+    public void updateAgitId(Long agitId) {
         this.agitId = agitId;
     }
 
@@ -124,6 +143,10 @@ public class Ticket extends BaseEntity {
         this.content = content;
     }
 
+    public void updateCustomId(String customId) {
+        this.customId = customId;
+    }
+
     public void updateCategories(Category firstCategory, Category secondCategory) {
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;
@@ -135,5 +158,9 @@ public class Ticket extends BaseEntity {
 
     public void softDelete() {
         this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restoreTicket() {
+        this.deletedAt = null;
     }
 }

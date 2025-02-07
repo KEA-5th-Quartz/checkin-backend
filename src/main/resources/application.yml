@@ -46,6 +46,7 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
+  baseurl: "${API_SERVER_URL}"
 
 cloud:
   aws:

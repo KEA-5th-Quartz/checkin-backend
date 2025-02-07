@@ -22,7 +22,6 @@ import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +44,7 @@ public class MemberService {
     private final ApplicationEventPublisher eventPublisher;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private final S3UploadService s3UploadService;
+    private final S3Service s3Service;
     private final JwtService jwtService;
 
     public Member getMemberByIdOrThrow(Long id) {
@@ -166,7 +165,7 @@ public class MemberService {
 
     @Transactional
     public String updateMemberProfilePic(Long id, CustomUser customUser, MultipartFile file) {
-        if (file.isEmpty() || !s3UploadService.isImageType(file.getContentType())) {
+        if (file.isEmpty() || !s3Service.isImageType(file.getContentType())) {
             log.error("파일이 누락되었거나, 이미지 타입이 아닙니다.");
             throw new ApiException(ErrorCode.INVALID_DATA);
         }
@@ -182,11 +181,11 @@ public class MemberService {
         checkMemberOwnsResource(member, customUser);
 
         try {
-            String profilePic = s3UploadService.uploadFile(file, S3Config.PROFILE_DIR);
+            String profilePic = s3Service.uploadFile(file, S3Config.PROFILE_DIR);
             member.updateProfilePic(profilePic);
 
             return profilePic;
-        } catch (IOException exception) {
+        } catch (Exception exception) {
             log.error("S3에 파일을 업로드할 수 없습니다. {}", exception.getMessage());
             throw new ApiException(ErrorCode.OBJECT_STORAGE_ERROR);
         }

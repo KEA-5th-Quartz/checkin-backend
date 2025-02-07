@@ -1,13 +1,14 @@
 package com.quartz.checkin.dto.ticket.response;
 
+import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
-import java.util.List;
 
 @Getter
 @Builder
 public class TicketActivityResponse {
-    private Long ticketId;
+    private Long id;
+    private String customId;
     private List<ActivityResponse> activities;
 }
 

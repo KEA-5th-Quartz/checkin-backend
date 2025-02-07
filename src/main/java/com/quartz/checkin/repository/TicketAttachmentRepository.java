@@ -20,4 +20,8 @@ public interface TicketAttachmentRepository extends JpaRepository<TicketAttachme
 
     @Query("SELECT ta.attachment.id FROM TicketAttachment ta WHERE ta.ticket.id IN :ticketIds")
     List<Long> findAttachmentIdsByTicketIds(@Param("ticketIds") List<Long> ticketIds);
+
+    @Modifying
+    @Query("DELETE FROM TicketAttachment ta WHERE ta.ticket.id IN :ticketIds")
+    void deleteAllByTicketIds(@Param("ticketIds") List<Long> ticketIds);
 }

@@ -20,6 +20,7 @@ import lombok.Setter;
 public class TicketDetailResponse {
 
     private Long ticketId;
+    private String customId;
     private String title;
     private String firstCategory;
     private String secondCategory;
@@ -45,6 +46,7 @@ public class TicketDetailResponse {
 
         return TicketDetailResponse.builder()
                 .ticketId(ticket.getId())
+                .customId(ticket.getCustomId())
                 .title(ticket.getTitle())
                 .firstCategory(ticket.getFirstCategory().getName())
                 .secondCategory(ticket.getSecondCategory().getName())

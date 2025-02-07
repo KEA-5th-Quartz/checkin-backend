@@ -20,6 +20,7 @@ public class ApiResponse<T> {
     private T data;
     private String message;
 
+
     public static <T> ApiResponse<T> createSuccessResponseWithData(int status, T data) {
         return ApiResponse.<T>builder()
                 .status(status)

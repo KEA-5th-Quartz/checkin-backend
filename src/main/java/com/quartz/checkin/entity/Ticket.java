@@ -79,7 +79,7 @@ public class Ticket extends BaseEntity {
     @Builder
     public Ticket(String customId, Member user, Category firstCategory, Category secondCategory, String title, String content,
                   Priority priority,Status status, LocalDate dueDate, Long agitId) {
-        /*this.customId = customId;*/
+        this.customId = customId;
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;

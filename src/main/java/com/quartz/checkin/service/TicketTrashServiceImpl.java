@@ -3,7 +3,9 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.event.TicketCreatedEvent;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import java.time.Duration;
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,7 @@ public class TicketTrashServiceImpl implements TicketTrashService {
     private final TicketRepository ticketRepository;
     private final TicketAttachmentRepository ticketAttachmentRepository;
     private final AttachmentService attachmentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void restoreTickets(Long memberId, List<Long> ticketIds) {
@@ -57,7 +61,25 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         //            String id = ticket.getCustomId();
         //            String today = LocalDate.now().toString().substring(5).replace("-", "");
         //            ticket.updateCustomId(today + id.substring(4));
-        tickets.forEach(this::restoreTicket);
+
+        //tickets.forEach(this::restoreTicket);
+
+        for (Ticket ticket : tickets) {
+            restoreTicket(ticket); // 개별 티켓 복원 메서드 호출
+
+            // **OPEN 상태인 경우 기존 방식대로 이벤트 발행**
+            if (ticket.getStatus() == Status.OPEN) {
+                eventPublisher.publishEvent(new TicketCreatedEvent(
+                        ticket.getId(),
+                        ticket.getCustomId(),
+                        ticket.getUser().getId(),
+                        ticket.getTitle(),
+                        ticket.getContent(),
+                        List.of(member.getUsername())
+                ));
+            }
+        }
+
         ticketRepository.saveAll(tickets);
     }
 

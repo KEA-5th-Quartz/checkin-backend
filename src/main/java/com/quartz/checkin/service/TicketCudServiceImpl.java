@@ -41,7 +41,6 @@ public class TicketCudServiceImpl implements TicketCudService {
     private final CategoryServiceImpl categoryService;
     private final MemberService memberService;
     private final TicketAttachmentRepository ticketAttachmentRepository;
-    private final WebhookService webhookService;
     private final ApplicationEventPublisher eventPublisher;
 
 

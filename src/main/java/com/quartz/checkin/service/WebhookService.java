@@ -60,12 +60,12 @@ public class WebhookService {
         }
     }
 
-    public Long createAgitPost(Long ticketId, String title, String content, List<String> assignees) {
+    public Long createAgitPost(String CustomId, String title, String content, List<String> assignees) {
         // URL 중복 제거
         String url = webhookUrl + "/wall_messages";
 
         Map<String, Object> payload = Map.of(
-                "text", "**[" + ticketId + "] " + "**\n**" + title +  "**\n" + content,
+                "text", "**[" + CustomId + "] " + "**\n**" + title +  "**\n" + content,
                 "task", Map.of(
                         "template_name", "web_bug",
                         "assignees", assignees

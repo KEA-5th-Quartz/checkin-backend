@@ -38,9 +38,9 @@ public interface StatsTicketRepository extends JpaRepository<Ticket, Long> {
             WHERE t.status IN ('IN_PROGRESS', 'CLOSED') 
                 AND t.deleted_at IS NULL 
                 AND ( 
-                    (:type = 'WEEK' AND t.created_at >= DATEADD('DAY', -7, CURRENT_DATE)) OR 
-                    (:type = 'MONTH' AND t.created_at >= DATEADD('MONTH', -1, CURRENT_DATE)) OR 
-                    (:type = 'QUARTER' AND t.created_at >= DATEADD('MONTH', -3, CURRENT_DATE)) 
+                    (:type = 'WEEK' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) OR 
+                    (:type = 'MONTH' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)) OR 
+                    (:type = 'QUARTER' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 MONTH)) 
                 ) 
             GROUP BY t.manager_id, t.status 
     ) subquery 
@@ -53,9 +53,9 @@ public interface StatsTicketRepository extends JpaRepository<Ticket, Long> {
         WHERE status IN ('IN_PROGRESS', 'CLOSED') 
             AND deleted_at IS NULL 
             AND ( 
-                (:type = 'WEEK' AND created_at >= DATEADD('DAY', -7, CURRENT_DATE)) OR 
-                (:type = 'MONTH' AND created_at >= DATEADD('MONTH', -1, CURRENT_DATE)) OR 
-                (:type = 'QUARTER' AND created_at >= DATEADD('MONTH', -3, CURRENT_DATE)) 
+                (:type = 'WEEK' AND created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) OR 
+                (:type = 'MONTH' AND created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)) OR 
+                (:type = 'QUARTER' AND created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 MONTH)) 
             ) 
         GROUP BY manager_id 
     ) total ON subquery.manager_id = total.manager_id 
@@ -74,21 +74,23 @@ public interface StatsTicketRepository extends JpaRepository<Ticket, Long> {
     FROM ticket t 
     WHERE t.deleted_at IS NULL 
         AND ( 
-            (:type = 'WEEK' AND t.created_at >= DATEADD('DAY', -7, CURRENT_DATE)) OR 
-            (:type = 'MONTH' AND t.created_at >= DATEADD('MONTH', -1, CURRENT_DATE)) OR 
-            (:type = 'QUARTER' AND t.created_at >= DATEADD('MONTH', -3, CURRENT_DATE)) 
+            (:type = 'WEEK' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) OR 
+            (:type = 'MONTH' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)) OR 
+            (:type = 'QUARTER' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 MONTH)) 
         )
     """, nativeQuery = true)
     Optional<Double> findCompletionRateByType(@Param("type") String type); // type을 String으로 직접 받음
 
     // 카테고리별 티켓 수
     @Query(value = """
-        SELECT c.name AS name, COUNT(t.ticket_id) AS ticket_count 
-        FROM category c 
-        LEFT JOIN ticket t ON c.category_id = t.first_category_id AND t.status = 'IN_PROGRESS'
-        WHERE c.parent_id IS NULL 
-        GROUP BY c.category_id, c.name 
-        ORDER BY ticket_count DESC
-        """, nativeQuery = true)
+    SELECT c.name AS name, COUNT(t.ticket_id) AS ticket_count 
+    FROM category c 
+    LEFT JOIN ticket t ON c.category_id = t.first_category_id 
+        AND t.status = 'IN_PROGRESS' 
+        AND t.deleted_at IS NULL  -- 추가: 삭제되지 않은 티켓만
+    WHERE c.parent_id IS NULL 
+    GROUP BY c.name 
+    ORDER BY ticket_count DESC
+    """, nativeQuery = true)
     List<Object[]> findCategoryTicketStats();
 }

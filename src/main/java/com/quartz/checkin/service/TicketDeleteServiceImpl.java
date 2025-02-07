@@ -9,7 +9,6 @@ import com.quartz.checkin.repository.TicketRepository;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +26,7 @@ public class TicketDeleteServiceImpl implements TicketDeleteService {
     private final AttachmentService attachmentService;
 
     @Override
-    public void restoreTickets(Long memberId, List<String> ticketIds) {
+    public void restoreTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
@@ -46,20 +45,24 @@ public class TicketDeleteServiceImpl implements TicketDeleteService {
             }
         }
 
-        ArrayList<Ticket> temps = new ArrayList<>();
-        // 티켓 복원 시 dueDate와 createdAt을 오늘을 기준으로 초기화
-        LocalDateTime now = LocalDateTime.now();
-        tickets.forEach(ticket -> {
-            Duration duration = Duration.between(ticket.getCreatedAt(), now);
-            LocalDateTime dueDateTime = ticket.getDueDate().atStartOfDay().plus(duration);
-            Ticket temp = replaceTicket(ticket, dueDateTime.toLocalDate());
-            temps.add(temp);
-        });
-        ticketRepository.saveAll(temps);
+//        ArrayList<Ticket> temps = new ArrayList<>();
+        //            LocalDateTime now = LocalDateTime.now();
+        //            // 티켓 복원 시 dueDate를 createdAt와의 차이만큼 더함
+        //            LocalDateTime dueDateTime = ticket.getDueDate().atStartOfDay();
+        //            Duration duration = Duration.between(ticket.getCreatedAt(), dueDateTime);
+        //            ticket.updateDueDate(dueDateTime.plus(duration).toLocalDate());
+        ////            Ticket temp = replaceTicket(ticket, dueDateTime.toLocalDate());
+        ////            temps.add(temp);
+        //            // ticket id를 가져와서 첫 네 글자를 오늘 날짜로 변경(MMDD)
+        //            String id = ticket.getCustomId();
+        //            String today = LocalDate.now().toString().substring(5).replace("-", "");
+        //            ticket.updateCustomId(today + id.substring(4));
+        tickets.forEach(this::restoreTicket);
+        ticketRepository.saveAll(tickets);
     }
 
     @Override
-    public void purgeTickets(Long memberId, List<String> ticketIds) {
+    public void purgeTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
@@ -91,31 +94,43 @@ public class TicketDeleteServiceImpl implements TicketDeleteService {
         ticketRepository.deleteAll(tickets);
     }
 
-    private Ticket replaceTicket(Ticket ticket, LocalDate dueDateTime) {
-        Ticket temp;
+    private void restoreTicket(Ticket ticket) {
+        // 티켓 복원 시 dueDate를 createdAt와의 차이만큼 더함
+        LocalDateTime dueDateTime = ticket.getDueDate().atStartOfDay();
+        Duration duration = Duration.between(ticket.getCreatedAt(), dueDateTime);
+        ticket.updateDueDate(dueDateTime.plus(duration).toLocalDate());
+//            Ticket temp = replaceTicket(ticket, dueDateTime.toLocalDate());
+//            temps.add(temp);
 
-//        // ticket id를 가져와서 첫 네 글자를 오늘 날짜로 변경(MMDD)
-//        String id = ticket.getId();
-//        String today = LocalDate.now().toString().substring(5).replace("-", "");
-//        String tempId = today + id.substring(4);
+        // ticket id를 가져와서 첫 네 글자를 오늘 날짜로 변경(MMDD)
+        String id = ticket.getCustomId();
+        String today = LocalDate.now().toString().substring(5).replace("-", "");
+        ticket.updateCustomId(today + id.substring(4));
 
-        // temp에 ticket 깊은 복사
-        temp = Ticket.builder()
-//                .id(tempId)
-                .id(ticket.getId())
-                .user(ticket.getUser())
-                .firstCategory(ticket.getFirstCategory())
-                .secondCategory(ticket.getSecondCategory())
-                .title(ticket.getTitle())
-                .content(ticket.getContent())
-                .priority(ticket.getPriority())
-                .status(ticket.getStatus())
-                .dueDate(dueDateTime)
-                .agitId(ticket.getAgitId())
-                .build();
-
-        // ticket 삭제
-        ticketRepository.delete(ticket);
-        return temp;
+        ticket.restoreTicket();
     }
+
+//    private Ticket replaceTicket(Ticket ticket, LocalDate dueDateTime) {
+//        Ticket temp;
+//
+//        // ticket id를 가져와서 첫 네 글자를 오늘 날짜로 변경(MMDD)
+//        String id = ticket.getCustomId();
+//        String today = LocalDate.now().toString().substring(5).replace("-", "");
+//        String tempCustomId = today + id.substring(4);
+//
+//        // temp에 ticket 깊은 복사
+//        temp = Ticket.builder()
+//                .customId(tempCustomId)
+//                .user(ticket.getUser())
+//                .firstCategory(ticket.getFirstCategory())
+//                .secondCategory(ticket.getSecondCategory())
+//                .title(ticket.getTitle())
+//                .content(ticket.getContent())
+//                .priority(ticket.getPriority())
+//                .status(ticket.getStatus())
+//                .dueDate(dueDateTime)
+//                .agitId(ticket.getAgitId())
+//                .build();
+//
+//    }
 }

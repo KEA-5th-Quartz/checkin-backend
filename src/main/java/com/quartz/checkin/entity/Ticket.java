@@ -159,4 +159,8 @@ public class Ticket extends BaseEntity {
     public void softDelete() {
         this.deletedAt = LocalDateTime.now();
     }
+
+    public void restoreTicket() {
+        this.deletedAt = null;
+    }
 }

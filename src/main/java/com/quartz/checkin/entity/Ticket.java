@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -16,7 +18,6 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Getter
@@ -24,8 +25,12 @@ import lombok.Setter;
 public class Ticket extends BaseEntity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ticket_id")
-    private String id;
+    private Long id;
+
+    @Column(name = "custom_id", nullable = false)
+    private String customId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
@@ -72,9 +77,9 @@ public class Ticket extends BaseEntity {
     private List<TicketAttachment> attachments;
 
     @Builder
-    public Ticket(String id, Member user, Category firstCategory, Category secondCategory, String title, String content,
+    public Ticket(String customId, Member user, Category firstCategory, Category secondCategory, String title, String content,
                   Priority priority,Status status, LocalDate dueDate, Long agitId) {
-        this.id = id;
+        this.customId = customId;
         this.user = user;
         this.firstCategory = firstCategory;
         this.secondCategory = secondCategory;
@@ -90,6 +95,14 @@ public class Ticket extends BaseEntity {
         if (this.agitId != null) {
             throw new IllegalStateException("아지트 ID는 이미 설정되어 있습니다.");
         }
+        this.agitId = agitId;
+    }
+
+    public void unlinkFromAgit() {
+        this.agitId = null;
+    }
+
+    public void updateAgitId(Long agitId) {
         this.agitId = agitId;
     }
 
@@ -128,6 +141,10 @@ public class Ticket extends BaseEntity {
 
     public void updateContent(String content) {
         this.content = content;
+    }
+
+    public void updateCustomId(String customId) {
+        this.customId = customId;
     }
 
     public void updateCategories(Category firstCategory, Category secondCategory) {

@@ -7,7 +7,8 @@ import lombok.Getter;
 @Getter
 @Builder
 public class TicketActivityResponse {
-    private String ticketId;
+    private Long id;
+    private String customId;
     private List<ActivityResponse> activities;
 }
 

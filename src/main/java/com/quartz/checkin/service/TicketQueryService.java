@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface TicketQueryService {
 
-    TicketDetailResponse getTicketDetail(Long memberId, String ticketId);
+    TicketDetailResponse getTicketDetail(Long memberId, Long ticketId);
 
     ManagerTicketListResponse getManagerTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                                 List<String> categories, List<Priority> priorities,

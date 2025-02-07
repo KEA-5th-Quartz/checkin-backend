@@ -149,21 +149,21 @@ public class TicketCudServiceImpl implements TicketCudService {
         // 기존 createdAt을 기준으로 날짜 유지
         String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
 
-        // **1차 카테고리 또는 2차 카테고리가 변경되었을 경우만 customId 변경**
+        // 1차 카테고리 또는 2차 카테고리가 변경되었을 경우만 customId 변경
         if (!oldFirstCategory.equals(firstCategory) || !oldSecondCategory.equals(secondCategory)) {
             String firstCategoryAlias = firstCategory.getAlias();
             String secondCategoryAlias = secondCategory.getAlias();
             String prefix = datePart + firstCategoryAlias + "-" + secondCategoryAlias;
 
-            // 기존 티켓 중 같은 날짜, 카테고리 조합의 마지막 ID 찾기
-            String lastCustomId = ticketRepository.findLastTicketId(prefix);
-            int lastTicketNumber = (lastCustomId != null && lastCustomId.startsWith(prefix))
-                    ? Integer.parseInt(lastCustomId.substring(lastCustomId.length() - 3)) + 1
-                    : 1;
+            // 기존 customId에서 숫자 부분만 추출 (마지막 3자리)
+            String oldCustomId = ticket.getCustomId();
+            String numberPart = oldCustomId.substring(oldCustomId.length() - 3); // 001, 002 같은 숫자 부분 유지
 
-            String newCustomId = prefix + String.format("%03d", lastTicketNumber);
+            // 새로운 customId 생성 (앞부분만 변경하고, 숫자는 유지)
+            String newCustomId = prefix + numberPart;
             ticket.updateCustomId(newCustomId);
         }
+
 
         // 첨부파일 검증 및 변경 사항 반영 (null 체크 추가)
         List<Long> newAttachmentIds = request.getAttachmentIds() != null ? request.getAttachmentIds() : Collections.emptyList();

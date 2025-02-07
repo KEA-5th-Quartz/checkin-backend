@@ -12,7 +12,7 @@ public class FirstCategoryCreateRequest {
     private String name;
 
     @NotBlank
-    @Size(max = 4, message = "카테고리 약어을 입력하세요 (영어 대문자 2~4)")
+    @Size(min = 2, max = 4, message = "카테고리 약어을 입력하세요 (영어 대문자 2~4)")
     private String alias;
 
     @NotBlank

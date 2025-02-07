@@ -66,11 +66,8 @@ public class CategoryServiceImpl implements CategoryService {
         checkDuplicateFirstCategory(request.getName(), null);
         checkDuplicateAlias(request.getAlias(), null);
 
-        // Alias 자동 변환 로직
-        String formattedAlias = formatAlias(request.getAlias());
-
         // 카테고리 생성 및 저장
-        Category firstCategory = new Category(null, request.getName(), formattedAlias, request.getContentGuide());
+        Category firstCategory = new Category(null, request.getName(), request.getAlias(), request.getContentGuide());
         categoryRepository.save(firstCategory);
 
         return new FirstCategoryCreateResponse(firstCategory.getId());
@@ -90,9 +87,7 @@ public class CategoryServiceImpl implements CategoryService {
             checkDuplicateAlias(request.getAlias(), firstCategoryId);
         }
 
-        String formattedAlias = formatAlias(request.getAlias());
-
-        firstCategory.updateCategory(request.getName(), formattedAlias, request.getContentGuide());
+        firstCategory.updateCategory(request.getName(), request.getAlias(), request.getContentGuide());
     }
 
     @Override
@@ -220,18 +215,5 @@ public class CategoryServiceImpl implements CategoryService {
     public Category getSecondCategoryOrThrow(String secondCategory, Category firstCategory) {
         return categoryRepository.findByNameAndParent(secondCategory, firstCategory)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
-    }
-
-    private String formatAlias(String alias) {
-        if (alias == null || alias.isBlank()) {
-            throw new ApiException(ErrorCode.INVALID_ALIAS_FORMAT);
-        }
-
-        return switch (alias.length()) {
-            case 2 -> alias + "__";
-            case 3 -> alias + "_";
-            case 4 -> alias;
-            default -> throw new ApiException(ErrorCode.INVALID_ALIAS_FORMAT);
-        };
     }
 }

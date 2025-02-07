@@ -18,7 +18,7 @@ bin/
 !**/src/test/**/bin/
 
 # QueryDSL 자동 생성 파일 제외
-build/generated/
+src/main/generated/
 
 ### IntelliJ IDEA ###
 .idea

@@ -23,6 +23,7 @@ import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.event.RoleUpdateEvent;
+import com.quartz.checkin.event.SoftDeletedEvent;
 import com.quartz.checkin.repository.CommentRepository;
 import com.quartz.checkin.repository.LikeRepository;
 import com.quartz.checkin.repository.MemberAccessLogRepository;
@@ -249,6 +250,7 @@ public class MemberService {
         }
 
         member.softDelete();
+        eventPublisher.publishEvent(new SoftDeletedEvent(member.getUsername()));
     }
 
     @Transactional

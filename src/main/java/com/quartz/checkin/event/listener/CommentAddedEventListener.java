@@ -35,7 +35,7 @@ public class CommentAddedEventListener {
             webhookService.addCommentToWebhookPost(parentId, formattedComment);
 
             AlertLog alertLog = AlertLog.builder()
-                    .relatedId(event.getTicketId())
+                    .relatedId(event.getId())
                     .relatedTable("comment")
                     .status("SUCCESS")
                     .type("COMMENT_ADDED")
@@ -49,7 +49,7 @@ public class CommentAddedEventListener {
             log.error("티켓 댓글 추가 이벤트 처리 실패: {}", e.getMessage(), e);
 
             AlertLog alertLog = AlertLog.builder()
-                    .relatedId(event.getTicketId())
+                    .relatedId(event.getId())
                     .relatedTable("comment")
                     .status("FAILURE")
                     .type("COMMENT_ADDED")

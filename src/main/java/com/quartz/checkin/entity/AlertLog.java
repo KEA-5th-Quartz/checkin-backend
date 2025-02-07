@@ -26,7 +26,7 @@ public class AlertLog {
     private Long memberId;
     private String type;
     private String relatedTable;
-    private String relatedId;
+    private Long relatedId;
     private String status;
     private LocalDateTime createdAt;
 

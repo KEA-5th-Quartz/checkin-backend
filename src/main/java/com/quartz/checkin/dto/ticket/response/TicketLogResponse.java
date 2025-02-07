@@ -10,7 +10,8 @@ import lombok.Getter;
 public class TicketLogResponse {
 
     private final Long logId;
-    private final String ticketId;
+    private final Long ticketId;
+    private final String customId;
     private final LogType logType;
     private final String content;
 
@@ -20,6 +21,7 @@ public class TicketLogResponse {
     public TicketLogResponse(TicketLog ticketLog) {
         this.logId = ticketLog.getId();
         this.ticketId = ticketLog.getTicket().getId();
+        this.customId = ticketLog.getTicket().getCustomId();
         this.logType = ticketLog.getLogtype();
         this.content = ticketLog.getContent();
         this.createdAt = ticketLog.getCreatedAt();

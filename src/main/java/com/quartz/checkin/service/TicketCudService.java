@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface TicketCudService {
     TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request);
-    void updatePriority(Long memberId, String ticketId, PriorityUpdateRequest request);
-    void updateTicket(Long memberId, TicketUpdateRequest request, String ticketId);
-    void deleteTickets(Long memberId, List<String> ticketIds);
+    void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request);
+    void updateTicket(Long memberId, TicketUpdateRequest request, Long ticketId);
+    void deleteTickets(Long memberId, List<Long> ticketIds);
 }

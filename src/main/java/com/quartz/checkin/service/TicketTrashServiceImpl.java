@@ -6,10 +6,12 @@ import com.quartz.checkin.dto.ticket.response.DeletedTicketDetail;
 import com.quartz.checkin.dto.ticket.response.QDeletedTicketDetail;
 import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.entity.Member;
-import com.quartz.checkin.entity.QMember;
-import com.quartz.checkin.entity.QTicket;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.event.TicketCreatedEvent;
+import com.quartz.checkin.repository.TicketAttachmentRepository;
+import com.quartz.checkin.entity.QMember;
+import com.quartz.checkin.entity.QTicket;
 import com.quartz.checkin.repository.TicketQueryRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -19,18 +21,21 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketTrashServiceImpl implements TicketTrashService {
     private final MemberService memberService;
     private final TicketRepository ticketRepository;
+    private final TicketAttachmentRepository ticketAttachmentRepository;
+    private final AttachmentService attachmentService;
+    private final ApplicationEventPublisher eventPublisher;
     private final TicketQueryRepository ticketQueryRepository;
     private final JPAQueryFactory queryFactory;
 
@@ -71,7 +76,25 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         //            String id = ticket.getCustomId();
         //            String today = LocalDate.now().toString().substring(5).replace("-", "");
         //            ticket.updateCustomId(today + id.substring(4));
-        tickets.forEach(this::restoreTicket);
+
+        //tickets.forEach(this::restoreTicket);
+
+        for (Ticket ticket : tickets) {
+            restoreTicket(ticket); // 개별 티켓 복원 메서드 호출
+
+            // **OPEN 상태인 경우 기존 방식대로 이벤트 발행**
+            if (ticket.getStatus() == Status.OPEN) {
+                eventPublisher.publishEvent(new TicketCreatedEvent(
+                        ticket.getId(),
+                        ticket.getCustomId(),
+                        ticket.getUser().getId(),
+                        ticket.getTitle(),
+                        ticket.getContent(),
+                        List.of(member.getUsername())
+                ));
+            }
+        }
+
         ticketRepository.saveAll(tickets);
     }
 
@@ -150,8 +173,6 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         List<Ticket> expiredTickets = ticketQueryRepository.findTicketsToDelete(thresholdDate);
 
         if (!expiredTickets.isEmpty()) {
-            log.info("Soft deleting {} expired tickets.", expiredTickets.size());
-
             // SoftDelete 수행
             expiredTickets.forEach(Ticket::softDelete);
             ticketRepository.saveAll(expiredTickets);
@@ -174,11 +195,8 @@ public class TicketTrashServiceImpl implements TicketTrashService {
                 .fetch();
 
         if (!oldTickets.isEmpty()) {
-            log.info("Soft deleting {} closed tickets older than 6 months.", oldTickets.size());
-
             // SoftDelete 처리
             oldTickets.forEach(Ticket::softDelete);
-
             // 변경 사항 저장
             ticketRepository.saveAll(oldTickets);
         }
@@ -229,5 +247,21 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         );
     }
 
+
+    @Transactional
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void deleteOldSoftDeletedTickets() {
+        QTicket ticket = QTicket.ticket;
+        // 30일이 지난 삭제된 티켓 조회
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+
+        List<Ticket> expiredTickets = queryFactory
+                .selectFrom(ticket)
+                .where(ticket.deletedAt.isNotNull()
+                        .and(ticket.deletedAt.before(thirtyDaysAgo)))
+                .fetch();
+        // 영구 삭제 실행
+        ticketRepository.deleteAll(expiredTickets);
+    }
 
 }

@@ -212,31 +212,22 @@ public class WebhookService {
         }
     }
 
-    public void deleteAgitPost(List<Long> agitId) {
-        if (agitId == null) {
-            log.error("웹훅 삭제 실패: agitId가 null입니다.");
-            throw new IllegalArgumentException("agitId가 null일 수 없습니다.");
-        }
-
-        // 아지트 웹훅 삭제 URL (agitId를 포함하여 요청)
+    public boolean deleteAgitPost(Long agitId) {
         String url = webhookUrl + "/wall_messages/" + agitId;
 
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.DELETE, null, String.class);
 
-            // DELETE 요청 보내기
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class);
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                throw new RuntimeException("웹훅 게시글 삭제 실패: " + response.getStatusCode());
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("웹훅 게시글 삭제 성공: agitId={}", agitId, response.getBody());
+                return true;
+            } else {
+                log.error("웹훅 게시글 삭제 실패: agitId={}, 응답 코드={}", agitId, response.getStatusCode());
+                return false;
             }
-
-            log.info("웹훅 게시글 삭제 성공: agitId={}", agitId);
         } catch (Exception e) {
-            log.error("웹훅 게시글 삭제 중 오류 발생: {}", e.getMessage());
-            throw new RuntimeException("웹훅 게시글 삭제 실패: " + e.getMessage());
+            log.error("웹훅 게시글 삭제 중 예외 발생: agitId={}, 오류={}", agitId, e.getMessage());
+            return false;
         }
     }
 

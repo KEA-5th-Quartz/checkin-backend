@@ -21,21 +21,29 @@ public class TicketDeletedListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTicketDeletedEvent(TicketDeletedEvent event) {
-        log.info("티켓 삭제 이벤트 감지: agitId={}, ticketId={}", event.getAgitIds(), event.getTicketId());
+        log.info("티켓 삭제 이벤트 감지: agitIds={}, ticketId={}", event.getAgitIds(), event.getTicketId());
 
         try {
-            webhookService.deleteAgitPost(event.getAgitIds());
+            for (Long agitId : event.getAgitIds()) {
+                log.info("아지트 게시글 삭제 요청: agitId={}", agitId);
 
-            alertLogRepository.save(AlertLog.builder()
-                    .createdAt(LocalDateTime.now())
-                    .relatedId(event.getTicketId())
-                    .relatedTable("ticket")
-                    .status("SUCCESS")
-                    .type("TICKET_DELETED")
-                    .build());
+                boolean success = webhookService.deleteAgitPost(agitId);
 
-            log.info("아지트 게시글 삭제 성공: ticketId={}", event.getTicketId());
+                if (success) {
+                    log.info("아지트 게시글 삭제 성공: agitId={}", agitId);
 
+                    alertLogRepository.save(AlertLog.builder()
+                            .createdAt(LocalDateTime.now())
+                            .relatedId(event.getTicketId())
+                            .relatedTable("ticket")
+                            .status("SUCCESS")
+                            .type("TICKET_DELETED")
+                            .build());
+
+                } else {
+                    log.error("아지트 게시글 삭제 실패(응답 오류): agitId={}", agitId);
+                }
+            }
         } catch (Exception e) {
             log.error("아지트 게시글 삭제 실패: {}", e.getMessage());
 

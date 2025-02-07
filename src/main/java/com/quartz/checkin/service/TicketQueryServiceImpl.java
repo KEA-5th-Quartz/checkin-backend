@@ -70,7 +70,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
                                                        List<String> categories, List<Priority> priorities,
                                                        Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
 
-        Page<Ticket> ticketPage = fetchTickets(memberId, null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt);
+        Page<Ticket> ticketPage = fetchTickets(null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt);
         return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
@@ -78,70 +78,102 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     public UserTicketListResponse getUserTickets(Long userId, List<Status> statuses, List<String> usernames,
                                                  List<String> categories, List<Priority> priorities,
                                                  Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
-        Page<Ticket> ticketPage = fetchTickets(userId, null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt);
+        Page<Ticket> ticketPage = fetchTickets(userId, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt);
         return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 
     @Override
     public ManagerTicketListResponse searchManagerTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
-        Page<Ticket> ticketPage = fetchTickets(null, keyword, null, null, null, null, null, null, page, size, sortByCreatedAt);
+        Page<Ticket> ticketPage = fetchSearchedTickets(null, keyword, page, size, sortByCreatedAt);
         return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
     @Override
     public UserTicketListResponse searchUserTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
-        Page<Ticket> ticketPage = fetchTickets(memberId, keyword, null, null, null, null, null, null, page, size, sortByCreatedAt);
+        Page<Ticket> ticketPage = fetchSearchedTickets(memberId, keyword, page, size, sortByCreatedAt);
         return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 
-
+    @Transactional(readOnly = true)
     @Override
-    public TicketProgressResponse getManagerProgress(Long memberId) {
-        List<Object[]> resultList = ticketRepository.getManagerTicketStatistics(memberId);
+    public TicketProgressResponse getManagerProgress(Long managerId) {
+        QTicket ticket = QTicket.ticket;
 
-        // 만약 결과가 비어있다면 기본값 반환
-        if (resultList.isEmpty()) {
-            return new TicketProgressResponse(0, 0, 0, 0, "0 / 0");
-        }
+        LocalDate today = LocalDate.now();
 
-        // Object 배열에서 각 값 추출
-        Object[] result = resultList.get(0);
+        // dueTodayCount (오늘 마감이며 본인 담당 티켓)
+        Long dueTodayCount = queryFactory
+                .select(ticket.count())
+                .from(ticket)
+                .where(ticket.deletedAt.isNull()
+                        .and(ticket.dueDate.eq(today))
+                        .and(ticket.manager.id.eq(managerId)))
+                .fetchOne();
 
-        int dueTodayCount = ((Number) result[0]).intValue();
-        int openTicketCount = ((Number) result[1]).intValue();
-        int inProgressTicketCount = ((Number) result[2]).intValue();
-        int closedTicketCount = ((Number) result[3]).intValue();
-        int totalTickets = ((Number) result[4]).intValue();
+        // openTicketCount (열린 상태이며 오늘 이후 마감)
+        Long openTicketCount = queryFactory
+                .select(ticket.count())
+                .from(ticket)
+                .where(ticket.deletedAt.isNull()
+                        .and(ticket.status.eq(Status.OPEN))
+                        .and(ticket.dueDate.goe(today)))
+                .fetchOne();
 
-        String progressExpression = totalTickets > 0
-                ? String.format("%d / %d", inProgressTicketCount + closedTicketCount, totalTickets)
+        // inProgressTicketCount (진행 중 상태이며 본인 담당, 오늘 이후 마감)
+        Long inProgressTicketCount = queryFactory
+                .select(ticket.count())
+                .from(ticket)
+                .where(ticket.deletedAt.isNull()
+                        .and(ticket.status.eq(Status.IN_PROGRESS))
+                        .and(ticket.dueDate.goe(today))
+                        .and(ticket.manager.id.eq(managerId)))
+                .fetchOne();
+
+        // closedTicketCount (완료 상태이며 본인 담당, 오늘 이후 마감)
+        Long closedTicketCount = queryFactory
+                .select(ticket.count())
+                .from(ticket)
+                .where(ticket.deletedAt.isNull()
+                        .and(ticket.status.eq(Status.CLOSED))
+                        .and(ticket.dueDate.goe(today))
+                        .and(ticket.manager.id.eq(managerId)))
+                .fetchOne();
+
+        // totalTickets (모든 티켓에서 오늘 이후 마감된 티켓 수)
+        Long totalTickets = queryFactory
+                .select(ticket.count())
+                .from(ticket)
+                .where(ticket.deletedAt.isNull()
+                        .and(ticket.dueDate.goe(today)))
+                .fetchOne();
+
+        // Null 값 방지
+        int safeDueTodayCount = dueTodayCount != null ? dueTodayCount.intValue() : 0;
+        int safeOpenTicketCount = openTicketCount != null ? openTicketCount.intValue() : 0;
+        int safeInProgressTicketCount = inProgressTicketCount != null ? inProgressTicketCount.intValue() : 0;
+        int safeClosedTicketCount = closedTicketCount != null ? closedTicketCount.intValue() : 0;
+        int safeTotalTickets = totalTickets != null ? totalTickets.intValue() : 0;
+
+        String progressExpression = safeTotalTickets > 0
+                ? String.format("%d / %d", safeInProgressTicketCount + safeClosedTicketCount, safeTotalTickets)
                 : "0 / 0";
 
         return new TicketProgressResponse(
-                dueTodayCount,
-                openTicketCount,
-                inProgressTicketCount,
-                closedTicketCount,
+                safeDueTodayCount,
+                safeOpenTicketCount,
+                safeInProgressTicketCount,
+                safeClosedTicketCount,
                 progressExpression
         );
     }
 
-    private Page<Ticket> fetchTickets(
-            Long memberId, String keyword, List<Status> statuses, List<String> usernames,
-            List<String> categories, List<Priority> priorities,
-            Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
 
+    private Page<Ticket> fetchSearchedTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
         validatePagination(page, size);
-
-        Sort.Direction createdAtSortDirection = "asc".equalsIgnoreCase(sortByCreatedAt) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Sort sort = Sort.by(createdAtSortDirection, "createdAt");
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
 
         QTicket ticket = QTicket.ticket;
         QMember manager = QMember.member;
-
-        LocalDate today = LocalDate.now();
-        LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
         BooleanBuilder whereClause = new BooleanBuilder();
         whereClause.and(ticket.deletedAt.isNull());
@@ -154,6 +186,51 @@ public class TicketQueryServiceImpl implements TicketQueryService {
             String searchKeyword = "%" + keyword.toLowerCase() + "%";
             whereClause.and(ticket.title.lower().like(searchKeyword)
                     .or(ticket.content.lower().like(searchKeyword)));
+        }
+
+        OrderSpecifier<?> orderSpecifier = "asc".equalsIgnoreCase(sortByCreatedAt)
+                ? ticket.createdAt.asc()
+                : ticket.createdAt.desc();
+
+        // QueryDSL을 사용한 페이징 적용 조회
+        List<Ticket> results = queryFactory
+                .selectFrom(ticket)
+                .leftJoin(ticket.manager, manager).fetchJoin()
+                .where(whereClause)
+                .orderBy(orderSpecifier)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        // 총 개수 조회
+        long safeTotalCount = Optional.ofNullable(
+                queryFactory.select(ticket.count())
+                        .from(ticket)
+                        .where(whereClause)
+                        .fetchOne()
+        ).orElse(0L);
+
+        return new PageImpl<>(results, pageable, safeTotalCount);
+    }
+
+    private Page<Ticket> fetchTickets(Long memberId, List<Status> statuses, List<String> usernames,
+                                      List<String> categories, List<Priority> priorities,
+                                      Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
+
+        validatePagination(page, size);
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
+
+        QTicket ticket = QTicket.ticket;
+        QMember manager = QMember.member;
+
+        LocalDate today = LocalDate.now();
+        LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+
+        BooleanBuilder whereClause = new BooleanBuilder();
+        whereClause.and(ticket.deletedAt.isNull());
+
+        if (memberId != null) {
+            whereClause.and(ticket.user.id.eq(memberId));
         }
 
         if (statuses != null && !statuses.isEmpty()) {

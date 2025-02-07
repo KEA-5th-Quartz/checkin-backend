@@ -140,7 +140,7 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "desc") String sortByCreatedAt,
+            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.getManagerTickets(
@@ -167,7 +167,7 @@ public class TicketController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "desc") String sortByCreatedAt,
+            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.searchManagerTickets(user.getId(), keyword, page, size, sortByCreatedAt);
@@ -187,7 +187,7 @@ public class TicketController {
             @RequestParam(required = false) Boolean dueThisWeek,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "desc") String sortByCreatedAt,
+            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.getUserTickets(
@@ -205,7 +205,7 @@ public class TicketController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "desc") String sortByCreatedAt,
+            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.searchUserTickets(user.getId(), keyword, page, size, sortByCreatedAt);

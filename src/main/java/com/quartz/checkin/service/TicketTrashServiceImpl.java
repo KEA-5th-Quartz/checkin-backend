@@ -144,4 +144,30 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         }
     }
 
+    // 매일 자정 실행 (자동 삭제)
+    @Scheduled(cron = "0 0 0 * * ?")  // 매일 00:00:00에 실행
+    @Transactional
+    public void softDeleteOldClosedTickets() {
+        // 6개월 전 날짜 계산
+        LocalDate sixMonthsAgo = LocalDate.now().minusMonths(6);
+
+        // 6개월 이상 지난 Closed 상태의 티켓 조회
+        List<Ticket> oldTickets = queryFactory
+                .selectFrom(ticket)
+                .where(ticket.status.eq(Status.CLOSED)
+                        .and(ticket.dueDate.before(sixMonthsAgo))
+                        .and(ticket.deletedAt.isNull()))  // SoftDelete 되지 않은 것만 조회
+                .fetch();
+
+        if (!oldTickets.isEmpty()) {
+            log.info("Soft deleting {} closed tickets older than 6 months.", oldTickets.size());
+
+            // SoftDelete 처리
+            oldTickets.forEach(Ticket::softDelete);
+
+            // 변경 사항 저장
+            ticketRepository.saveAll(oldTickets);
+        }
+    }
+
 }

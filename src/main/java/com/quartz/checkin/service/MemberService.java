@@ -262,17 +262,20 @@ public class MemberService {
 
         List<Ticket> tickets = ticketRepository.findByUser(member);
         for (Ticket ticket : tickets) {
+            log.info("티켓 {}의 요청자 초기화", ticket.getId());
             ticket.hardDeleteUser(deletedUser);
         }
 
         tickets = ticketRepository.findByManager(member);
         for (Ticket ticket : tickets) {
-            ticket.hardDeleteUser(deletedUser);
+            log.info("티켓 {}의 담당자 초기화", ticket.getId());
+            ticket.hardDeleteManager(deletedUser);
         }
 
         List<Comment> comments = commentRepository.findByMember(member);
         for (Comment comment : comments) {
-            comment.hardDeleteMember(member);
+            log.info("댓글 {}의 담당자 초기화", comment.getId());
+            comment.hardDeleteMember(deletedUser);
         }
 
         likeRepository.deleteAllByMember(member);
@@ -296,6 +299,9 @@ public class MemberService {
         templateAttachmentRepository.deleteByTemplates(templates);
 
         templateRepository.deleteByTemplateIds(templateIds);
+
+        log.info("사용자 {} 완전 삭제", member.getUsername());
+        memberRepository.delete(member);
 
     }
 

@@ -81,6 +81,12 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 """)
     List<Object[]> getManagerTicketStatistics(@Param("managerId") Long managerId);
 
-    @Query("SELECT t.id FROM Ticket t WHERE t.customId LIKE CONCAT(:prefix, '%') ORDER BY t.id DESC LIMIT 1")
+    @Query("""
+    SELECT t.customId 
+    FROM Ticket t 
+    WHERE t.customId LIKE CONCAT(:prefix, '%') 
+    ORDER BY CAST(SUBSTRING(t.customId, LENGTH(:prefix) + 1, 3) AS int) DESC 
+    LIMIT 1
+""")
     String findLastTicketId(@Param("prefix") String prefix);
 }

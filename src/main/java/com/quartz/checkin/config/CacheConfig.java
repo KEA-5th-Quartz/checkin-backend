@@ -3,6 +3,7 @@ package com.quartz.checkin.config;
 import com.quartz.checkin.common.cache.LoginBlockCache;
 import com.quartz.checkin.common.cache.LoginFailureCache;
 import com.quartz.checkin.common.cache.RoleUpdateCache;
+import com.quartz.checkin.common.cache.SoftDeletedMemberCache;
 import com.quartz.checkin.common.cache.TokenBlacklistCache;
 import java.util.List;
 import org.springframework.cache.CacheManager;
@@ -10,17 +11,16 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
 @EnableCaching
-@EnableScheduling
 public class CacheConfig {
 
     public static final String LOGIN_BLOCK_CACHE = "loginBlock";
     public static final String LOGIN_FAILURE_CACHE = "loginFailure";
     public static final String ROLE_UPDATE_CACHE = "roleUpdate";
+    public static final String SOFT_DELETED_MEMBER_CACHE = "softDeletedMember";
     public static final String TOKEN_BLACKLIST_CACHE = "tokenBlacklist";
 
     @Bean
@@ -30,6 +30,7 @@ public class CacheConfig {
                 new LoginFailureCache(LOGIN_FAILURE_CACHE),
                 new LoginBlockCache(LOGIN_BLOCK_CACHE),
                 new RoleUpdateCache(ROLE_UPDATE_CACHE),
+                new SoftDeletedMemberCache(SOFT_DELETED_MEMBER_CACHE),
                 new TokenBlacklistCache(TOKEN_BLACKLIST_CACHE)
         ));
         simpleCacheManager.afterPropertiesSet();

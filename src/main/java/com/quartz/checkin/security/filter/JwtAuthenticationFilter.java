@@ -6,6 +6,7 @@ import com.quartz.checkin.security.service.CustomUserDetailsService;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.common.ServletResponseUtils;
 import com.quartz.checkin.service.RoleUpdateCacheService;
+import com.quartz.checkin.service.SoftDeletedMemberCacheService;
 import com.quartz.checkin.service.TokenBlackListCacheService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -44,6 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService customUserDetailsService;
     private final TokenBlackListCacheService tokenBlackListCacheService;
     private final RoleUpdateCacheService roleUpdateCacheService;
+    private final SoftDeletedMemberCacheService softDeletedMemberCacheService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -78,6 +80,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         UserDetails userDetails = customUserDetailsService.loadUserByAccessToken(accessToken);
         if (roleUpdateCacheService.isRoleUpdated(userDetails.getUsername())) {
             log.error("권한 변경 기록이 있는 사용자입니다. 재발급이 필요합니다.");
+            throw new InValidAccessTokenException();
+        }
+
+        if (softDeletedMemberCacheService.isSoftDeleted(userDetails.getUsername())) {
+            log.error("소프트 딜리트된 사용자입니다. 인증을 거부합니다.");
             throw new InValidAccessTokenException();
         }
 

@@ -280,8 +280,8 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         for (Ticket ticket : tickets) {
             if (ticket.getAgitId() != null && ticket.getStatus() == Status.OPEN) {
-                agitIdsToDelete.add(ticket.getAgitId()); // 나중에 이벤트로 삭제 처리
-                ticket.unlinkFromAgit(); // 기존 agitId 제거
+                agitIdsToDelete.add(ticket.getAgitId());
+                ticket.unlinkFromAgit();
             }
             tickets.forEach(Ticket::softDelete);
         }

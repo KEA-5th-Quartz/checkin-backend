@@ -3,6 +3,8 @@ package com.quartz.checkin.repository;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +26,13 @@ public interface TicketAttachmentRepository extends JpaRepository<TicketAttachme
     @Modifying
     @Query("DELETE FROM TicketAttachment ta WHERE ta.ticket.id IN :ticketIds")
     void deleteAllByTicketIds(@Param("ticketIds") List<Long> ticketIds);
+
+    // 티켓 ID와 첨부파일 URL로 연결 정보 조회
+    @Query("SELECT ta FROM TicketAttachment ta " +
+            "WHERE ta.ticket.id = :ticketId " +
+            "AND ta.attachment.url = :attachmentUrl")
+    Optional<TicketAttachment> findByTicketIdAndAttachmentUrl(
+            @Param("ticketId") Long ticketId,
+            @Param("attachmentUrl") String attachmentUrl
+    );
 }

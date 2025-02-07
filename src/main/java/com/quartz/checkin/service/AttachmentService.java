@@ -7,6 +7,10 @@ import com.quartz.checkin.dto.ticket.response.AttachmentResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.repository.AttachmentRepository;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -69,24 +73,34 @@ public class AttachmentService {
         attachmentRepository.deleteAllByIdInBatch(attachmentIdsToRemove);
     }
 
+    // 파일 다운로드 정보 조회
     @Transactional(readOnly = true)
-    public AttachmentResponse getAttachment(String ticketId, Long attachmentId) {
-        // 특정 ticketId와 attachmentId를 가진 첨부파일이 있는지 조회
-        Optional<TicketAttachment> ticketAttachment = ticketAttachmentRepository.findByTicketId(Long.valueOf(ticketId))
-                .stream()
-                .filter(ta -> ta.getAttachment().getId().equals(attachmentId))
-                .findFirst();
+    public AttachmentResponse getAttachmentInfo(Long ticketId, String attachmentUrl) {
+        // 1. 티켓-첨부파일 연결 정보 조회
+        TicketAttachment ticketAttachment = ticketAttachmentRepository
+                .findByTicketIdAndAttachmentUrl(ticketId, attachmentUrl)
+                .orElseThrow(() -> new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND));
 
-        if (ticketAttachment.isEmpty()) {
-            throw new ApiException(ErrorCode.NOT_FOUND, "해당 첨부파일을 찾을 수 없습니다.");
+        // 2. 첨부파일 상세 정보 조회
+        Attachment attachment = (Attachment) attachmentRepository.findByUrl(attachmentUrl)
+                .orElseThrow(() -> new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND));
+
+        // 3. 파일 이름 추출
+        String fileName = extractFileNameFromUrl(attachment.getUrl());
+
+        return new AttachmentResponse( // DTO 이름 통일
+                attachment.getId(),
+                fileName,
+                attachment.getUrl()
+        );
+    }
+
+    private String extractFileNameFromUrl(String url) {
+        try {
+            return Paths.get(new URI(url).getPath()).getFileName().toString();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Invalid URL format: " + url, e);
         }
-
-        Attachment attachment = ticketAttachment.get().getAttachment();
-
-        return new AttachmentResponse(attachment.getId(), extractFileName(attachment.getUrl()), attachment.getUrl());
     }
 
-    private String extractFileName(String url) {
-        return url.substring(url.lastIndexOf("/") + 1);
-    }
 }

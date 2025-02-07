@@ -17,9 +17,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     Optional<Member> findByRefreshToken(String refreshToken);
 
-    Page<Member> findByRole(Role role, Pageable pageable);
+    Page<Member> findByRoleAndDeletedAtIsNull(Role role, Pageable pageable);
 
-    Page<Member> findByRoleAndUsernameContaining(Role role, String username, Pageable pageable);
+    Page<Member> findByRoleAndUsernameContainingAndDeletedAtIsNull(Role role, String username, Pageable pageable);
 
     Page<Member> findByDeletedAtIsNotNull(Pageable pageable);
 

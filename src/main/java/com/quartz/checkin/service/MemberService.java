@@ -81,9 +81,9 @@ public class MemberService {
 
         Page<Member> memberPage = null;
         if (username == null || username.isBlank()) {
-            memberPage = memberRepository.findByRole(role, pageable);
+            memberPage = memberRepository.findByRoleAndDeletedAtIsNull(role, pageable);
         } else {
-            memberPage = memberRepository.findByRoleAndUsernameContaining(role, username, pageable);
+            memberPage = memberRepository.findByRoleAndUsernameContainingAndDeletedAtIsNull(role, username, pageable);
         }
 
         return MemberInfoListResponse.from(memberPage);

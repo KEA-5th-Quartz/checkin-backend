@@ -167,6 +167,7 @@ public class MemberController {
     }
 
     @Admin
+    @Operation(summary = "API 명세서 v0.3 line 21", description = "관리자가 회원 소프트 딜리트")
     @DeleteMapping("/{memberId}")
     public ApiResponse<Void> delete(@PathVariable(name = "memberId") Long memberId) {
         memberService.softDeleteMember(memberId);

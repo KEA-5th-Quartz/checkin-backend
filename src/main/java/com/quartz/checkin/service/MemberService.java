@@ -17,9 +17,11 @@ import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
+import com.quartz.checkin.event.RoleUpdateEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -191,7 +193,7 @@ public class MemberService {
     }
 
     @Transactional
-    public void updateMemberRole(Long id, RoleUpdateRequest roleUpdateRequest) {
+    public void updateMemberRole(Long id, HttpServletRequest request, RoleUpdateRequest roleUpdateRequest) {
         Member member = getMemberByIdOrThrow(id);
 
         Role newRole = Role.fromValue(roleUpdateRequest.getRole());
@@ -201,6 +203,8 @@ public class MemberService {
         }
 
         member.updateRole(newRole);
+
+        eventPublisher.publishEvent(new RoleUpdateEvent(member.getUsername()));
     }
 
     private void checkMemberOwnsResource(Member member, CustomUser customUser) {

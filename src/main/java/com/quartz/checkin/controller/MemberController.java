@@ -24,6 +24,7 @@ import com.quartz.checkin.security.annotation.AdminOrManager;
 import com.quartz.checkin.service.MemberAccessLogService;
 import com.quartz.checkin.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -137,8 +138,9 @@ public class MemberController {
     @Operation(summary = "API 명세서 v0.3 line 17", description = "관리자가 회원의 권한 변경")
     @PutMapping("/{memberId}/role")
     public ApiResponse<Void> updateRole(@PathVariable(name = "memberId") Long memberId,
+                                        HttpServletRequest request,
                                         @RequestBody @Valid RoleUpdateRequest roleUpdateRequest) {
-        memberService.updateMemberRole(memberId, roleUpdateRequest);
+        memberService.updateMemberRole(memberId, request, roleUpdateRequest);
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }

@@ -57,6 +57,17 @@ public class TicketController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
+    @ManagerOrUser
+    @Operation(summary = "API 명세서 v0.3 line 39", description = "티켓 첨부파일 다운로드")
+    @GetMapping("/{ticketId}/{attachmentId}")
+    public ApiResponse<AttachmentResponse> getAttachment(
+            @PathVariable String ticketId,
+            @PathVariable Long attachmentId) {
+
+        AttachmentResponse response = attachmentService.getAttachment(ticketId, attachmentId);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
 
     @User
     @Operation(summary = "API 명세서 v0.3 line 31", description = "사용자가 티켓 수정")
@@ -185,8 +196,6 @@ public class TicketController {
         ticketCudService.updatePriority(user.getId(), ticketId, request);
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
-
-
 
 
 

@@ -3,13 +3,11 @@ package com.quartz.checkin.repository;
 import com.quartz.checkin.dto.member.response.MemberRoleCount;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
@@ -23,6 +21,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     Page<Member> findByRoleAndUsernameContaining(Role role, String username, Pageable pageable);
 
+    Page<Member> findByDeletedAtIsNotNull(Pageable pageable);
+
     @Query("""
            SELECT new com.quartz.checkin.dto.member.response.MemberRoleCount(
                 SUM (CASE WHEN m.role = com.quartz.checkin.entity.Role.USER THEN 1 ELSE 0 END),
@@ -30,7 +30,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
                 SUM (CASE WHEN m.role = com.quartz.checkin.entity.Role.ADMIN THEN 1 ELSE 0 END)
            )
            FROM Member m
-           WHERE m.deleted_at IS NULL
+           WHERE m.deletedAt IS NULL
             """)
     MemberRoleCount findRoleCounts();
 }

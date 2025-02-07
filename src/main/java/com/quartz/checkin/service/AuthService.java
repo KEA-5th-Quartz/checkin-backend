@@ -41,7 +41,7 @@ public class AuthService {
                     return new ApiException(ErrorCode.INVALID_REFRESH_TOKEN);
                 });
 
-        if (member.getDeleted_at() != null) {
+        if (member.getDeletedAt() != null) {
             log.error("소프트 딜리트된 사용자가 재발급하려고 합니다.");
             throw new ApiException(ErrorCode.MEMBER_NOT_FOUND);
         }

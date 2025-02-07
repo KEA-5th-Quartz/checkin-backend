@@ -15,9 +15,6 @@ import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
-import com.quartz.checkin.dto.member.response.MemberRoleCount;
-import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
-
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.security.annotation.AdminOrManager;
@@ -172,6 +169,7 @@ public class MemberController {
     @DeleteMapping("/{memberId}")
     public ApiResponse<Void> delete(@PathVariable(name = "memberId") Long memberId) {
         memberService.softDeleteMember(memberId);
+
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
@@ -180,7 +178,17 @@ public class MemberController {
     @PatchMapping("/trash/{memberId}/restore")
     public ApiResponse<Void> restore(@PathVariable(name = "memberId") Long memberId) {
         memberService.restoreMember(memberId);
+
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @Admin
+    @Operation(summary = "API 명세서 v0.3 line 15", description = "관리자가 소프트 딜리트된 회원 조회")
+    @GetMapping("/trash")
+    public ApiResponse<MemberInfoListResponse> trash(@ModelAttribute @Valid SimplePageRequest pageRequest) {
+        MemberInfoListResponse response = memberService.getSoftDeletedMemberInfoList(pageRequest);
+
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
 }

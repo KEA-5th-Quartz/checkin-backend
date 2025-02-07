@@ -13,6 +13,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface TemplateRepository extends JpaRepository<Template, Long> {
 
+    List<Template> findAllByMember(Member member);
+
     @Query("SELECT t FROM Template t "
             + "JOIN FETCH t.firstCategory fc "
             + "JOIN FETCH t.secondCategory sc "

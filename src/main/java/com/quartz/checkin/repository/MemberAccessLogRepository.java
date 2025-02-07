@@ -1,5 +1,6 @@
 package com.quartz.checkin.repository;
 
+import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.MemberAccessLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,4 +12,6 @@ public interface MemberAccessLogRepository extends JpaRepository<MemberAccessLog
     @Query(value = "SELECT al FROM MemberAccessLog al JOIN FETCH al.member",
             countQuery = "SELECT COUNT(al) FROM MemberAccessLog al")
     Page<MemberAccessLog> findAllJoinFetch(Pageable pageable);
+
+    void deleteAllByMember(Member member);
 }

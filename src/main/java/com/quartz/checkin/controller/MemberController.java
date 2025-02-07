@@ -191,4 +191,13 @@ public class MemberController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
+    @Admin
+    @Operation(summary = "API 명세서 v0.3 line 13", description = "관리자가 소프트 딜리트된 회원 영구삭제")
+    @DeleteMapping("/trash/{memberId}")
+    public ApiResponse<Void> hardDelete(@PathVariable(name = "memberId") Long memberId) {
+        memberService.hardDeleteMember(memberId);
+
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
 }

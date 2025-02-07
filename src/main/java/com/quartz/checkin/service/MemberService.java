@@ -14,15 +14,27 @@ import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
 import com.quartz.checkin.dto.member.response.MemberRoleCount;
+import com.quartz.checkin.entity.Comment;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.MemberAccessLog;
 import com.quartz.checkin.entity.Role;
+import com.quartz.checkin.entity.Template;
+import com.quartz.checkin.entity.TemplateAttachment;
+import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.event.RoleUpdateEvent;
+import com.quartz.checkin.repository.CommentRepository;
+import com.quartz.checkin.repository.LikeRepository;
+import com.quartz.checkin.repository.MemberAccessLogRepository;
 import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.repository.TemplateAttachmentRepository;
+import com.quartz.checkin.repository.TemplateRepository;
+import com.quartz.checkin.repository.TicketRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,11 +54,18 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class MemberService {
 
+    private final AttachmentService attachmentService;
     private final ApplicationEventPublisher eventPublisher;
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3Service s3Service;
     private final JwtService jwtService;
+    private final CommentRepository commentRepository;
+    private final LikeRepository likeRepository;
+    private final MemberAccessLogRepository memberAccessLogRepository;
+    private final TemplateRepository templateRepository;
+    private final TemplateAttachmentRepository templateAttachmentRepository;
+    private final TicketRepository ticketRepository;
 
     public Member getMemberByIdOrThrow(Long id) {
         return memberRepository.findById(id)
@@ -232,6 +251,55 @@ public class MemberService {
     }
 
     @Transactional
+    public void hardDeleteMember(Long id) {
+        Member member = getMemberByIdOrThrow(id);
+
+        if (member.getDeletedAt() == null) {
+            throw new ApiException(ErrorCode.MEMBER_NOT_SOFT_DELETED);
+        }
+
+        Member deletedUser = getMemberByIdOrThrow(-1L);
+
+        List<Ticket> tickets = ticketRepository.findByUser(member);
+        for (Ticket ticket : tickets) {
+            ticket.hardDeleteUser(deletedUser);
+        }
+
+        tickets = ticketRepository.findByManager(member);
+        for (Ticket ticket : tickets) {
+            ticket.hardDeleteUser(deletedUser);
+        }
+
+        List<Comment> comments = commentRepository.findByMember(member);
+        for (Comment comment : comments) {
+            comment.hardDeleteMember(member);
+        }
+
+        likeRepository.deleteAllByMember(member);
+
+        memberAccessLogRepository.deleteAllByMember(member);
+
+        List<Template> templates = templateRepository.findAllByMember(member);
+        List<Long> templateIds = templates.stream()
+                .map(Template::getId)
+                .toList();
+
+        List<TemplateAttachment> templateAttachments =
+                templateAttachmentRepository.findAllByTemplatesJoinFetch(templateIds);
+
+        List<Long> templateAttachmentIds = templateAttachments.stream()
+                .map(TemplateAttachment::getId)
+                .toList();
+
+        attachmentService.deleteAttachments(templateAttachmentIds);
+
+        templateAttachmentRepository.deleteByTemplates(templates);
+
+        templateRepository.deleteByTemplateIds(templateIds);
+
+    }
+
+    @Transactional
     public void restoreMember(Long id) {
         Member member = getMemberByIdOrThrow(id);
 
@@ -263,7 +331,7 @@ public class MemberService {
             throw new ApiException(ErrorCode.DUPLICATE_USERNAME);
         }
     }
-    
+
     public MemberRoleCount getMemberRoleCounts() {
         return memberRepository.findRoleCounts();
     }

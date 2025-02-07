@@ -2,10 +2,12 @@ package com.quartz.checkin.entity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -33,11 +35,11 @@ public class Ticket extends BaseEntity {
     private String customId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Member user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "manager_id")
+    @JoinColumn(name = "manager_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Member manager;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -116,6 +118,16 @@ public class Ticket extends BaseEntity {
     public void reassignManager(Member newManager) {
         this.manager = newManager;
         this.status = Status.IN_PROGRESS; // 담당자 변경 시 진행 중 상태 유지
+    }
+
+    // 사용자 영구삭제
+    public void hardDeleteUser(Member user) {
+        this.user = user;
+    }
+
+    // 사용자 영구삭제
+    public void hardDeleteManager(Member manager) {
+        this.manager = manager;
     }
 
     // 티켓 완료 처리 메서드

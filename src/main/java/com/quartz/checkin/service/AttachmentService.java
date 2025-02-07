@@ -7,14 +7,12 @@ import com.quartz.checkin.dto.ticket.response.AttachmentResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.TicketAttachment;
 import com.quartz.checkin.repository.AttachmentRepository;
-
+import jakarta.persistence.EntityManager;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +25,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class AttachmentService {
 
-    private final AttachmentRepository attachmentRepository;
     private final S3Service s3Service;
+    private final EntityManager entityManager;
+    private final AttachmentRepository attachmentRepository;
     private final TicketAttachmentRepository ticketAttachmentRepository;
 
     @Transactional
@@ -71,6 +70,9 @@ public class AttachmentService {
             }
         }
         attachmentRepository.deleteAllByIdInBatch(attachmentIdsToRemove);
+
+        entityManager.flush();
+        entityManager.clear();
     }
 
     // 파일 다운로드 정보 조회

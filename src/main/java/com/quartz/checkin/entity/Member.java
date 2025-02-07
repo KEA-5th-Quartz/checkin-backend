@@ -69,6 +69,7 @@ public class Member extends BaseEntity {
     }
 
     public void softDelete() {
+        this.refreshToken = null;
         this.deletedAt = LocalDateTime.now();
     }
 

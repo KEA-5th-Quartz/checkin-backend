@@ -3,6 +3,7 @@ package com.quartz.checkin.repository;
 import com.quartz.checkin.dto.member.response.MemberRoleCount;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
+
+    List<Member> findAllByDeletedAtIsNotNull();
 
     Optional<Member> findByEmail(String email);
 

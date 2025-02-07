@@ -16,7 +16,6 @@ import com.quartz.checkin.dto.member.response.MemberInfoResponse;
 import com.quartz.checkin.dto.member.response.MemberRoleCount;
 import com.quartz.checkin.entity.Comment;
 import com.quartz.checkin.entity.Member;
-import com.quartz.checkin.entity.MemberAccessLog;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.entity.Template;
 import com.quartz.checkin.entity.TemplateAttachment;
@@ -34,6 +33,7 @@ import com.quartz.checkin.repository.TicketRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +43,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -282,6 +283,7 @@ public class MemberService {
 
         memberAccessLogRepository.deleteAllByMember(member);
 
+        // 템플릿 관련된 데이터는 영구삭제
         List<Template> templates = templateRepository.findAllByMember(member);
         List<Long> templateIds = templates.stream()
                 .map(Template::getId)
@@ -303,6 +305,22 @@ public class MemberService {
         log.info("사용자 {} 완전 삭제", member.getUsername());
         memberRepository.delete(member);
 
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?")
+    @Transactional
+    public void permanentlyDeleteOldSoftDeletedUsers() {
+        LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6);
+
+        List<Member> softDeletedMembers = memberRepository.findAllByDeletedAtIsNotNull();
+
+        for (Member member : softDeletedMembers) {
+            // 회원의 deletedAt 값이 6개월 전보다 이전인 경우, 회원 삭제
+            if (member.getDeletedAt().isBefore(sixMonthsAgo)) {
+                log.info("사용자 {}가 소트트 딜리트 된 지 6개월이 넘어 영구삭제합니다.", member.getUsername());
+                memberRepository.delete(member);
+            }
+        }
     }
 
     @Transactional

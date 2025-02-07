@@ -1,6 +1,7 @@
 package com.quartz.checkin.event.listener;
 
 import com.quartz.checkin.event.MemberRegisteredEvent;
+import com.quartz.checkin.event.MemberRestoredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.event.RoleUpdateEvent;
 import com.quartz.checkin.event.SoftDeletedEvent;
@@ -55,6 +56,14 @@ public class MemberEventListener {
         String username = event.getUsername();
         log.info("사용자({})가 소프트 딜리트 되었습니다. 소프트 딜리트 캐시에 기록합니다.", username);
         softDeletedMemberCacheService.put(username);
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleRoleUpdateEvent(MemberRestoredEvent event) {
+        String username = event.getUsername();
+        log.info("사용자({})가 복구되었습니다. 소프트 딜리트 캐시에서 제거합니다.", username);
+        softDeletedMemberCacheService.evict(username);
     }
 
 }

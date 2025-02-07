@@ -21,6 +21,7 @@ import com.quartz.checkin.entity.Template;
 import com.quartz.checkin.entity.TemplateAttachment;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.event.MemberRegisteredEvent;
+import com.quartz.checkin.event.MemberRestoredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.event.RoleUpdateEvent;
 import com.quartz.checkin.event.SoftDeletedEvent;
@@ -335,6 +336,7 @@ public class MemberService {
         }
 
         member.restore();
+        eventPublisher.publishEvent(new MemberRestoredEvent(member.getUsername()));
     }
 
     private void checkMemberOwnsResource(Member member, CustomUser customUser) {

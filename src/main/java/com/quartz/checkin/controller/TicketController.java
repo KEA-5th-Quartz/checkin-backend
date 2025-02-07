@@ -243,7 +243,7 @@ public class TicketController {
     @GetMapping("/trash")
     public ApiResponse<SoftDeletedTicketResponse> getDeletedTickets(
             @AuthenticationPrincipal CustomUser user,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         SoftDeletedTicketResponse response = ticketTrashService.getDeletedTickets(user.getId(), page, size);

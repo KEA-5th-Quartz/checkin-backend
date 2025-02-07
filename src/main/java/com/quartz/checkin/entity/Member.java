@@ -72,6 +72,10 @@ public class Member extends BaseEntity {
         this.deleted_at = LocalDateTime.now();
     }
 
+    public void restore() {
+        this.deleted_at = null;
+    }
+
     @PrePersist
     public void setDefaultProfilePic() {
         if (this.profilePic == null) {

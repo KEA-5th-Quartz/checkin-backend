@@ -31,6 +31,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 사용자입니다."));
 
+        if (member.getDeleted_at() != null) {
+            log.error("소프트 딜리트된 사용자가 로그인하려 합니다.");
+            throw new UsernameNotFoundException("소프트 딜리트된 사용자입니다.");
+        }
+
         return new CustomUser(
                 member.getId(),
                 member.getUsername(),

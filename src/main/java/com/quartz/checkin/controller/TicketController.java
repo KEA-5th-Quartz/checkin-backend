@@ -9,6 +9,7 @@ import com.quartz.checkin.dto.ticket.request.TicketDeleteOrRestoreOrPurgeRequest
 import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
 import com.quartz.checkin.dto.ticket.response.AttachmentResponse;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
+import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
 import com.quartz.checkin.dto.ticket.response.TicketProgressResponse;
@@ -215,7 +216,7 @@ public class TicketController {
     }
   
     @User
-    @Operation(summary = "API 명세서 v0.3 line 34", description = "사용자가 다중 티켓 복구")
+    @Operation(summary = "API 명세서 v0.3 line 36", description = "사용자가 다중 티켓 복구")
     @PatchMapping("/trash/restore")
     public ApiResponse<Void> restoreTickets(
             @AuthenticationPrincipal CustomUser user,
@@ -226,7 +227,7 @@ public class TicketController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 35", description = "사용자가 다중 티켓 영구삭제")
+    @Operation(summary = "API 명세서 v0.3 line 37", description = "사용자가 다중 티켓 영구삭제")
     @DeleteMapping
     public ApiResponse<Void> deleteTickets(
             @AuthenticationPrincipal CustomUser user,
@@ -235,6 +236,18 @@ public class TicketController {
         ticketTrashService.deleteTickets(user.getId(), request.getTicketIds());
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
+    }
+
+    @User
+    @Operation(summary = "API 명세서 v0.3 line 35", description = "사용자가 다중 티켓 영구삭제")
+    @GetMapping("/trash")
+    public ApiResponse<SoftDeletedTicketResponse> getDeletedTickets(
+            @AuthenticationPrincipal CustomUser user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        SoftDeletedTicketResponse response = ticketTrashService.getDeletedTickets(user.getId(), page, size);
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }
 

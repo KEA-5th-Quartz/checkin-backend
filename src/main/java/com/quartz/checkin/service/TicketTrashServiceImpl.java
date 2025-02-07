@@ -2,16 +2,26 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.ticket.response.DeletedTicketDetail;
+import com.quartz.checkin.dto.ticket.response.QDeletedTicketDetail;
+import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.QMember;
+import com.quartz.checkin.entity.QTicket;
+import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
-import com.quartz.checkin.repository.TicketAttachmentRepository;
+import com.quartz.checkin.repository.TicketQueryRepository;
 import com.quartz.checkin.repository.TicketRepository;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +31,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class TicketTrashServiceImpl implements TicketTrashService {
     private final MemberService memberService;
     private final TicketRepository ticketRepository;
-    private final TicketAttachmentRepository ticketAttachmentRepository;
-    private final AttachmentService attachmentService;
+    private final TicketQueryRepository ticketQueryRepository;
+    private final JPAQueryFactory queryFactory;
+
+    private static final QTicket ticket = QTicket.ticket;
+    private static final QMember manager = new QMember("manager");
+
 
     @Transactional
     @Override
@@ -169,5 +183,51 @@ public class TicketTrashServiceImpl implements TicketTrashService {
             ticketRepository.saveAll(oldTickets);
         }
     }
+
+    @Transactional(readOnly = true)
+    @Override
+    public SoftDeletedTicketResponse getDeletedTickets(Long memberId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 삭제된 티켓 개수 조회
+        Long totalCount = queryFactory
+                .select(ticket.count())
+                .from(ticket)
+                .where(ticket.deletedAt.isNotNull()
+                        .and(ticket.user.id.eq(memberId)))
+                .fetchOne();
+
+        long safeTotalCount = (totalCount != null) ? totalCount : 0L; // Null 방지
+
+        // 삭제된 티켓 리스트 조회 (Pagination 적용)
+        List<DeletedTicketDetail> tickets = queryFactory
+                .select(new QDeletedTicketDetail(
+                        ticket.id,
+                        ticket.customId,
+                        ticket.title,
+                        manager.username,
+                        manager.profilePic,
+                        ticket.content,
+                        ticket.dueDate.stringValue(),
+                        ticket.status.stringValue()
+                ))
+                .from(ticket)
+                .leftJoin(manager).on(ticket.manager.id.eq(manager.id))
+                .where(ticket.deletedAt.isNotNull()
+                        .and(ticket.user.id.eq(memberId)))
+                .orderBy(ticket.createdAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        return new SoftDeletedTicketResponse(
+                page + 1,
+                size,
+                (int) Math.ceil((double) safeTotalCount / size),
+                safeTotalCount,
+                tickets
+        );
+    }
+
 
 }

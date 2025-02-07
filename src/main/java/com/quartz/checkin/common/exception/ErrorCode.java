@@ -56,6 +56,10 @@ public enum ErrorCode {
     TICKET_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "TICKET_4090", "이미 담당자가 할당된 상태입니다."),
     TICKET_ALREADY_ASSIGNED_TO_SELF(HttpStatus.CONFLICT, "TICKET_4091", "이미 본인이 담당자로 할당된 상태입니다."),
 
+    // 티켓 첨부파일 서비스 예외
+    ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "ATTACHMENT_4040", "존재하지 않는 첨부파일입니다."),
+
+
     // 댓글 서비스 예외
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_4040", "존재하지 않는 댓글입니다."),
 
@@ -75,6 +79,7 @@ public enum ErrorCode {
     INVALID_STATS_DATE_FORMAT(HttpStatus.BAD_REQUEST, "STATS_4001", "날짜 형식이 올바르지 않습니다."),
     INVALID_STATS_DATE_RANGE(HttpStatus.BAD_REQUEST, "STATS_4002", "시작 날짜가 종료 날짜보다 큽니다."),
     STATS_MANAGER_NOT_FOUND(HttpStatus.NOT_FOUND, "STATS_4041", "존재하지 않는 담당자입니다.");
+
 
     private final HttpStatus status;
     private final String code;

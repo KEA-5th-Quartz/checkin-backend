@@ -6,6 +6,7 @@ import com.quartz.checkin.repository.AlertLogRepository;
 import com.quartz.checkin.service.WebhookService;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -25,7 +26,7 @@ public class TicketCreatedEventListener {
     public void handleTicketCreatedEvent(TicketCreatedEvent event) {
         try {
             Long agitId = webhookService.createAgitPost(
-                    event.getId(),
+                    event.getCustomId(),
                     event.getTitle(),
                     event.getContent(),
                     event.getAssignees()

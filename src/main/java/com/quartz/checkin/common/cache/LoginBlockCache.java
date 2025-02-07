@@ -67,4 +67,15 @@ public class LoginBlockCache extends ConcurrentMapCache {
     private boolean isExpired(Long blockedAt) {
         return System.currentTimeMillis() - blockedAt > TTL;
     }
+
+    public void evictAllExpiredData() {
+        log.info("로그인 잠금 캐시에 대한 정리를 시작합니다.");
+        cache.keySet()
+                .stream()
+                .filter(k -> isExpired(cache.get(k)))
+                .forEach(k -> {
+                    log.info("키 {}를 로그인 잠금 캐시에서 삭제합니다.", k);
+                    this.evict(k);
+                });
+    }
 }

@@ -10,9 +10,12 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
 @EnableCaching
+@EnableScheduling
 public class CacheConfig {
 
     public static final String LOGIN_BLOCK_CACHE = "loginBlock";
@@ -31,5 +34,24 @@ public class CacheConfig {
         ));
         simpleCacheManager.afterPropertiesSet();
         return simpleCacheManager;
+    }
+
+    // 1시간마다 TTL이 포함된 캐시들에서 만료된 데이터들을 정리합니다.
+    @Scheduled(cron = "0 0 * * * *")
+    public void evictCaches() {
+        CacheManager cacheManager = cacheManager();
+
+        LoginFailureCache loginFailureCache =
+                (LoginFailureCache) cacheManager.getCache(LOGIN_FAILURE_CACHE);
+
+        LoginBlockCache loginBlockCache =
+                (LoginBlockCache) cacheManager.getCache(LOGIN_BLOCK_CACHE);
+
+        TokenBlacklistCache tokenBlacklistCache =
+                (TokenBlacklistCache) cacheManager.getCache(TOKEN_BLACKLIST_CACHE);
+
+        loginFailureCache.evictAllExpiredData();
+        loginBlockCache.evictAllExpiredData();
+        tokenBlacklistCache.evictAllExpiredData();
     }
 }

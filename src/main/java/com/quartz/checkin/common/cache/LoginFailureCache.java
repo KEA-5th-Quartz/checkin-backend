@@ -64,5 +64,15 @@ public class LoginFailureCache extends ConcurrentMapCache {
         return System.currentTimeMillis() - loginFailureInfo.getFirstFailureTime() > TTL;
     }
 
+    public void evictAllExpiredData() {
+        log.info("로그인 실패 횟수 캐시에 대한 정리를 시작합니다.");
+        cache.keySet()
+                .stream()
+                .filter(k -> isExpired(cache.get(k)))
+                .forEach(k -> {
+                    log.info("키 {}를 로그인 실패 횟수 캐시에서 삭제합니다.", k);
+                    this.evict(k);
+                });
+    }
 
 }

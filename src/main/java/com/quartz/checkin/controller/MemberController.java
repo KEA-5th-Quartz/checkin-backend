@@ -30,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -163,6 +164,13 @@ public class MemberController {
         AccessLogListResponse response = memberAccessLogService.getAccessLogList(simplePageRequest, order);
 
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
+    }
+
+    @Admin
+    @DeleteMapping("/{memberId}")
+    public ApiResponse<Void> delete(@PathVariable(name = "memberId") Long memberId) {
+        memberService.softDeleteMember(memberId);
+        return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
 }

@@ -68,6 +68,10 @@ public class Member extends BaseEntity {
         this.profilePic = profilePic;
     }
 
+    public void softDelete() {
+        this.deleted_at = LocalDateTime.now();
+    }
+
     @PrePersist
     public void setDefaultProfilePic() {
         if (this.profilePic == null) {

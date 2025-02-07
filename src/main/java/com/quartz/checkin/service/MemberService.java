@@ -206,6 +206,18 @@ public class MemberService {
         eventPublisher.publishEvent(new RoleUpdateEvent(member.getUsername()));
     }
 
+    @Transactional
+    public void softDeleteMember(Long id) {
+        Member member = getMemberByIdOrThrow(id);
+
+        if (member.getDeleted_at() != null) {
+            log.error("이미 소프트 딜리트된 사용자입니다.");
+            throw new ApiException(ErrorCode.MEMBER_ALREADY_SOFT_DELETED);
+        }
+
+        member.softDelete();
+    }
+
     private void checkMemberOwnsResource(Member member, CustomUser customUser) {
         if (!Objects.equals(member.getId(), customUser.getId())) {
             log.error("다른 사용자의 리소스에 접근하려고 합니다.");

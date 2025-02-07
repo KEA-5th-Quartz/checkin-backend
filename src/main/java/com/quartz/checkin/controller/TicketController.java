@@ -7,6 +7,7 @@ import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketDeleteOrRestoreOrPurgeRequest;
 import com.quartz.checkin.dto.ticket.request.TicketUpdateRequest;
+import com.quartz.checkin.dto.ticket.response.AttachmentResponse;
 import com.quartz.checkin.dto.ticket.response.ManagerTicketListResponse;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.dto.ticket.response.TicketDetailResponse;
@@ -20,16 +21,13 @@ import com.quartz.checkin.security.annotation.ManagerOrUser;
 import com.quartz.checkin.security.annotation.User;
 import com.quartz.checkin.service.AttachmentService;
 import com.quartz.checkin.service.TicketCudService;
-import com.quartz.checkin.service.TicketDeleteService;
 import com.quartz.checkin.service.TicketQueryService;
+import com.quartz.checkin.service.TicketTrashService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +40,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -53,7 +50,7 @@ public class TicketController {
     private final AttachmentService attachmentService;
     private final TicketCudService ticketCudService;
     private final TicketQueryService ticketQueryService;
-    private final TicketDeleteService ticketDeleteService;
+    private final TicketTrashService ticketTrashService;
 
     @User
     @Operation(summary = "API 명세서 v0.3 line 29", description = "티켓 생성")
@@ -224,8 +221,7 @@ public class TicketController {
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
 
-        ticketDeleteService.restoreTickets(user.getId(), request.getTicketIds());
-
+        ticketTrashService.restoreTickets(user.getId(), request.getTicketIds());
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
@@ -236,7 +232,7 @@ public class TicketController {
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
 
-        ticketDeleteService.purgeTickets(user.getId(), request.getTicketIds());
+        ticketTrashService.purgeTickets(user.getId(), request.getTicketIds());
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }

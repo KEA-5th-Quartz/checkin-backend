@@ -70,7 +70,7 @@ dependencies {
     annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 }
 
-def querydslSrcDir = "build/generated"
+def querydslSrcDir = "src/main/generated"
 
 tasks.withType(JavaCompile).configureEach {
     options.annotationProcessorGeneratedSourcesDirectory = file(querydslSrcDir)

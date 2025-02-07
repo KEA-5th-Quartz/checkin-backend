@@ -20,6 +20,7 @@ import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.entity.Template;
 import com.quartz.checkin.entity.TemplateAttachment;
 import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.event.MemberHardDeletedEvent;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.MemberRestoredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
@@ -306,8 +307,9 @@ public class MemberService {
         templateRepository.deleteByTemplateIds(templateIds);
 
         log.info("사용자 {} 완전 삭제", member.getUsername());
-        memberRepository.delete(member);
 
+        memberRepository.delete(member);
+        eventPublisher.publishEvent(new MemberHardDeletedEvent(member.getUsername()));
     }
 
     @Scheduled(cron = "0 0 0 * * ?")

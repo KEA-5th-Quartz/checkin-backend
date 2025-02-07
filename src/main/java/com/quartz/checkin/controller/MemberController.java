@@ -78,7 +78,7 @@ public class MemberController {
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 
-    @Operation(summary = "API 명세서 v0.3 line 19", description = "회원 ID 중복 검사")
+    @Operation(summary = "API 명세서 v0.3 line 22", description = "회원 ID 중복 검사")
     @GetMapping("/check-username")
     public ApiResponse<Void> checkUsernameDuplicate(@ModelAttribute @Valid UsernameCheckRequest usernameCheckRequest) {
         memberService.checkUsernameDuplicate(usernameCheckRequest.getUsername());
@@ -86,7 +86,7 @@ public class MemberController {
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
-    @Operation(summary = "API 명세서 v0.3 line 20", description = "이메일 중복 검사")
+    @Operation(summary = "API 명세서 v0.3 line 23", description = "이메일 중복 검사")
     @GetMapping("/check-email")
     public ApiResponse<Void> checkUsernameDuplicate(@ModelAttribute @Valid EmailCheckRequest emailCheckRequest) {
         memberService.checkEmailDuplicate(emailCheckRequest.getEmail());
@@ -94,7 +94,7 @@ public class MemberController {
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
-    @Operation(summary = "API 명세서 v0.3 line 15", description = "기존 비밀번호와 새로운 비밀번호를 통해 회원 자신의 비밀번호를 재설정")
+    @Operation(summary = "API 명세서 v0.3 line 18", description = "기존 비밀번호와 새로운 비밀번호를 통해 회원 자신의 비밀번호를 재설정")
     @PutMapping("/{memberId}/password")
     public ApiResponse<Void> updatePassword(@PathVariable(name = "memberId") Long memberId,
                                             @RequestBody @Valid PasswordChangeRequest passwordChangeRequest,
@@ -104,7 +104,7 @@ public class MemberController {
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
-    @Operation(summary = "API 명세서 v0.3 line 13", description = "비밀번호 초기 페이지로 가는 링크가 담긴 메일 전송")
+    @Operation(summary = "API 명세서 v0.3 line 16", description = "비밀번호 초기 페이지로 가는 링크가 담긴 메일 전송")
     @PostMapping("/password-reset")
     public ApiResponse<Void> sendPasswordResetMail(
             @RequestBody @Valid PasswordResetEmailRequest passwordResetEmailRequest) {
@@ -113,7 +113,7 @@ public class MemberController {
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
 
-    @Operation(summary = "API 명세서 v0.3 line 14", description = "비밀번호 초기화 토큰과 새 비밀번호로 비밀번호를 초기화")
+    @Operation(summary = "API 명세서 v0.3 line 17", description = "비밀번호 초기화 토큰과 새 비밀번호로 비밀번호를 초기화")
     @PutMapping("/{memberId}/password-reset")
     public ApiResponse<Void> resetPassword(@PathVariable(name = "memberId") Long memberId,
                                            @RequestBody @Valid PasswordResetRequest passwordResetRequest) {
@@ -123,7 +123,7 @@ public class MemberController {
     }
 
 
-    @Operation(summary = "API 명세서 v0.3 line 16", description = "회원의 프로필 사진 변경")
+    @Operation(summary = "API 명세서 v0.3 line 19", description = "회원의 프로필 사진 변경")
     @PutMapping("/{memberId}/profile-pic")
     public ApiResponse<ProfilePicUpdateResponse> updateProfilePic(@PathVariable(name = "memberId") Long memberId,
                                                                   @RequestParam(name = "file") MultipartFile file,
@@ -135,7 +135,7 @@ public class MemberController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.3 line 17", description = "관리자가 회원의 권한 변경")
+    @Operation(summary = "API 명세서 v0.3 line 20", description = "관리자가 회원의 권한 변경")
     @PutMapping("/{memberId}/role")
     public ApiResponse<Void> updateRole(@PathVariable(name = "memberId") Long memberId,
                                         HttpServletRequest request,
@@ -155,7 +155,7 @@ public class MemberController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.3 line 27", description = "관리자가 사용자들의 접속 로그 조회")
+    @Operation(summary = "API 명세서 v0.3 line 30", description = "관리자가 사용자들의 접속 로그 조회")
     @GetMapping("/access-logs")
     public ApiResponse<AccessLogListResponse> accesslogs(
             @ModelAttribute @Valid SimplePageRequest simplePageRequest,

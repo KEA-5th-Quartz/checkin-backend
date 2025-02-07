@@ -26,7 +26,7 @@ public class StatisticsController {
     }
 
     @AdminOrManager
-    @Operation(summary = "API 명세서 v0.3 line 63", description = "각 담당자의 상태별 티켓수(type params 필요)- 세로 막대그래프")
+    @Operation(summary = "API 명세서 v0.3 line 67", description = "각 담당자의 상태별 티켓수(type params 필요)- 세로 막대그래프")
     @GetMapping("/managers")
     public ApiResponse<List<StatProgressResponse>> getProgressRates(
             @RequestParam(name = "type") String type // 쿼리 파라미터로 type 전달
@@ -36,7 +36,7 @@ public class StatisticsController {
     }
 
     @AdminOrManager
-    @Operation(summary = "API 명세서 v0.3 line 64", description = "카테고리별 진행중인 티켓수 - 세로 막대그래프")
+    @Operation(summary = "API 명세서 v0.3 line 68", description = "카테고리별 진행중인 티켓수 - 세로 막대그래프")
     @GetMapping("/categories")
     public ApiResponse<List<StatCategoryTicketResponse>> getCategoryTicketStats() {
         List<StatCategoryTicketResponse> response = statsTicketService.getCategoryTicketStats();
@@ -44,7 +44,7 @@ public class StatisticsController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.3 line 66", description = "전체 작업상태 분포 - 도넛 그래프")
+    @Operation(summary = "API 명세서 v0.3 line 70", description = "전체 작업상태 분포 - 도넛 그래프")
     @GetMapping("/status-rate")
     public ApiResponse<List<StatTotalProgressResponse>> getTotalProgress() {
         List<StatTotalProgressResponse> response = statsMemberService.getStatTotalProgress();
@@ -53,7 +53,7 @@ public class StatisticsController {
 
 
     @Admin
-    @Operation(summary = "API 명세서 v0.3 line 65", description = "작업 완성률 조회(type params 필요) - 도넛 그래프")
+    @Operation(summary = "API 명세서 v0.3 line 69", description = "작업 완성률 조회(type params 필요) - 도넛 그래프")
     @GetMapping("/closed-rate")
     public ApiResponse<StatClosedRateResponse> getCompletionRate(
             @RequestParam(name = "type") String type // 쿼리 파라미터로 type 전달
@@ -63,7 +63,7 @@ public class StatisticsController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 62", description = "각 담당자의 카테고리별 티켓수 - 가로 누적그래프")
+    @Operation(summary = "API 명세서 v0.3 line 66", description = "각 담당자의 카테고리별 티켓수 - 가로 누적그래프")
     @GetMapping("/managers/categories")
     public ApiResponse<List<StatCategoryRateResponse>> getStatsByCategory() {
         List<StatCategoryRateResponse> response = statsMemberService.getStatsByCategory();

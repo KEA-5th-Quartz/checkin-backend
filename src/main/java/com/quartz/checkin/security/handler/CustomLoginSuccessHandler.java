@@ -5,6 +5,7 @@ import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.MemberAccessLogService;
 import com.quartz.checkin.service.MemberService;
+import com.quartz.checkin.service.RoleUpdateCacheService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +24,7 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
     private final JwtService jwtService;
     private final MemberAccessLogService memberAccessLogService;
     private final MemberService memberService;
+    private final RoleUpdateCacheService roleUpdateCacheService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -38,6 +40,12 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
 
         String clientIp = ServletRequestUtils.getClientIp(request);
         memberAccessLogService.writeLoginSuccessAccessLog(user.getId(), clientIp);
+
+        String username = user.getUsername();
+        if (roleUpdateCacheService.isRoleUpdated(username)) {
+            log.info("권한 변경 기록이 있는 사용자 {}가 새로 로그인했습니다. 권한 변경 기록을 삭제합니다.", username);
+            roleUpdateCacheService.evict(username);
+        }
 
     }
 }

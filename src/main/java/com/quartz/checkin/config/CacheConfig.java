@@ -2,6 +2,7 @@ package com.quartz.checkin.config;
 
 import com.quartz.checkin.common.cache.LoginBlockCache;
 import com.quartz.checkin.common.cache.LoginFailureCache;
+import com.quartz.checkin.common.cache.RoleUpdateCache;
 import com.quartz.checkin.common.cache.TokenBlacklistCache;
 import java.util.List;
 import org.springframework.cache.CacheManager;
@@ -16,6 +17,7 @@ public class CacheConfig {
 
     public static final String LOGIN_BLOCK_CACHE = "loginBlock";
     public static final String LOGIN_FAILURE_CACHE = "loginFailure";
+    public static final String ROLE_UPDATE_CACHE = "roleUpdate";
     public static final String TOKEN_BLACKLIST_CACHE = "tokenBlacklist";
 
     @Bean
@@ -24,6 +26,7 @@ public class CacheConfig {
         simpleCacheManager.setCaches(List.of(
                 new LoginFailureCache(LOGIN_FAILURE_CACHE),
                 new LoginBlockCache(LOGIN_BLOCK_CACHE),
+                new RoleUpdateCache(ROLE_UPDATE_CACHE),
                 new TokenBlacklistCache(TOKEN_BLACKLIST_CACHE)
         ));
         simpleCacheManager.afterPropertiesSet();

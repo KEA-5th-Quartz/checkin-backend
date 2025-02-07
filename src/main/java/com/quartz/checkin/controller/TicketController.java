@@ -101,11 +101,11 @@ public class TicketController {
     @PatchMapping
     @User
     @Operation(summary = "API 명세서 V0.3 line 32", description = "사용자가 다중 티켓 삭제")
-    public ApiResponse<Void> deleteMultipleTickets(
+    public ApiResponse<Void> tempDeleteTickets(
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
 
-        ticketCudService.deleteTickets(user.getId(), request.getTicketIds());
+        ticketCudService.tempDeleteTickets(user.getId(), request.getTicketIds());
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }
@@ -228,11 +228,11 @@ public class TicketController {
     @User
     @Operation(summary = "API 명세서 v0.3 line 35", description = "사용자가 다중 티켓 영구삭제")
     @DeleteMapping
-    public ApiResponse<Void> purgeTickets(
+    public ApiResponse<Void> deleteTickets(
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
 
-        ticketTrashService.purgeTickets(user.getId(), request.getTicketIds());
+        ticketTrashService.deleteTickets(user.getId(), request.getTicketIds());
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }

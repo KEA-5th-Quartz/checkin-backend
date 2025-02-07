@@ -18,13 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class TicketTrashServiceImpl implements TicketTrashService {
     private final MemberService memberService;
     private final TicketRepository ticketRepository;
     private final TicketAttachmentRepository ticketAttachmentRepository;
     private final AttachmentService attachmentService;
 
+    @Transactional
     @Override
     public void restoreTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
@@ -61,8 +61,9 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         ticketRepository.saveAll(tickets);
     }
 
+    @Transactional
     @Override
-    public void purgeTickets(Long memberId, List<Long> ticketIds) {
+    public void deleteTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
@@ -79,15 +80,6 @@ public class TicketTrashServiceImpl implements TicketTrashService {
             if (!ticket.getUser().getId().equals(member.getId())) {
                 throw new ApiException(ErrorCode.UNAUTHENTICATED);
             }
-        }
-
-        // 티켓에 연결된 첨부파일 ID 조회
-        List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
-
-        // 첨부파일 영구 삭제
-        if (!attachmentIds.isEmpty()) {
-            ticketAttachmentRepository.deleteAllByTicketIds(ticketIds); // 연결 데이터 삭제
-            attachmentService.deleteAttachments(attachmentIds); // 첨부파일 삭제
         }
 
         // 티켓 영구 삭제

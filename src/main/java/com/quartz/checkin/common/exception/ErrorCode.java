@@ -39,7 +39,6 @@ public enum ErrorCode {
 
     // 템플릿 서비스 예외
     TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "TEMPLATE_4040", "존재하지 않는 템플릿입니다."),
-    INVALID_TEMPLATE_ATTACHMENT_IDS(HttpStatus.NOT_FOUND, "TEMPLATE_4090", "존재하지 않는 첨부파일입니다."),
 
     // 티켓 서비스 예외
     INVALID_TICKET_TITLE(HttpStatus.BAD_REQUEST, "TICKET_4000", "제목이 유효하지 않습니다."),
@@ -70,6 +69,8 @@ public enum ErrorCode {
     CATEGORY_NAME_MISSING(HttpStatus.BAD_REQUEST, "CATEGORY_4000", "카테고리 이름이 누락되었습니다."),
     INVALID_CATEGORY_NAME_FORMAT(HttpStatus.BAD_REQUEST, "CATEGORY_4001", "카테고리 이름 형식이 올바르지 않습니다."),
     INVALID_ALIAS_FORMAT(HttpStatus.BAD_REQUEST,"CATEGORY_4002", "약어 형식이 올바르지 않습니다."),
+    FIRST_CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "CATEGORY_4003", "사용 중인 1차 카테고리입니다."),
+    SECOND_CATEGORY_IN_USE(HttpStatus.BAD_REQUEST, "CATEGORY_4004", "사용 중인 2차 카테고리입니다."),
     CATEGORY_NOT_FOUND_FIRST(HttpStatus.NOT_FOUND, "CATEGORY_4040", "존재하지 않는 1차 카테고리입니다."),
     CATEGORY_NOT_FOUND_SECOND(HttpStatus.NOT_FOUND, "CATEGORY_4041", "존재하지 않는 2차 카테고리입니다."),
     DUPLICATE_CATEGORY_FIRST(HttpStatus.CONFLICT, "CATEGORY_4090", "동일한 이름의 1차 카테고리가 이미 존재합니다."),

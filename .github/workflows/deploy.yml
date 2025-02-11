@@ -64,4 +64,4 @@ jobs:
             docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
             docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
             docker image prune -f
-            docker run -d --name ${{ secrets.DOCKER_IMAGE_NAME }} -p 8080:8080 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+            docker run -d --name ${{ secrets.DOCKER_IMAGE_NAME }} -e "TZ=Asia/Seoul" -e "JAVA_OPTS=-Duser.timezone=Asia/Seoul" -p 8080:8080 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest

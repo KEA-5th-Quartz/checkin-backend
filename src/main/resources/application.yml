@@ -65,3 +65,22 @@ jwt:
 user:
   profile:
     defaultImageUrl: "${DEFAULT_PROFILE_IMAGE_URL}"
+
+# 테스트 프로필
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:h2:mem:checkin-test;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always

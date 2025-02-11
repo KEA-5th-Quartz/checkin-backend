@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Deploy on KakaoCloud
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
       # 3. application-secret.yml 생성
       - name: Decode and create application-secret.yml
         run: |
-          echo "${{ secrets.ENCODED_APPLICATION_SECRET_YML }}" | base64 -d > src/main/resources/application-secret.yml
+          echo "${{ secrets.KC_ENCODED_APPLICATION_SECRET_YML }}" | base64 -d > src/main/resources/application-secret.yml
 
       # 4. data.sql 생성
       - name: Create data.sql
@@ -44,24 +44,24 @@ jobs:
       # 7. Docker 이미지 빌드
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest .
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.KC_DOCKER_IMAGE_NAME }}:latest .
 
       # 8. Docker 이미지 푸시
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.KC_DOCKER_IMAGE_NAME }}:latest
           
 
-      # 9. EC2 인스턴스에 SSH로 접속하여 이미지 다운로드 및 컨테이너 실행
+      # 8. 카카오클라우드 VM에 SSH로 접속하여 이미지 다운로드 및 컨테이너 실행
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v0.1.8
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          host: ${{ secrets.KC_VM_IP }}
+          username: ${{ secrets.KC_VM_USERNAME }}
+          key: ${{ secrets.KC_VM_PRIVATE_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
-            docker stop ${{ secrets.DOCKER_IMAGE_NAME }} || true
-            docker rm ${{ secrets.DOCKER_IMAGE_NAME }} || true
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.KC_DOCKER_IMAGE_NAME }}:latest
+            docker stop ${{ secrets.KC_DOCKER_IMAGE_NAME }} || true
+            docker rm ${{ secrets.KC_DOCKER_IMAGE_NAME }} || true
             docker image prune -f
-            docker run -d --name ${{ secrets.DOCKER_IMAGE_NAME }} -p 8080:8080 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
+            docker run -d --name ${{ secrets.KC_DOCKER_IMAGE_NAME }} -p 8080:8080 ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.KC_DOCKER_IMAGE_NAME }}:latest

@@ -20,8 +20,6 @@ import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -160,7 +158,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         );
     }
 
-
     private Page<Ticket> fetchSearchedTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
         validatePagination(page, size);
         Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
@@ -203,7 +200,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         return new PageImpl<>(results, pageable, safeTotalCount);
     }
 
-
     // WHERE 조건 빌더
     private BooleanBuilder buildWhereClause(Long memberId, String keyword, List<Status> statuses, List<String> usernames,
                                             List<String> categories, List<Priority> priorities,
@@ -232,6 +228,10 @@ public class TicketQueryServiceImpl implements TicketQueryService {
             whereClause.and(ticket.manager.username.in(usernames));
         }
 
+        if (Boolean.TRUE.equals(dueToday) && Boolean.TRUE.equals(dueThisWeek)) {
+            throw new ApiException(ErrorCode.INVALID_TICKET_DUE_DATE);
+        }
+
         if (Boolean.TRUE.equals(dueToday)) {
             LocalDate today = LocalDate.now();
             whereClause.and(ticket.dueDate.eq(today));
@@ -254,18 +254,8 @@ public class TicketQueryServiceImpl implements TicketQueryService {
 
     // 공통 정렬 적용 메서드
     private OrderSpecifier<?>[] getOrderSpecifiers(QTicket ticket, String sortByCreatedAt) {
-        NumberExpression<Integer> statusPriority = new CaseBuilder()
-                .when(ticket.status.eq(Status.OPEN)).then(1)
-                .when(ticket.status.eq(Status.IN_PROGRESS)).then(2)
-                .otherwise(3);
-
-        OrderSpecifier<?> createdAtOrder = "asc".equalsIgnoreCase(sortByCreatedAt)
-                ? ticket.createdAt.asc()
-                : ticket.createdAt.desc();
-
         return new OrderSpecifier<?>[]{
-                statusPriority.asc(), // 상태 우선 정렬 (OPEN > IN_PROGRESS > CLOSED)
-                createdAtOrder // 같은 상태 내에서 생성일 정렬
+                "asc".equalsIgnoreCase(sortByCreatedAt) ? ticket.createdAt.asc() : ticket.createdAt.desc()
         };
     }
 
@@ -280,7 +270,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     }
 
     private void validatePagination(int page, int size) {
-        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
-        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+        if (page < 1) throw new ApiException(ErrorCode.INVALID_TICKET_PAGE_NUMBER);
+        if (size <= 0) throw new ApiException(ErrorCode.INVALID_TICKET_PAGE_SIZE);
     }
 }

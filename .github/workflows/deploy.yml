@@ -3,7 +3,7 @@ name: Build and Push Docker Image
 on:
   push:
     branches:
-      - release/0.0.1
+      - release/0.0.2
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

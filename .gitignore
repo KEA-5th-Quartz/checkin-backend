@@ -41,3 +41,6 @@ out/
 
 application-*.yml
 .DS_Store
+
+# 테스트용 더미데이터
+src/main/resources/data.sql

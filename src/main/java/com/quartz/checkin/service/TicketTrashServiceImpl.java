@@ -56,7 +56,7 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
-                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+                throw new ApiException(ErrorCode.FORBIDDEN);
             }
         }
 
@@ -111,7 +111,7 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
-                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+                throw new ApiException(ErrorCode.FORBIDDEN);
             }
         }
 

@@ -3,6 +3,7 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.common.request.SimplePageRequest;
+import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.dto.template.request.TemplateDeleteRequest;
 import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
 import com.quartz.checkin.dto.template.response.TemplateCreateResponse;
@@ -10,7 +11,6 @@ import com.quartz.checkin.dto.template.response.TemplateDeleteResponse;
 import com.quartz.checkin.dto.template.response.TemplateDetailResponse;
 import com.quartz.checkin.dto.template.response.TemplateIdResponse;
 import com.quartz.checkin.dto.template.response.TemplateListResponse;
-import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
@@ -227,7 +227,7 @@ public class TemplateService {
     private void checkInvalidAttachment(List<Long> attachmentIds, List<Attachment> attachments) {
         if (attachmentIds.size() != attachments.size()) {
             log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
-            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
+            throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
         }
     }
 

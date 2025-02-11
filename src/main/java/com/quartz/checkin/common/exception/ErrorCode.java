@@ -39,7 +39,6 @@ public enum ErrorCode {
 
     // 템플릿 서비스 예외
     TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "TEMPLATE_4040", "존재하지 않는 템플릿입니다."),
-    INVALID_TEMPLATE_ATTACHMENT_IDS(HttpStatus.NOT_FOUND, "TEMPLATE_4090", "존재하지 않는 첨부파일입니다."),
 
     // 티켓 서비스 예외
     INVALID_TICKET_TITLE(HttpStatus.BAD_REQUEST, "TICKET_4000", "제목이 유효하지 않습니다."),

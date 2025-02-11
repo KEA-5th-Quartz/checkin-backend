@@ -83,7 +83,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         if (attachments.size() != attachmentIds.size()) {
             log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
-            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
+            throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
         }
 
         // 티켓 생성 및 저장
@@ -330,7 +330,7 @@ public class TicketCudServiceImpl implements TicketCudService {
     private void checkInvalidAttachment(List<Long> attachmentIds, List<Attachment> attachments) {
         if (attachmentIds.size() != attachments.size()) {
             log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
-            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
+            throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
         }
     }
 

@@ -13,6 +13,7 @@ import com.quartz.checkin.dto.category.response.SecondCategoryResponse;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.QCategory;
 import com.quartz.checkin.repository.CategoryRepository;
+import com.quartz.checkin.repository.TicketRepository;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
+    private final TicketRepository ticketRepository;
     private final JPAQueryFactory queryFactory;
 
 
@@ -57,7 +60,7 @@ public class CategoryServiceImpl implements CategoryService {
             Category first = row.get(firstCategory);
             Category second = row.get(secondCategory);
 
-            categoryMap.putIfAbsent(first.getId(),
+            categoryMap.putIfAbsent(Objects.requireNonNull(first).getId(),
                     new CategoryResponse(
                             first.getId(),
                             first.getName(),
@@ -116,6 +119,11 @@ public class CategoryServiceImpl implements CategoryService {
         if (categoryRepository.existsByParent(firstCategory)) {
             throw new ApiException(ErrorCode.CATEGORY_HAS_SUBCATEGORIES);
         }
+        boolean isCategoryInUse = ticketRepository.existsByFirstCategory(firstCategory);
+
+        if (isCategoryInUse) {
+            throw new ApiException(ErrorCode.FIRST_CATEGORY_IN_USE);
+        }
 
         categoryRepository.delete(firstCategory);
     }
@@ -151,6 +159,12 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public void deleteSecondCategory(Long memberId, Long firstCategoryId, Long secondCategoryId) {
         Category secondCategory = getValidSecondCategory(firstCategoryId, secondCategoryId);
+        boolean isCategoryInUse = ticketRepository.existsBySecondCategory(secondCategory);
+
+        if (isCategoryInUse) {
+            throw new ApiException(ErrorCode.SECOND_CATEGORY_IN_USE);
+        }
+
         categoryRepository.delete(secondCategory);
     }
 

@@ -6,12 +6,11 @@ import com.quartz.checkin.dto.ticket.response.DeletedTicketDetail;
 import com.quartz.checkin.dto.ticket.response.QDeletedTicketDetail;
 import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.QMember;
+import com.quartz.checkin.entity.QTicket;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.event.TicketCreatedEvent;
-import com.quartz.checkin.repository.TicketAttachmentRepository;
-import com.quartz.checkin.entity.QMember;
-import com.quartz.checkin.entity.QTicket;
 import com.quartz.checkin.repository.TicketQueryRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -20,7 +19,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,8 +31,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class TicketTrashServiceImpl implements TicketTrashService {
     private final MemberService memberService;
     private final TicketRepository ticketRepository;
-    private final TicketAttachmentRepository ticketAttachmentRepository;
-    private final AttachmentService attachmentService;
     private final ApplicationEventPublisher eventPublisher;
     private final TicketQueryRepository ticketQueryRepository;
     private final JPAQueryFactory queryFactory;
@@ -60,7 +56,7 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
-                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+                throw new ApiException(ErrorCode.FORBIDDEN);
             }
         }
 
@@ -115,7 +111,7 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
-                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+                throw new ApiException(ErrorCode.FORBIDDEN);
             }
         }
 

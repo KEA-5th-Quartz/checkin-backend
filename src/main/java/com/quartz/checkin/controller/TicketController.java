@@ -106,7 +106,7 @@ public class TicketController {
 
     @PatchMapping
     @User
-    @Operation(summary = "API 명세서 V0.3 line 36", description = "사용자가 다중 티켓 삭제")
+    @Operation(summary = "API 명세서 V0.3 line 36", description = "사용자가 다중 티켓 임시삭제")
     public ApiResponse<Void> tempDeleteTickets(
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketDeleteOrRestoreOrPurgeRequest request) {
@@ -213,7 +213,7 @@ public class TicketController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 51", description = "중요도 변경")
+    @Operation(summary = "API 명세서 v0.3 line 50", description = "중요도 변경")
     @PatchMapping("/{ticketId}/priority")
     public ApiResponse<Void> updateTicketPriority(
             @PathVariable Long ticketId,
@@ -248,11 +248,11 @@ public class TicketController {
     }
 
     @User
-    @Operation(summary = "API 명세서 v0.3 line 35", description = "휴지통 조회")
+    @Operation(summary = "API 명세서 v0.3 line 37", description = "휴지통 조회")
     @GetMapping("/trash")
     public ApiResponse<SoftDeletedTicketResponse> getDeletedTickets(
             @AuthenticationPrincipal CustomUser user,
-            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         SoftDeletedTicketResponse response = ticketTrashService.getDeletedTickets(user.getId(), page, size);

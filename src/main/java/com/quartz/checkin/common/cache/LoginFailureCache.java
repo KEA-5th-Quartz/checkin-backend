@@ -45,8 +45,9 @@ public class LoginFailureCache extends ConcurrentMapCache {
             return null;
         }
         if (isExpired(loginFailureInfo)) {
-            log.info("{} 로그인 실패 횟수 유효기간 만료, 새로 카운트 시작", key);
-            return new LoginFailureInfo();
+            log.info("{} 로그인 실패 횟수 유효기간이 만료되었습니다. 캐시에서 삭제 후, 다시 카운트를 시작합니다.", key);
+            cache.remove(key);
+            return null;
         }
 
         loginFailureInfo.increment();

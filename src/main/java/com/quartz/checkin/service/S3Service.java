@@ -18,11 +18,13 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 @RequiredArgsConstructor
 public class S3Service {
 
-    private final String S3_URL_FORMAT = "https://%s.s3.%s.amazonaws.com/%s";
+    private final String S3_URL_FORMAT = "https://objectstorage.kr-central-2.kakaocloud.com/v1/%s/%s/%s";
 
     private final S3Client s3Client;
     @Value("${cloud.aws.bucket}")
     private String bucket;
+    @Value("${cloud.aws.projectId}")
+    private String projectId;
 
     public String uploadFile(MultipartFile file, String dirName) throws IOException, SdkException {
         String originalFilename = file.getOriginalFilename();
@@ -41,8 +43,8 @@ public class S3Service {
 
         return String.format(
                 S3_URL_FORMAT,
+                projectId,
                 bucket,
-                s3Client.serviceClientConfiguration().region().id(),
                 key
         );
     }
@@ -55,7 +57,7 @@ public class S3Service {
                 .key(key)
                 .build();
 
-        log.info("S3에서 파일 {} 제거", key);
+        log.info("Object Storage에서 파일 {} 제거", key);
 
         s3Client.deleteObject(deleteObjectRequest);
     }
@@ -88,8 +90,8 @@ public class S3Service {
     private String extractKey(String fileUrl) {
         String urlPrefix = String.format(
                 S3_URL_FORMAT,
+                projectId,
                 bucket,
-                s3Client.serviceClientConfiguration().region().id(),
                 "");
 
         return fileUrl.substring(urlPrefix.length());

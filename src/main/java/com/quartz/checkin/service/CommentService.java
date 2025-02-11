@@ -276,7 +276,7 @@ public class CommentService {
                     .attachmentUrl(attachmentUrl)
                     .build();
         } catch (Exception e) {
-            log.error("S3에 댓글용 첨부파일을 업로드할 수 없습니다. {}", e.getMessage());
+            log.error("Object Storage에 댓글용 첨부파일을 업로드할 수 없습니다. {}", e.getMessage());
             throw new ApiException(ErrorCode.OBJECT_STORAGE_ERROR);
         }
 

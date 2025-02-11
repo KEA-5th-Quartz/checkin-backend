@@ -38,7 +38,7 @@ public enum ErrorCode {
 
     // 티켓 서비스 예외
     INVALID_TICKET_ID_FORMAT(HttpStatus.BAD_REQUEST, "TICKET_4001", "티켓 ID 형식이 올바르지 않습니다."),
-    INVALID_TICKET_DUE_DATE(HttpStatus.BAD_REQUEST, "TICKET_4002", "마감 기한이 유효하지 않습니다."),
+    INVALID_TICKET_DUE_DATE(HttpStatus.BAD_REQUEST, "TICKET_4002", "마감 기한을 동시에 선택할 수 없습니다."),
     INVALID_TICKET_STATUS(HttpStatus.BAD_REQUEST, "TICKET_4003", "티켓 상태 값이 유효하지 않습니다."),
     INVALID_TICKET_MANAGER(HttpStatus.BAD_REQUEST, "TICKET_4006", "담당자 정보가 유효하지 않습니다."),
     INVALID_TICKET_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "TICKET_4007", "페이지 번호가 유효하지 않습니다."),

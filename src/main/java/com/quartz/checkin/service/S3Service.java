@@ -57,7 +57,7 @@ public class S3Service {
                 .key(key)
                 .build();
 
-        log.info("S3에서 파일 {} 제거", key);
+        log.info("Object Storage에서 파일 {} 제거", key);
 
         s3Client.deleteObject(deleteObjectRequest);
     }

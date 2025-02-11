@@ -136,37 +136,8 @@ public class TicketLogServiceImpl implements TicketLogService {
         Category newSecondCategory = categoryRepository.findByNameAndParent(request.getSecondCategory(), firstCategory)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
 
-        // customId 변경 로직 추가
-        String firstCategoryAlias = firstCategory.getAlias();
-        String secondCategoryAlias = newSecondCategory.getAlias();
-
-        // 기존 날짜 유지
-        String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
-        String numberPart = oldCustomId.substring(oldCustomId.length() - 3);
-
-        // 새 customId 생성 (날짜는 그대로 유지하고 카테고리만 변경)
-        String newCustomId = datePart + firstCategoryAlias + "-" + secondCategoryAlias + numberPart;
-
-        // 카테고리 및 customId 업데이트
-        ticket.updateCategory(firstCategory, newSecondCategory);
-        ticket.updateCustomId(newCustomId); // customId 변경 적용
-        ticketRepository.save(ticket);
-
-        // 이/가 조사 적용
-        String subjectParticle = getSubjectParticle(manager.getUsername());
-
-        // **로그 메시지 생성**
-        String logContent = String.format(
-                "%s%s 2차 카테고리를 변경하였습니다. '%s' → '%s'",
-                manager.getUsername(),
-                subjectParticle,
-                oldSecondCategory,
-                newSecondCategory.getName()
-        );
-
-        // customId가 변경되었을 경우 로그 추가
-        if (!oldCustomId.equals(newCustomId)) {
-            logContent += String.format("\n티켓 번호가 변경되었습니다. '%s' → '%s'", oldCustomId, newCustomId);
+        if (oldSecondCategory.equals(newSecondCategory.getName())) {
+            return new TicketLogResponse(null);
         }
 
         // 공통 메서드 호출하여 카테고리 & customId 업데이트

@@ -63,24 +63,13 @@ public class TicketLogController {
   
     @Manager
     @Operation(summary = "API 명세서 v0.3 line 50", description = "담당자 변경")
-    @PatchMapping("/{ticketId}/reassign")
+    @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> reassignManager(
             @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody Map<String, String> request) {
 
-        TicketLogResponse response = ticketLogService.reassignManager(user.getId(), ticketId, request.get("manager"));
-        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
-    }
-
-    @Manager
-    @Operation(summary = "API 명세서 v0.3 line 46", description = "담당자 할당")
-    @PatchMapping("/{ticketId}/assign")
-    public ApiResponse<TicketLogResponse> assignManager(
-            @PathVariable Long ticketId,
-            @AuthenticationPrincipal CustomUser user
-    ) {
-        TicketLogResponse response = ticketLogService.assignManager(user.getId(), ticketId);
+        TicketLogResponse response = ticketLogService.assignManager(user.getId(), ticketId, request.get("manager"));
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }

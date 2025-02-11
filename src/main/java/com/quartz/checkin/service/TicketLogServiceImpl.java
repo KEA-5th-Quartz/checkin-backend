@@ -8,6 +8,7 @@ import com.quartz.checkin.dto.ticket.response.TicketLogResponse;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.LogType;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Priority;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketLog;
@@ -42,61 +43,6 @@ public class TicketLogServiceImpl implements TicketLogService {
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',
             'A', 'E', 'I', 'O', 'U');
-
-    // 담당자 배정
-    @Override
-    public TicketLogResponse assignManager(Long memberId, Long ticketId) {
-
-        // 티켓 & 담당자 조회
-        Member manager = getValidMember(memberId);
-        Ticket ticket = getValidTicket(ticketId);
-
-        // 예외 검증
-        validateTicketForUpdate(ticket, manager, false, false, true);
-
-        // 조사 처리
-        String subjectParticle = getSubjectParticle(ticket.getTitle());
-
-        // 담당자 배정 처리
-        ticket.assignManager(manager);
-        ticketRepository.save(ticket);
-
-        // 로그 기록
-        String logContent = String.format("%s%s %s에게 배정되었습니다.",
-                ticket.getTitle(), subjectParticle, manager.getUsername());
-
-        TicketLog ticketLog = TicketLog.builder()
-                .ticket(ticket)
-                .logType(LogType.MANAGER)
-                .content(logContent)
-                .build();
-
-        ticketLogRepository.save(ticketLog);
-
-        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), 1));
-
-        List<String> assigneesForInProgress = new ArrayList<>();
-
-        // 사용자는 항상 포함
-        if (ticket.getUser() != null) {
-            assigneesForInProgress.add(ticket.getUser().getUsername());
-        }
-
-        // 현재 담당자 추가 (변경이 발생했을 경우 새로운 담당자로 대체됨)
-        if (ticket.getManager() != null) {
-            assigneesForInProgress.add(ticket.getManager().getUsername());
-        }
-
-        eventPublisher.publishEvent(new TicketAssigneeChangedEvent(
-                ticket.getAgitId(),
-                ticket.getManager() != null ? ticket.getManager().getId() : null,
-                ticket.getUser() != null ? ticket.getUser().getId() : null,
-                ticket.getId(),
-                new ArrayList<>(assigneesForInProgress)
-        ));
-
-        return new TicketLogResponse(ticketLog);
-    }
 
     // 티켓 상태 변경: 진행 중 → 완료
     @Override
@@ -136,10 +82,8 @@ public class TicketLogServiceImpl implements TicketLogService {
         return new TicketLogResponse(ticketLog);
     }
 
-    // 1차 카테고리 변경
     @Override
     public TicketLogResponse updateFirstCategory(Long memberId, Long ticketId, FirstCategoryPatchRequest request) {
-
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
         Member manager = getValidMember(memberId);
@@ -149,7 +93,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 기존 카테고리 정보 저장
         String oldFirstCategory = ticket.getFirstCategory().getName();
-        String oldCustomId = ticket.getCustomId(); // 기존 customId 저장
+        String oldCustomId = ticket.getCustomId();
 
         // 새로운 1차 카테고리 조회
         Category newFirstCategory = categoryRepository.findByNameAndParentIsNull(request.getFirstCategory())
@@ -160,63 +104,17 @@ public class TicketLogServiceImpl implements TicketLogService {
         if (secondCategories.isEmpty()) {
             throw new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND);
         }
-        Category newSecondCategory = secondCategories.get(0); // 가장 첫 번째 2차 카테고리 선택
+        Category newSecondCategory = secondCategories.get(0);
 
-        // **customId 변경 로직 추가**
-        String firstCategoryAlias = newFirstCategory.getAlias();
-        String secondCategoryAlias = newSecondCategory.getAlias();
+        // 카테고리 & customId 업데이트
+        String newCustomId = updateTicketCategoryAndCustomId(ticket, newFirstCategory, newSecondCategory);
 
-        // 기존 날짜 유지
-        String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
-        String numberPart = oldCustomId.substring(oldCustomId.length() - 3);
-
-        // 새 customId 생성 (날짜는 유지, 1차 & 2차 카테고리 변경, 숫자는 유지)
-        String newCustomId = datePart + firstCategoryAlias + "-" + secondCategoryAlias + numberPart;
-
-        // 카테고리 및 customId 업데이트
-        ticket.updateCategory(newFirstCategory, newSecondCategory);
-        ticket.updateCustomId(newCustomId); // customId 변경 적용
-        ticketRepository.save(ticket);
-
-        // 이/가 조사 적용
-        String subjectParticle = getSubjectParticle(manager.getUsername());
-
-        // **로그 메시지 생성**
-        String logContent = String.format(
-                "%s%s 1차 카테고리를 변경하였습니다. '%s' → '%s'. (2차 카테고리 기본값: %s)",
-                manager.getUsername(),
-                subjectParticle,
-                oldFirstCategory,
-                newFirstCategory.getName(),
-                newSecondCategory.getName()
-        );
-
-        // **customId가 변경되었을 경우 로그 추가**
-        if (!oldCustomId.equals(newCustomId)) {
-            logContent += String.format("\n티켓 번호가 변경되었습니다. '%s' → '%s'", oldCustomId, newCustomId);
-        }
-
-        // 로그 저장
-        TicketLog ticketLog = TicketLog.builder()
-                .ticket(ticket)
-                .logType(LogType.CATEGORY)
-                .content(logContent)
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        ticketLogRepository.save(ticketLog);
-
-        eventPublisher.publishEvent(
-                new TicketCategoryChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), memberId, oldFirstCategory, newFirstCategory.getName(), logContent)
-        );
-
-        return new TicketLogResponse(ticketLog);
+        // 로그 저장 및 이벤트 발행
+        return createAndSaveTicketLog(ticket, manager, oldFirstCategory, null, newFirstCategory.getName(), newSecondCategory.getName(), oldCustomId, newCustomId, "first");
     }
-
 
     @Override
     public TicketLogResponse updateSecondCategory(Long memberId, Long ticketId, Long firstCategoryId, SecondCategoryPatchRequest request) {
-
         // 티켓 & 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
         Member manager = getValidMember(memberId);
@@ -232,9 +130,9 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         // 기존 정보 저장
         String oldSecondCategory = ticket.getSecondCategory().getName();
-        String oldCustomId = ticket.getCustomId(); // 기존 customId 저장
+        String oldCustomId = ticket.getCustomId();
 
-        // 새로운 2차 카테고리 조회 (해당 1차 카테고리에 속하는지 확인)
+        // 새로운 2차 카테고리 조회
         Category newSecondCategory = categoryRepository.findByNameAndParent(request.getSecondCategory(), firstCategory)
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
 
@@ -271,43 +169,49 @@ public class TicketLogServiceImpl implements TicketLogService {
             logContent += String.format("\n티켓 번호가 변경되었습니다. '%s' → '%s'", oldCustomId, newCustomId);
         }
 
-        // 로그 저장
-        TicketLog ticketLog = TicketLog.builder()
-                .ticket(ticket)
-                .logType(LogType.CATEGORY)
-                .content(logContent)
-                .createdAt(LocalDateTime.now())
-                .build();
+        // 공통 메서드 호출하여 카테고리 & customId 업데이트
+        String newCustomId = updateTicketCategoryAndCustomId(ticket, firstCategory, newSecondCategory);
 
-        ticketLogRepository.save(ticketLog);
-
-        eventPublisher.publishEvent(new TicketCategoryChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), memberId, oldSecondCategory, newSecondCategory.getName(), logContent));
-
-        return new TicketLogResponse(ticketLog);
+        // 공통 메서드 호출하여 로그 저장 및 이벤트 발행
+        return createAndSaveTicketLog(ticket, manager, null, oldSecondCategory, null, newSecondCategory.getName(), oldCustomId, newCustomId, "second");
     }
 
 
-
-    @Transactional
     @Override
-    public TicketLogResponse reassignManager(Long memberId, Long ticketId, String newManagerUsername) {
+    public TicketLogResponse assignManager(Long memberId, Long ticketId, String managerUsername) {
         // 티켓 & 기존 담당자 조회
         Ticket ticket = getValidTicket(ticketId);
         Member currentManager = ticket.getManager();
-        Member newManager = memberRepository.findByUsername(newManagerUsername)
+        Member manager = memberRepository.findByUsername(managerUsername)
                 .orElseThrow(() -> new ApiException(ErrorCode.MEMBER_NOT_FOUND));
 
+        // 예외 처리
+        if (currentManager != null && !currentManager.getId().equals(memberId) && ticket.getStatus() != Status.OPEN) {
+            throw new ApiException(ErrorCode.TICKET_ALREADY_ASSIGNED);
+        }
+        if (currentManager == null) {
+            ticket.updateStatus(Status.IN_PROGRESS);
+            ticket.updatePriority(Priority.MEDIUM);
+        }
+
         // 예외 검증
-        validateTicketForUpdate(ticket, newManager, false, false, true);
+        validateTicketForUpdate(ticket, manager, false, false, true);
 
         // 담당자 변경
-        ticket.reassignManager(newManager);
+        ticket.assignManager(manager);
         ticketRepository.save(ticket);
 
         // 로그 기록
-        String logContent = String.format("담당자가 변경되었습니다. %s → %s",
-                currentManager != null ? currentManager.getUsername() : "없음",
-                newManager.getUsername());
+        String logContent;
+        if (currentManager != null) {
+            logContent = String.format("담당자가 변경되었습니다. %s → %s",
+                    currentManager.getUsername(),
+                    manager.getUsername());
+        } else {
+            String subjectParticle = getSubjectParticle(ticket.getTitle()); // 조사 적용
+            logContent = String.format("%s%s %s에게 배정되었습니다.",
+                    ticket.getTitle(), subjectParticle, manager.getUsername());
+        }
 
         TicketLog ticketLog = TicketLog.builder()
                 .ticket(ticket)
@@ -318,21 +222,21 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         ticketLogRepository.save(ticketLog);
 
-        List<String> assigneesForInProgress = new ArrayList<>();
+        eventPublisher.publishEvent(new TicketStatusChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), 1));
 
+        List<String> assigneesForInProgress = new ArrayList<>();
         if (ticket.getUser() != null) {
             assigneesForInProgress.add(ticket.getUser().getUsername());
         }
-
-        assigneesForInProgress.add(newManager.getUsername());
+        assigneesForInProgress.add(manager.getUsername());
 
         eventPublisher.publishEvent(new TicketAssigneeChangedEvent(
                 ticket.getAgitId(),
-                newManager.getId(),
+                manager.getId(),
                 ticket.getUser().getId(),
                 ticket.getId(),
                 new ArrayList<>(assigneesForInProgress)
-                ));
+        ));
 
         return new TicketLogResponse(ticketLog);
     }
@@ -371,6 +275,79 @@ public class TicketLogServiceImpl implements TicketLogService {
         if (!checkReassign && (ticket.getManager() == null || !ticket.getManager().getId().equals(manager.getId()))) {
             throw new ApiException(ErrorCode.INVALID_TICKET_MANAGER);
         }
+    }
+
+    private String updateTicketCategoryAndCustomId(Ticket ticket, Category firstCategory, Category secondCategory) {
+        // customId 변경 로직
+        String firstCategoryAlias = firstCategory.getAlias();
+        String secondCategoryAlias = secondCategory.getAlias();
+
+        // 기존 날짜 유지
+        String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
+        String oldCustomId = ticket.getCustomId();
+        String numberPart = oldCustomId.substring(oldCustomId.length() - 3);
+
+        // 새 customId 생성
+        String newCustomId = datePart + firstCategoryAlias + "-" + secondCategoryAlias + numberPart;
+
+        // 카테고리 및 customId 업데이트
+        ticket.updateCategory(firstCategory, secondCategory);
+        ticket.updateCustomId(newCustomId);
+        ticketRepository.save(ticket);
+
+        return newCustomId;
+    }
+
+    private TicketLogResponse createAndSaveTicketLog(
+            Ticket ticket, Member manager, String oldFirstCategory, String oldSecondCategory,
+            String newFirstCategory, String newSecondCategory, String oldCustomId, String newCustomId, String actionType) {
+
+        // 이/가 조사 적용
+        String subjectParticle = getSubjectParticle(manager.getUsername());
+
+        // 기본 로그 메시지
+        String logContent;
+        if (actionType.equals("first")) {
+            logContent = String.format(
+                    "%s%s 1차 카테고리를 변경하였습니다. '%s' → '%s'. (2차 카테고리 기본값: %s)",
+                    manager.getUsername(),
+                    subjectParticle,
+                    oldFirstCategory,
+                    newFirstCategory,
+                    newSecondCategory
+            );
+        } else {
+            logContent = String.format(
+                    "%s%s 2차 카테고리를 변경하였습니다. '%s' → '%s'",
+                    manager.getUsername(),
+                    subjectParticle,
+                    oldSecondCategory,
+                    newSecondCategory
+            );
+        }
+
+        // customId 변경 로그 추가
+        if (!oldCustomId.equals(newCustomId)) {
+            logContent += String.format("\n티켓 번호가 변경되었습니다. '%s' → '%s'", oldCustomId, newCustomId);
+        }
+
+        // 로그 저장
+        TicketLog ticketLog = TicketLog.builder()
+                .ticket(ticket)
+                .logType(LogType.CATEGORY)
+                .content(logContent)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        ticketLogRepository.save(ticketLog);
+
+        // 이벤트 발행
+        eventPublisher.publishEvent(new TicketCategoryChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), manager.getId(),
+                oldFirstCategory != null ? oldFirstCategory : oldSecondCategory,
+                newFirstCategory != null ? newFirstCategory : newSecondCategory,
+                logContent));
+
+        return new TicketLogResponse(ticketLog);
     }
 
     // 주격 조사 검증 로직

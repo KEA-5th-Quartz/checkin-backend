@@ -160,6 +160,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         if (currentManager != null && !currentManager.getId().equals(memberId) && ticket.getStatus() != Status.OPEN) {
             throw new ApiException(ErrorCode.TICKET_ALREADY_ASSIGNED);
         }
+
         if (currentManager == null) {
             ticket.updateStatus(Status.IN_PROGRESS);
             ticket.updatePriority(Priority.MEDIUM);

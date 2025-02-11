@@ -1,5 +1,6 @@
 package com.quartz.checkin.dto.ticket.request;
 
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -29,6 +30,7 @@ public class TicketCreateRequest {
     private String secondCategory;
 
     @NotNull
+    @FutureOrPresent(message = "마감 기한은 오늘 이후 날짜여야 합니다.")
     private LocalDate dueDate;
 
     private List<Long> attachmentIds = new ArrayList<>();

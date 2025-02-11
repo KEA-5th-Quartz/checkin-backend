@@ -101,7 +101,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
 
         LocalDate today = LocalDate.now();
 
-        // dueTodayCount (오늘 마감이며 본인 담당 티켓)
         Long dueTodayCount = queryFactory
                 .select(ticket.count())
                 .from(ticket)
@@ -110,41 +109,33 @@ public class TicketQueryServiceImpl implements TicketQueryService {
                         .and(ticket.manager.id.eq(managerId)))
                 .fetchOne();
 
-        // openTicketCount (열린 상태이며 오늘 이후 마감)
         Long openTicketCount = queryFactory
                 .select(ticket.count())
                 .from(ticket)
                 .where(ticket.deletedAt.isNull()
-                        .and(ticket.status.eq(Status.OPEN))
-                        .and(ticket.dueDate.goe(today)))
+                        .and(ticket.status.eq(Status.OPEN)))
                 .fetchOne();
 
-        // inProgressTicketCount (진행 중 상태이며 본인 담당, 오늘 이후 마감)
         Long inProgressTicketCount = queryFactory
                 .select(ticket.count())
                 .from(ticket)
                 .where(ticket.deletedAt.isNull()
                         .and(ticket.status.eq(Status.IN_PROGRESS))
-                        .and(ticket.dueDate.goe(today))
                         .and(ticket.manager.id.eq(managerId)))
                 .fetchOne();
 
-        // closedTicketCount (완료 상태이며 본인 담당, 오늘 이후 마감)
         Long closedTicketCount = queryFactory
                 .select(ticket.count())
                 .from(ticket)
                 .where(ticket.deletedAt.isNull()
                         .and(ticket.status.eq(Status.CLOSED))
-                        .and(ticket.dueDate.goe(today))
                         .and(ticket.manager.id.eq(managerId)))
                 .fetchOne();
 
-        // totalTickets (모든 티켓에서 오늘 이후 마감된 티켓 수)
         Long totalTickets = queryFactory
                 .select(ticket.count())
                 .from(ticket)
-                .where(ticket.deletedAt.isNull()
-                        .and(ticket.dueDate.goe(today)))
+                .where(ticket.deletedAt.isNull())
                 .fetchOne();
 
         // Null 값 방지
@@ -167,65 +158,53 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         );
     }
 
-
     private Page<Ticket> fetchSearchedTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
         validatePagination(page, size);
         Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
 
         QTicket ticket = QTicket.ticket;
-        QMember manager = QMember.member;
+        BooleanBuilder whereClause = buildWhereClause(memberId, keyword, null, null, null, null, null, null);
 
-        BooleanBuilder whereClause = new BooleanBuilder();
-        whereClause.and(ticket.deletedAt.isNull());
-
-        if (memberId != null) {
-            whereClause.and(ticket.user.id.eq(memberId));
-        }
-
-        if (keyword != null && !keyword.isBlank()) {
-            String searchKeyword = "%" + keyword.toLowerCase() + "%";
-            whereClause.and(ticket.title.lower().like(searchKeyword)
-                    .or(ticket.content.lower().like(searchKeyword)));
-        }
-
-        OrderSpecifier<?> orderSpecifier = "asc".equalsIgnoreCase(sortByCreatedAt)
-                ? ticket.createdAt.asc()
-                : ticket.createdAt.desc();
-
-        // QueryDSL을 사용한 페이징 적용 조회
-        List<Ticket> results = queryFactory
-                .selectFrom(ticket)
-                .leftJoin(ticket.manager, manager).fetchJoin()
-                .where(whereClause)
-                .orderBy(orderSpecifier)
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
-
-        // 총 개수 조회
-        long safeTotalCount = Optional.ofNullable(
-                queryFactory.select(ticket.count())
-                        .from(ticket)
-                        .where(whereClause)
-                        .fetchOne()
-        ).orElse(0L);
-
-        return new PageImpl<>(results, pageable, safeTotalCount);
+        return executeTicketQuery(ticket, whereClause, pageable, sortByCreatedAt);
     }
 
     private Page<Ticket> fetchTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                       List<String> categories, List<Priority> priorities,
                                       Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
-
         validatePagination(page, size);
         Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
 
         QTicket ticket = QTicket.ticket;
+        BooleanBuilder whereClause = buildWhereClause(memberId, null, statuses, usernames, categories, priorities, dueToday, dueThisWeek);
+
+        return executeTicketQuery(ticket, whereClause, pageable, sortByCreatedAt);
+    }
+
+    // QueryDSL 실행 및 페이징 처리 메서드
+    private Page<Ticket> executeTicketQuery(QTicket ticket, BooleanBuilder whereClause, Pageable pageable, String sortByCreatedAt) {
         QMember manager = QMember.member;
 
-        LocalDate today = LocalDate.now();
-        LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+        OrderSpecifier<?>[] orderSpecifiers = getOrderSpecifiers(ticket, sortByCreatedAt);
 
+        List<Ticket> results = queryFactory
+                .selectFrom(ticket)
+                .leftJoin(ticket.manager, manager).fetchJoin()
+                .where(whereClause)
+                .orderBy(orderSpecifiers)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        long safeTotalCount = getTotalCount(whereClause);
+
+        return new PageImpl<>(results, pageable, safeTotalCount);
+    }
+
+    // WHERE 조건 빌더
+    private BooleanBuilder buildWhereClause(Long memberId, String keyword, List<Status> statuses, List<String> usernames,
+                                            List<String> categories, List<Priority> priorities,
+                                            Boolean dueToday, Boolean dueThisWeek) {
+        QTicket ticket = QTicket.ticket;
         BooleanBuilder whereClause = new BooleanBuilder();
         whereClause.and(ticket.deletedAt.isNull());
 
@@ -249,41 +228,49 @@ public class TicketQueryServiceImpl implements TicketQueryService {
             whereClause.and(ticket.manager.username.in(usernames));
         }
 
+        if (Boolean.TRUE.equals(dueToday) && Boolean.TRUE.equals(dueThisWeek)) {
+            throw new ApiException(ErrorCode.INVALID_TICKET_DUE_DATE);
+        }
+
         if (Boolean.TRUE.equals(dueToday)) {
+            LocalDate today = LocalDate.now();
             whereClause.and(ticket.dueDate.eq(today));
         }
 
         if (Boolean.TRUE.equals(dueThisWeek)) {
+            LocalDate today = LocalDate.now();
+            LocalDate endOfWeek = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
             whereClause.and(ticket.dueDate.between(today, endOfWeek));
         }
 
-        OrderSpecifier<?> orderSpecifier = "asc".equalsIgnoreCase(sortByCreatedAt)
-                ? ticket.createdAt.asc()
-                : ticket.createdAt.desc();
+        if (keyword != null && !keyword.isBlank()) {
+            String searchKeyword = "%" + keyword.toLowerCase() + "%";
+            whereClause.and(ticket.title.lower().like(searchKeyword)
+                    .or(ticket.content.lower().like(searchKeyword)));
+        }
 
-        // QueryDSL로 페이징 적용한 조회 쿼리 실행
-        List<Ticket> results = queryFactory
-                .selectFrom(ticket)
-                .leftJoin(ticket.manager, manager).fetchJoin()
-                .where(whereClause)
-                .orderBy(orderSpecifier)
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
+        return whereClause;
+    }
 
-        // 총 개수 조회
-        long safeTotalCount = Optional.ofNullable(
-                queryFactory.select(ticket.count())
-                        .from(ticket)
+    // 공통 정렬 적용 메서드
+    private OrderSpecifier<?>[] getOrderSpecifiers(QTicket ticket, String sortByCreatedAt) {
+        return new OrderSpecifier<?>[]{
+                "asc".equalsIgnoreCase(sortByCreatedAt) ? ticket.createdAt.asc() : ticket.createdAt.desc()
+        };
+    }
+
+    // 총 개수 조회 메서드
+    private long getTotalCount(BooleanBuilder whereClause) {
+        return Optional.ofNullable(
+                queryFactory.select(QTicket.ticket.count())
+                        .from(QTicket.ticket)
                         .where(whereClause)
                         .fetchOne()
         ).orElse(0L);
-
-        return new PageImpl<>(results, pageable, safeTotalCount);
     }
 
     private void validatePagination(int page, int size) {
-        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
-        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+        if (page < 1) throw new ApiException(ErrorCode.INVALID_TICKET_PAGE_NUMBER);
+        if (size <= 0) throw new ApiException(ErrorCode.INVALID_TICKET_PAGE_SIZE);
     }
 }

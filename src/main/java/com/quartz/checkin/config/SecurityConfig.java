@@ -1,7 +1,6 @@
 package com.quartz.checkin.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quartz.checkin.common.cache.LoginBlockCache;
 import com.quartz.checkin.security.filter.CustomUsernamePasswordAuthenticationFilter;
 import com.quartz.checkin.security.filter.JwtAuthenticationFilter;
 import com.quartz.checkin.security.handler.CustomAccessDeniedHandler;
@@ -13,8 +12,8 @@ import com.quartz.checkin.security.handler.CustomLogoutSuccessHandler;
 import com.quartz.checkin.security.service.CustomUserDetailsService;
 import com.quartz.checkin.service.LoginBlockCacheService;
 import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -110,7 +109,7 @@ public class SecurityConfig {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOriginPatterns(Arrays.asList("http://localhost:8080", "https://kc.quartz-checkin.xyz")); //Vue.js 기본 포트
         corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        corsConfiguration.setAllowedHeaders(Arrays.asList("*"));
+        corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

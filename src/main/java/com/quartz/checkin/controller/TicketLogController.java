@@ -27,7 +27,7 @@ public class TicketLogController {
     private final TicketLogService ticketLogService;
 
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 47", description = "티켓 완료 처리")
+    @Operation(summary = "API 명세서 v0.3 line 46", description = "티켓 완료 처리")
     @PatchMapping("/{ticketId}/close")
     public ApiResponse<TicketLogResponse> closeTicket(
             @PathVariable Long ticketId,
@@ -37,7 +37,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 48", description = "1차 카테고리 수정")
+    @Operation(summary = "API 명세서 v0.3 line 47", description = "1차 카테고리 수정")
     @PatchMapping("/{ticketId}/category")
     public ApiResponse<TicketLogResponse> updateFirstCategory(
             @PathVariable Long ticketId,
@@ -49,7 +49,7 @@ public class TicketLogController {
     }
 
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 49", description = "2차 카테고리 수정")
+    @Operation(summary = "API 명세서 v0.3 line 48", description = "2차 카테고리 수정")
     @PatchMapping("/{ticketId}/category/{firstCategoryId}")
     public ApiResponse<TicketLogResponse> updateSecondCategory(
             @PathVariable Long ticketId,
@@ -62,25 +62,14 @@ public class TicketLogController {
     }
   
     @Manager
-    @Operation(summary = "API 명세서 v0.3 line 50", description = "담당자 변경")
-    @PatchMapping("/{ticketId}/reassign")
+    @Operation(summary = "API 명세서 v0.3 line 49", description = "담당자 변경")
+    @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> reassignManager(
             @PathVariable Long ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody Map<String, String> request) {
 
-        TicketLogResponse response = ticketLogService.reassignManager(user.getId(), ticketId, request.get("manager"));
-        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
-    }
-
-    @Manager
-    @Operation(summary = "API 명세서 v0.3 line 46", description = "담당자 할당")
-    @PatchMapping("/{ticketId}/assign")
-    public ApiResponse<TicketLogResponse> assignManager(
-            @PathVariable Long ticketId,
-            @AuthenticationPrincipal CustomUser user
-    ) {
-        TicketLogResponse response = ticketLogService.assignManager(user.getId(), ticketId);
+        TicketLogResponse response = ticketLogService.assignManager(user.getId(), ticketId, request.get("manager"));
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 }

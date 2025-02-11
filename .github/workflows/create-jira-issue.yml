@@ -64,7 +64,7 @@ jobs:
       - name: Checkout develop code
         uses: actions/checkout@v4
         with:
-          ref: release/0.0.1
+          ref: release/0.0.2
 
       - name: Create branch with Ticket number
         run: |

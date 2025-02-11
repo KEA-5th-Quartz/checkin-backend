@@ -36,7 +36,7 @@ public class MemberEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handlePasswordResetMailEvent(PasswordResetMailEvent event) {
         log.info("비밀번호 초기화 이메일 전송");
-        String format = "http://localhost:8080/password-reset?memberId=%s&passwordResetToken=%s";
+        String format = "https://kc.quartz-checkin.xyz/password-reset?memberId=%s&passwordResetToken=%s";
         emailSenderService.sendSimpleMessage(
                 event.getEmail(),
                 "비밀번호 초기화",

@@ -70,7 +70,7 @@ public class TicketCudServiceImpl implements TicketCudService {
             try {
                 lastTicketNumber = Integer.parseInt(lastCustomId.substring(lastCustomId.length() - 3)) + 1;
             } catch (NumberFormatException e) {
-                throw new ApiException(ErrorCode.INVALID_DATA);
+                throw new ApiException(ErrorCode.INVALID_TICKET_ID_FORMAT);
             }
         }
 
@@ -83,7 +83,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         if (attachments.size() != attachmentIds.size()) {
             log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
-            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
+            throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
         }
 
         // 티켓 생성 및 저장
@@ -133,7 +133,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         // 본인이 생성한 티켓인지 검증
         if (!ticket.getUser().getId().equals(member.getId())) {
-            throw new ApiException(ErrorCode.UNAUTHENTICATED);
+            throw new ApiException(ErrorCode.FORBIDDEN);
         }
 
         // 카테고리 검증 (1차 및 2차)
@@ -262,7 +262,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
-                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+                throw new ApiException(ErrorCode.FORBIDDEN);
             }
         }
 
@@ -330,7 +330,7 @@ public class TicketCudServiceImpl implements TicketCudService {
     private void checkInvalidAttachment(List<Long> attachmentIds, List<Attachment> attachments) {
         if (attachmentIds.size() != attachments.size()) {
             log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
-            throw new ApiException(ErrorCode.INVALID_TEMPLATE_ATTACHMENT_IDS);
+            throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
         }
     }
 

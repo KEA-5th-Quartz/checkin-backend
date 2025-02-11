@@ -8,13 +8,13 @@ import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
+import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.request.UsernameCheckRequest;
 import com.quartz.checkin.dto.member.response.AccessLogListResponse;
-import com.quartz.checkin.dto.member.response.MemberRoleCount;
-import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
-import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
+import com.quartz.checkin.dto.member.response.MemberRoleCount;
+import com.quartz.checkin.dto.member.response.ProfilePicUpdateResponse;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.security.annotation.AdminOrManager;
@@ -183,7 +183,7 @@ public class MemberController {
     }
 
     @Admin
-    @Operation(summary = "API 명세서 v0.3 line 15", description = "관리자가 소프트 딜리트된 회원 조회")
+    @Operation(summary = "API 명세서 v0.3 line 15", description = "관리자가 소프트 딜리트된 회원들의 데이터 페이지네이션 조회")
     @GetMapping("/trash")
     public ApiResponse<MemberInfoListResponse> trash(@ModelAttribute @Valid SimplePageRequest pageRequest) {
         MemberInfoListResponse response = memberService.getSoftDeletedMemberInfoList(pageRequest);

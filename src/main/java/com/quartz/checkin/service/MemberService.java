@@ -222,7 +222,7 @@ public class MemberService {
 
             return profilePic;
         } catch (Exception exception) {
-            log.error("S3에 파일을 업로드할 수 없습니다. {}", exception.getMessage());
+            log.error("Object Storage에 파일을 업로드할 수 없습니다. {}", exception.getMessage());
             throw new ApiException(ErrorCode.OBJECT_STORAGE_ERROR);
         }
     }

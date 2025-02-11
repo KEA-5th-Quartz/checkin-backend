@@ -50,7 +50,9 @@ springdoc:
 
 cloud:
   aws:
+    endpoint: "${AWS_ENDPOINT}"
     bucket: "${AWS_BUCKET}"
+    projectId: "${AWS_PROJECT_ID}"
     stack:
       auto: false
     region:

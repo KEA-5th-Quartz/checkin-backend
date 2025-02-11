@@ -70,7 +70,7 @@ public class TicketCudServiceImpl implements TicketCudService {
             try {
                 lastTicketNumber = Integer.parseInt(lastCustomId.substring(lastCustomId.length() - 3)) + 1;
             } catch (NumberFormatException e) {
-                throw new ApiException(ErrorCode.INVALID_DATA);
+                throw new ApiException(ErrorCode.INVALID_TICKET_ID_FORMAT);
             }
         }
 
@@ -133,7 +133,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         // 본인이 생성한 티켓인지 검증
         if (!ticket.getUser().getId().equals(member.getId())) {
-            throw new ApiException(ErrorCode.UNAUTHENTICATED);
+            throw new ApiException(ErrorCode.FORBIDDEN);
         }
 
         // 카테고리 검증 (1차 및 2차)
@@ -262,7 +262,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
-                throw new ApiException(ErrorCode.UNAUTHENTICATED);
+                throw new ApiException(ErrorCode.FORBIDDEN);
             }
         }
 

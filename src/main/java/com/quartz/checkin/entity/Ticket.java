@@ -108,17 +108,16 @@ public class Ticket extends BaseEntity {
         this.agitId = agitId;
     }
 
-    // 담당자 할당 메서드
+    // 담당자 변경 메서드
     public void assignManager(Member manager) {
         this.manager = manager;
-        this.status = Status.IN_PROGRESS;  // 담당자 배정 시 상태 변경
-    }
-
-    // 담당자 변경 메서드
-    public void reassignManager(Member newManager) {
-        this.manager = newManager;
         this.status = Status.IN_PROGRESS; // 담당자 변경 시 진행 중 상태 유지
     }
+
+    public void updateStatus(Status status) {
+        this.status = status;
+    }
+
 
     // 사용자 영구삭제
     public void hardDeleteUser(Member user) {

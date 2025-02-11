@@ -42,7 +42,7 @@ public class CommentController {
             @AuthenticationPrincipal CustomUser customUser,
             @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId,
             @Valid @RequestBody TicketCommentRequest request) {
-        return ApiResponse.createSuccessResponseWithData(200, commentService.writeComment(customUser, ticketId,
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), commentService.writeComment(customUser, ticketId,
                 request.getContent()));
     }
 
@@ -50,7 +50,7 @@ public class CommentController {
     @GetMapping("/{ticketId}/comments")
     public ApiResponse<TicketActivityResponse> getCommentsAndLogs(
             @Parameter(description = "티켓 ID", required = true) @PathVariable("ticketId") Long ticketId) {
-        return ApiResponse.createSuccessResponseWithData(200, commentService.getCommentsAndLogs(ticketId));
+        return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), commentService.getCommentsAndLogs(ticketId));
     }
 
     @ManagerOrUser

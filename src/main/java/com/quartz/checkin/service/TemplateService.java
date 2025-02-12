@@ -1,5 +1,6 @@
 package com.quartz.checkin.service;
 
+import com.quartz.checkin.common.AttachmentUtils;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.common.request.SimplePageRequest;
@@ -45,6 +46,7 @@ public class TemplateService {
     private final MemberService memberService;
     private final TemplateAttachmentRepository templateAttachmentRepository;
     private final TemplateRepository templateRepository;
+    private final AttachmentUtils attachmentUtils;
 
     public Template getTemplateByIdOrThrow(Long templateId) {
         return templateRepository.findById(templateId)
@@ -131,59 +133,19 @@ public class TemplateService {
     @Transactional
     public void updateTemplate(Long templateId, TemplateSaveRequest templateSaveRequest, CustomUser customUser) {
         Template template = getTemplateByIdOrThrow(templateId);
-
         Member member = memberService.getMemberByIdOrThrow(customUser.getId());
-
         checkTemplateOwner(template, member);
 
         Category firstCategory = categoryService.getFirstCategoryOrThrow(templateSaveRequest.getFirstCategory());
-        Category secondCategory = categoryService.
-                getSecondCategoryOrThrow(templateSaveRequest.getSecondCategory(), firstCategory);
-
-        List<Long> newAttachmentIds = templateSaveRequest.getAttachmentIds();
-        List<Attachment> newAttachments = attachmentRepository.findAllById(newAttachmentIds);
-
-        checkInvalidAttachment(newAttachmentIds, newAttachments);
+        Category secondCategory = categoryService.getSecondCategoryOrThrow(templateSaveRequest.getSecondCategory(), firstCategory);
 
         template.updateTitle(templateSaveRequest.getTitle());
         template.updateContent(templateSaveRequest.getContent());
         template.updateCategories(firstCategory, secondCategory);
 
-        // 해당 템플릿의 저장된 첨부파일 ID들
-        List<Long> savedAttachmentIds = templateAttachmentRepository.findByTemplate(template)
-                .stream()
-                .map(ta -> ta.getAttachment().getId())
-                .toList();
-
-        // 추가해야 할 첨부파일 ID들
-        List<Long> attachmentIdsToAdd = newAttachmentIds.stream()
-                .filter(id -> !savedAttachmentIds.contains(id))
-                .toList();
-
-        // 제거해야 할 첨부파일 ID들
-        List<Long> attachmentIdsToRemove = savedAttachmentIds.stream()
-                .filter(id -> !newAttachmentIds.contains(id))
-                .toList();
-
-        // 추가해야 할 첨부파일
-        List<Attachment> attachmentsToAdd = newAttachments.stream()
-                .filter(a -> attachmentIdsToAdd.contains(a.getId()))
-                .toList();
-
-        List<TemplateAttachment> newTemplateAttachments = attachmentsToAdd.stream()
-                .map(a -> new TemplateAttachment(template, a))
-                .toList();
-
-        templateAttachmentRepository.saveAll(newTemplateAttachments);
-
-        // 중간테이블 삭제 후, 첨부파일 테이블, S3 삭제
-        if (!attachmentIdsToRemove.isEmpty()) {
-            templateAttachmentRepository.deleteByTemplateAndAttachmentIds(template, attachmentIdsToRemove);
-
-            attachmentService.deleteAttachments(attachmentIdsToRemove);
-        }
-
+        attachmentUtils.handleTemplateAttachments(template, templateSaveRequest.getAttachmentIds());
     }
+
 
     @Transactional
     public TemplateDeleteResponse deleteTemplates(TemplateDeleteRequest templateDeleteRequest, CustomUser customUser) {
@@ -191,7 +153,6 @@ public class TemplateService {
 
         List<Long> templateIdsToDelete = templateDeleteRequest.getTemplateIds();
 
-        // 요청에 담긴 id들이 회원의 템플릿들이 맞는지 검증
         List<Template> templates = templateRepository.findAllByIdAndMember(templateIdsToDelete, member);
 
         if (templates.size() != templateIdsToDelete.size()) {
@@ -199,22 +160,17 @@ public class TemplateService {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
 
-        // 삭제할 템플릿들이 참조하고 있는 첨부파일 ID 리스트
         List<Long> attachmentIdsToDelete =
                 templateAttachmentRepository.findAllByTemplatesJoinFetch(templateIdsToDelete).stream()
                         .map(ta -> ta.getAttachment().getId())
                         .toList();
 
-        // 중간 테이블 삭제
         templateAttachmentRepository.deleteByTemplates(templates);
-        //  벌크 쿼라로 인한 영속성 컨텍스트와 DB의 싱크가 맞지 않게 되기에, 영속성 컨텍스트를 초기화
         entityManager.flush();
         entityManager.clear();
 
-        // s3, 첨부파일 삭제
         attachmentService.deleteAttachments(attachmentIdsToDelete);
 
-        // 템플릿 삭제
         templateRepository.deleteByTemplateIds(templateIdsToDelete);
 
         List<TemplateIdResponse> deletedIds = templateIdsToDelete.stream()

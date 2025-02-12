@@ -29,7 +29,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    // 인증을 처리하지 않은 요청들
     private static final AntPathRequestMatcher[] SKIP_PATHS = {
             new AntPathRequestMatcher("/auth/login"),
             new AntPathRequestMatcher("/auth/refresh"),

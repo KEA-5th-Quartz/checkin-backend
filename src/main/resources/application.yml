@@ -11,7 +11,7 @@ spring:
       max-request-size: 10MB
 
   config:
-    import: application-develop.yml
+    import: application-secret.yml
 
   datasource:
     url: ${DB_URL}
@@ -76,7 +76,7 @@ spring:
       on-profile: test
 
   datasource:
-    url: jdbc:h2:mem:checkin-test;DB_CLOSE_DELAY=-1;
+    url: jdbc:h2:mem:checkin-test;DB_CLOSE_DELAY=-1;MODE=MySQL
     driver-class-name: org.h2.Driver
     username: sa
     password:

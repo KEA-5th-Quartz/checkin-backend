@@ -10,7 +10,6 @@ import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Priority;
-import com.quartz.checkin.entity.QTicket;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.entity.TicketAttachment;
@@ -19,7 +18,6 @@ import com.quartz.checkin.event.TicketDeletedEvent;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.repository.TicketRepository;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,8 +42,6 @@ public class TicketCudServiceImpl implements TicketCudService {
     private final MemberService memberService;
     private final TicketAttachmentRepository ticketAttachmentRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final JPAQueryFactory queryFactory;
-
 
     @Override
     public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) {
@@ -53,16 +49,14 @@ public class TicketCudServiceImpl implements TicketCudService {
         Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
 
-        // 날짜 기반 prefix 생성 (MMDD + 1차 카테고리 alias + "-" + 2차 카테고리 alias)
         String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("MMdd"));
         String firstCategoryAlias = firstCategory.getAlias();
         String secondCategoryAlias = secondCategory.getAlias();
         String prefix = datePart + firstCategoryAlias + "-" + secondCategoryAlias;
 
-        // QueryDSL을 사용한 마지막 티켓 ID 조회
-        String lastCustomId = findLastTicketIdWithQueryDSL(prefix);
+        String lastCustomId = getLastTicketId(prefix);
 
-        int lastTicketNumber = 1; // 기본값 설정
+        int lastTicketNumber = 1;
         if (lastCustomId != null && lastCustomId.startsWith(prefix)) {
             try {
                 lastTicketNumber = Integer.parseInt(lastCustomId.substring(lastCustomId.length() - 3)) + 1;
@@ -71,10 +65,8 @@ public class TicketCudServiceImpl implements TicketCudService {
             }
         }
 
-        // 새 티켓 ID 생성
         String newCustomId = prefix + String.format("%03d", lastTicketNumber);
 
-        // 첨부파일 검증
         List<Long> attachmentIds = request.getAttachmentIds();
         List<Attachment> attachments = attachmentRepository.findAllById(attachmentIds);
 
@@ -83,7 +75,6 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
         }
 
-        // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
                 .customId(newCustomId)
                 .user(member)
@@ -106,7 +97,6 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         ticketAttachmentRepository.saveAll(ticketAttachments);
 
-        // 이벤트 발행
         eventPublisher.publishEvent(new TicketCreatedEvent(
                 savedTicket.getId(),
                 savedTicket.getCustomId(),
@@ -121,7 +111,6 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     @Override
     public void updateTicket(Long memberId, TicketUpdateRequest request, Long ticketId) {
-        // 티켓 조회 및 존재 여부 검증
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
 
@@ -219,15 +208,12 @@ public class TicketCudServiceImpl implements TicketCudService {
     public void tempDeleteTickets(Long memberId, List<Long> ticketIds) {
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
-        // 삭제할 티켓 조회
         List<Ticket> tickets = ticketRepository.findAllById(ticketIds);
 
-        // 존재하지 않는 티켓이 있는 경우 예외 처리
         if (tickets.size() != ticketIds.size()) {
             throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
         }
 
-        // 진행 중인(IN_PROGRESS) 티켓이 포함되어 있는지 확인
         List<Long> inProgressTickets = tickets.stream()
                 .filter(ticket -> ticket.getStatus() == Status.IN_PROGRESS)
                 .map(Ticket::getId)
@@ -237,20 +223,17 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.TICKET_ALREADY_ASSIGNED);
         }
 
-        // 사용자가 생성한 티켓인지 확인
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
                 throw new ApiException(ErrorCode.FORBIDDEN);
             }
         }
 
-        // 티켓에 연결된 첨부파일 ID 조회
         List<Long> attachmentIds = ticketAttachmentRepository.findAttachmentIdsByTicketIds(ticketIds);
 
-        // 첨부파일 영구 삭제
         if (!attachmentIds.isEmpty()) {
-            ticketAttachmentRepository.deleteAllByTicketIds(ticketIds); // 연결 데이터 삭제
-            attachmentService.deleteAttachments(attachmentIds); // 첨부파일 삭제
+            ticketAttachmentRepository.deleteAllByTicketIds(ticketIds);
+            attachmentService.deleteAttachments(attachmentIds);
         }
 
         List<Long> agitIdsToDelete = new ArrayList<>();
@@ -278,16 +261,10 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     @Override
     public void updatePriority(Long memberId, Long ticketId, PriorityUpdateRequest request) {
-        // 담당자 검증
         Member manager = memberService.getMemberByIdOrThrow(memberId);
-
-        // 티켓 검증 및 중요도 업데이트
         Ticket ticket = getValidTicket(ticketId);
-
-        // 담당자 권한 검증
         validateTicketManager(ticket, manager);
 
-        // 중요도 변경
         ticket.updatePriority(request.getPriority());
         ticketRepository.save(ticket);
     }
@@ -299,7 +276,6 @@ public class TicketCudServiceImpl implements TicketCudService {
 
 
     private void validateTicketManager(Ticket ticket, Member manager) {
-        // 담당자가 본인이 맞는지 검증
         if (ticket.getManager() == null || !ticket.getManager().getId().equals(manager.getId())) {
             throw new ApiException(ErrorCode.INVALID_TICKET_MANAGER);
         }
@@ -312,15 +288,7 @@ public class TicketCudServiceImpl implements TicketCudService {
         }
     }
 
-    public String findLastTicketIdWithQueryDSL(String prefix) {
-        QTicket ticket = QTicket.ticket;
-
-        return queryFactory
-                .select(ticket.customId)
-                .from(ticket)
-                .where(ticket.customId.startsWith(prefix))
-                .orderBy(ticket.customId.substring(prefix.length() + 1, prefix.length() + 4).castToNum(Integer.class).desc())
-                .limit(1)
-                .fetchOne();
+    public String getLastTicketId(String prefix) {
+        return ticketRepository.findLastTicketId(prefix);
     }
 }

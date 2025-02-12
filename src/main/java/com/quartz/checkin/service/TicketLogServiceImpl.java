@@ -50,6 +50,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         Member manager = getValidMember(memberId);
         validateTicketForUpdate(ticket, manager, true, true, false);
         ticket.closeTicket();
+
         ticketRepository.save(ticket);
 
         String subjectParticle = getSubjectParticle(manager.getUsername());

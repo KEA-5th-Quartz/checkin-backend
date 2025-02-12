@@ -1,13 +1,11 @@
 package com.quartz.checkin.repository;
 
-
 import com.quartz.checkin.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.*;
+import java.util.Map;
+import java.util.List;
 
 @Repository
 public interface StatsMemberRepository extends JpaRepository<Member, Long> {
@@ -29,23 +27,23 @@ public interface StatsMemberRepository extends JpaRepository<Member, Long> {
             COALESCE(c1.category_id, c2.parent_id) AS parentCategoryId,
             COUNT(t.ticket_id) AS ticketCount  
         FROM ticket t 
-        JOIN member m ON t.manager_id = m.member_id  -- member 테이블 조인
-            AND m.deleted_at IS NULL  -- member 테이블의 deleted_at
-            AND m.member_id != -1     -- member 테이블의 member_id
+        JOIN member m ON t.manager_id = m.member_id 
+            AND m.deleted_at IS NULL 
+            AND m.member_id != -1
         LEFT JOIN category c1 
             ON t.first_category_id = c1.category_id AND c1.parent_id IS NULL 
         LEFT JOIN category c2 
             ON t.first_category_id = c2.category_id AND c2.parent_id IS NOT NULL 
         WHERE t.status = 'IN_PROGRESS' 
-            AND t.deleted_at IS NULL  -- ticket 테이블의 deleted_at
+            AND t.deleted_at IS NULL 
         GROUP BY t.manager_id, COALESCE(c1.category_id, c2.parent_id) 
     ) t ON m.member_id = t.manager_id 
     LEFT JOIN category c1 
         ON t.parentCategoryId = c1.category_id 
     WHERE c1.parent_id IS NULL 
         AND c1.name IS NOT NULL 
-        AND m.deleted_at IS NULL  -- member 테이블의 deleted_at
-        AND m.member_id != -1      -- member 테이블의 member_id
+        AND m.deleted_at IS NULL  
+        AND m.member_id != -1
     GROUP BY m.member_id, m.username
     """, nativeQuery = true)
     List<Map<String, Object>> findStatsByCategory();
@@ -53,7 +51,6 @@ public interface StatsMemberRepository extends JpaRepository<Member, Long> {
     // 전체작업상태 분포(OVERDUE 포함) (soft/hard delete 제외)
     @Query(value = """
     SELECT 
-        -- 🔹 'IN_PROGRESS' 상태이며 기간이 지난 티켓 수 (OVERDUE)
         (SELECT COUNT(*) 
          FROM ticket t 
          JOIN member m ON t.manager_id = m.member_id  
@@ -65,7 +62,6 @@ public interface StatsMemberRepository extends JpaRepository<Member, Long> {
                              AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
         ) AS overdue,
 
-        -- 🔹 전체 티켓 상태 분포
         CONCAT(
             '[', 
             (SELECT GROUP_CONCAT(

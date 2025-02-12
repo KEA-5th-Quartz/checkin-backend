@@ -1,13 +1,13 @@
 package com.quartz.checkin.repository;
 
-
-
 import com.quartz.checkin.entity.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 @Repository
@@ -35,11 +35,11 @@ public interface StatsTicketRepository extends JpaRepository<Ticket, Long> {
                 t.status, 
                 COUNT(*) AS statusCount 
             FROM ticket t 
-            JOIN member m ON t.manager_id = m.member_id  -- member 테이블 조인
-                AND m.deleted_at IS NULL  -- member 테이블의 deleted_at
-                AND m.member_id != -1     -- member 테이블의 member_id
+            JOIN member m ON t.manager_id = m.member_id  
+                AND m.deleted_at IS NULL  
+                AND m.member_id != -1    
             WHERE t.status IN ('IN_PROGRESS', 'CLOSED') 
-                AND t.deleted_at IS NULL  -- ticket 테이블의 deleted_at
+                AND t.deleted_at IS NULL  
                 AND ( 
                     (:type = 'WEEK' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) OR 
                     (:type = 'MONTH' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)) OR 
@@ -48,18 +48,18 @@ public interface StatsTicketRepository extends JpaRepository<Ticket, Long> {
             GROUP BY t.manager_id, t.status 
     ) subquery 
     JOIN member m ON subquery.manager_id = m.member_id 
-        AND m.deleted_at IS NULL   -- member 테이블의 deleted_at
-        AND m.member_id != -1      -- member 테이블의 member_id
+        AND m.deleted_at IS NULL   
+        AND m.member_id != -1   
     JOIN ( 
         SELECT 
             t.manager_id, 
             COUNT(*) AS totalCount 
         FROM ticket t 
-        JOIN member m ON t.manager_id = m.member_id  -- member 테이블 조인
-            AND m.deleted_at IS NULL  -- member 테이블의 deleted_at
-            AND m.member_id != -1     -- member 테이블의 member_id
+        JOIN member m ON t.manager_id = m.member_id  
+            AND m.deleted_at IS NULL 
+            AND m.member_id != -1  
         WHERE t.status IN ('IN_PROGRESS', 'CLOSED') 
-            AND t.deleted_at IS NULL  -- ticket 테이블의 deleted_at
+            AND t.deleted_at IS NULL 
             AND ( 
                 (:type = 'WEEK' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) OR 
                 (:type = 'MONTH' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)) OR 
@@ -80,10 +80,10 @@ public interface StatsTicketRepository extends JpaRepository<Ticket, Long> {
             AS DECIMAL(10,2)
         ) AS closed_rate 
     FROM ticket t 
-    JOIN member m ON t.manager_id = m.member_id  -- member 테이블 조인
-        AND m.deleted_at IS NULL  -- member 테이블의 deleted_at
-        AND m.member_id != -1     -- member 테이블의 member_id
-    WHERE t.deleted_at IS NULL  -- ticket 테이블의 deleted_at
+    JOIN member m ON t.manager_id = m.member_id 
+        AND m.deleted_at IS NULL 
+        AND m.member_id != -1   
+    WHERE t.deleted_at IS NULL  
         AND ( 
             (:type = 'WEEK' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)) OR 
             (:type = 'MONTH' AND t.created_at >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)) OR 
@@ -98,8 +98,8 @@ public interface StatsTicketRepository extends JpaRepository<Ticket, Long> {
     FROM category c 
     LEFT JOIN ticket t ON c.category_id = t.first_category_id 
         AND t.status = 'IN_PROGRESS' 
-        AND t.deleted_at IS NULL  -- ticket 테이블의 deleted_at
-        AND t.manager_id NOT IN (  -- member 테이블의 member_id
+        AND t.deleted_at IS NULL  
+        AND t.manager_id NOT IN (  
             SELECT m.member_id FROM member m 
             WHERE m.deleted_at IS NOT NULL OR m.member_id = -1
         )

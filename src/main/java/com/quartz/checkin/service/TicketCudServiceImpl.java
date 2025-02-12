@@ -1,5 +1,6 @@
 package com.quartz.checkin.service;
 
+import com.quartz.checkin.common.AttachmentUtils;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class TicketCudServiceImpl implements TicketCudService {
 
+    private final AttachmentUtils attachmentUtils;
     private final AttachmentService attachmentService;
     private final AttachmentRepository attachmentRepository;
     private final TicketRepository ticketRepository;
@@ -45,6 +47,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     @Override
     public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) {
+
         Member member = memberService.getMemberByIdOrThrow(memberId);
         Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
@@ -90,7 +93,6 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         Ticket savedTicket = ticketRepository.save(ticket);
 
-        // 첨부파일 저장
         List<TicketAttachment> ticketAttachments = attachments.stream()
                 .map(attachment -> new TicketAttachment(savedTicket, attachment))
                 .toList();
@@ -123,67 +125,12 @@ public class TicketCudServiceImpl implements TicketCudService {
         Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
 
-        Category oldFirstCategory = ticket.getFirstCategory();
-        Category oldSecondCategory = ticket.getSecondCategory();
-
-        String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
-
-        if (!oldFirstCategory.equals(firstCategory) || !oldSecondCategory.equals(secondCategory)) {
-            String firstCategoryAlias = firstCategory.getAlias();
-            String secondCategoryAlias = secondCategory.getAlias();
-            String prefix = datePart + firstCategoryAlias + "-" + secondCategoryAlias;
-
-            String oldCustomId = ticket.getCustomId();
-            String numberPart = oldCustomId.substring(oldCustomId.length() - 3); // 001, 002 같은 숫자 부분 유지
-
-            String newCustomId = prefix + numberPart;
-            ticket.updateCustomId(newCustomId);
-        }
-
-        List<Long> newAttachmentIds = request.getAttachmentIds() != null ? request.getAttachmentIds() : Collections.emptyList();
-        List<Attachment> newAttachments = newAttachmentIds.isEmpty() ? Collections.emptyList() : attachmentRepository.findAllById(newAttachmentIds);
-        checkInvalidAttachment(newAttachmentIds, newAttachments);
-
-        List<Long> savedAttachmentIds = ticketAttachmentRepository.findByTicketId(ticketId)
-                .stream()
-                .map(ta -> ta.getAttachment().getId())
-                .toList();
-
-        List<Long> attachmentIdsToAdd = newAttachmentIds.stream()
-                .filter(id -> !savedAttachmentIds.contains(id))
-                .toList();
-
-        List<Long> attachmentIdsToRemove = savedAttachmentIds.stream()
-                .filter(id -> !newAttachmentIds.contains(id))
-                .toList();
-
-        List<Attachment> attachmentsToAdd = newAttachments.stream()
-                .filter(a -> attachmentIdsToAdd.contains(a.getId()))
-                .toList();
-
-        List<TicketAttachment> newTicketAttachments = attachmentsToAdd.stream()
-                .map(a -> new TicketAttachment(ticket, a))
-                .toList();
-
-        ticketAttachmentRepository.saveAll(newTicketAttachments);
-
-        if (!attachmentIdsToRemove.isEmpty()) {
-
-            ticketAttachmentRepository.deleteByTicketAndAttachmentIds(ticket, attachmentIdsToRemove);
-
-            List<Long> usedAttachmentIds = ticketAttachmentRepository.findAttachmentIdsInUse(attachmentIdsToRemove);
-            List<Long> finalAttachmentsToDelete = attachmentIdsToRemove.stream()
-                    .filter(id -> !usedAttachmentIds.contains(id))
-                    .toList();
-
-            if (!finalAttachmentsToDelete.isEmpty()) {
-                attachmentService.deleteAttachments(finalAttachmentsToDelete);
-            }
-        }
         ticket.updateTitle(request.getTitle());
         ticket.updateContent(request.getContent());
         ticket.updateCategories(firstCategory, secondCategory);
         ticket.updateDueDate(request.getDueDate());
+
+        attachmentUtils.handleTicketAttachments(ticket, request.getAttachmentIds() != null ? request.getAttachmentIds() : Collections.emptyList());
 
         Ticket savedTicket = ticketRepository.save(ticket);
 
@@ -278,13 +225,6 @@ public class TicketCudServiceImpl implements TicketCudService {
     private void validateTicketManager(Ticket ticket, Member manager) {
         if (ticket.getManager() == null || !ticket.getManager().getId().equals(manager.getId())) {
             throw new ApiException(ErrorCode.INVALID_TICKET_MANAGER);
-        }
-    }
-
-    private void checkInvalidAttachment(List<Long> attachmentIds, List<Attachment> attachments) {
-        if (attachmentIds.size() != attachments.size()) {
-            log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
-            throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
         }
     }
 

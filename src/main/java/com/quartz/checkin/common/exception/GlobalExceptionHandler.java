@@ -34,13 +34,11 @@ import software.amazon.awssdk.core.exception.SdkException;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    // 커스텀 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> HandleCustomException(ApiException ex) {
         return handleExceptionInternal(ex.getErrorCode());
     }
 
-    // @Valid 검증 예외 처리
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
                                                                   HttpHeaders headers,
@@ -61,7 +59,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ErrorCode.INVALID_DATA, errors);
     }
 
-    // @Validated 검증 예외 처리
     @ExceptionHandler
     protected ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException ex) {
 
@@ -84,25 +81,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ErrorCode.INVALID_DATA, errors);
     }
 
-    // API 인자 불일치 예외 처리
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Object> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
         return handleExceptionInternal(ErrorCode.METHOD_NOT_ALLOWED);
     }
 
-    // DB 유효성 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
         return handleExceptionInternal(ErrorCode.DB_ERROR);
     }
 
-    // S3 API 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> handleAwsServiceException(SdkException e) {
         return handleExceptionInternal(ErrorCode.OBJECT_STORAGE_ERROR, e.getMessage());
     }
 
-    // 파일 업로드 용량 초과 예외 처리
     @Override
     protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex,
                                                                           HttpHeaders headers, HttpStatusCode status,
@@ -110,15 +103,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ErrorCode.TOO_LARGE_FILE);
     }
 
-    // 메서드 기반 인가 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException e) {
         log.error("권한이 부족합니다. {}", e.getMessage());
         return handleExceptionInternal(ErrorCode.FORBIDDEN);
     }
 
-
-    // 요청 파라미터 누락 예외 처리
     @Override
     protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex,
                                                                           HttpHeaders headers, HttpStatusCode status,
@@ -135,7 +125,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ErrorCode.INVALID_DATA);
     }
 
-    // 그 외 모든 예외 처리
     @ExceptionHandler
     public ResponseEntity<Object> handleException(Exception e) {
         log.error(e.getMessage(), e);

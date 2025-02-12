@@ -182,7 +182,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         return executeTicketQuery(ticket, whereClause, pageable, sortByCreatedAt);
     }
 
-    // QueryDSL 실행 및 페이징 처리 메서드
     private Page<Ticket> executeTicketQuery(QTicket ticket, BooleanBuilder whereClause, Pageable pageable, String sortByCreatedAt) {
         QMember manager = QMember.member;
 
@@ -202,7 +201,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         return new PageImpl<>(results, pageable, safeTotalCount);
     }
 
-    // WHERE 조건 빌더
     private BooleanBuilder buildWhereClause(Long memberId, String keyword, List<Status> statuses, List<String> usernames,
                                             List<String> categories, List<Priority> priorities,
                                             Boolean dueToday, Boolean dueThisWeek) {
@@ -254,7 +252,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         return whereClause;
     }
 
-    // 공통 정렬 적용 메서드
     private OrderSpecifier<?>[] getOrderSpecifiers(QTicket ticket, String sortByCreatedAt) {
         if (!"asc".equalsIgnoreCase(sortByCreatedAt) && !"desc".equalsIgnoreCase(sortByCreatedAt)) {
             throw new ApiException(ErrorCode.INVALID_DATA);
@@ -264,8 +261,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         };
     }
 
-
-    // 총 개수 조회 메서드
     private long getTotalCount(BooleanBuilder whereClause) {
         return Optional.ofNullable(
                 queryFactory.select(QTicket.ticket.count())

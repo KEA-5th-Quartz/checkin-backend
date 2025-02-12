@@ -49,10 +49,7 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     @Override
     public TicketCreateResponse createTicket(Long memberId, TicketCreateRequest request) {
-        // 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
-
-        // 1차 및 2차 카테고리 조회
         Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
 
@@ -128,63 +125,49 @@ public class TicketCudServiceImpl implements TicketCudService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
 
-        // 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
-        // 본인이 생성한 티켓인지 검증
         if (!ticket.getUser().getId().equals(member.getId())) {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
 
-        // 카테고리 검증 (1차 및 2차)
         Category firstCategory = categoryService.getFirstCategoryOrThrow(request.getFirstCategory());
         Category secondCategory = categoryService.getSecondCategoryOrThrow(request.getSecondCategory(), firstCategory);
 
-        // 기존 정보 저장
         Category oldFirstCategory = ticket.getFirstCategory();
         Category oldSecondCategory = ticket.getSecondCategory();
 
-        // 기존 createdAt을 기준으로 날짜 유지
         String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
 
-        // 1차 카테고리 또는 2차 카테고리가 변경되었을 경우만 customId 변경
         if (!oldFirstCategory.equals(firstCategory) || !oldSecondCategory.equals(secondCategory)) {
             String firstCategoryAlias = firstCategory.getAlias();
             String secondCategoryAlias = secondCategory.getAlias();
             String prefix = datePart + firstCategoryAlias + "-" + secondCategoryAlias;
 
-            // 기존 customId에서 숫자 부분만 추출 (마지막 3자리)
             String oldCustomId = ticket.getCustomId();
             String numberPart = oldCustomId.substring(oldCustomId.length() - 3); // 001, 002 같은 숫자 부분 유지
 
-            // 새로운 customId 생성 (앞부분만 변경하고, 숫자는 유지)
             String newCustomId = prefix + numberPart;
             ticket.updateCustomId(newCustomId);
         }
 
-
-        // 첨부파일 검증 및 변경 사항 반영 (null 체크 추가)
         List<Long> newAttachmentIds = request.getAttachmentIds() != null ? request.getAttachmentIds() : Collections.emptyList();
         List<Attachment> newAttachments = newAttachmentIds.isEmpty() ? Collections.emptyList() : attachmentRepository.findAllById(newAttachmentIds);
         checkInvalidAttachment(newAttachmentIds, newAttachments);
 
-        // 현재 저장된 첨부파일 ID 조회
         List<Long> savedAttachmentIds = ticketAttachmentRepository.findByTicketId(ticketId)
                 .stream()
                 .map(ta -> ta.getAttachment().getId())
                 .toList();
 
-        // 추가해야 할 첨부파일 ID 확인
         List<Long> attachmentIdsToAdd = newAttachmentIds.stream()
                 .filter(id -> !savedAttachmentIds.contains(id))
                 .toList();
 
-        // 제거해야 할 첨부파일 ID 확인
         List<Long> attachmentIdsToRemove = savedAttachmentIds.stream()
                 .filter(id -> !newAttachmentIds.contains(id))
                 .toList();
 
-        // 추가해야 할 첨부파일 엔티티 생성
         List<Attachment> attachmentsToAdd = newAttachments.stream()
                 .filter(a -> attachmentIdsToAdd.contains(a.getId()))
                 .toList();
@@ -193,25 +176,21 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .map(a -> new TicketAttachment(ticket, a))
                 .toList();
 
-        // 첨부파일 업데이트 (추가 및 삭제)
         ticketAttachmentRepository.saveAll(newTicketAttachments);
 
         if (!attachmentIdsToRemove.isEmpty()) {
-            // 중간 테이블에서 삭제
+
             ticketAttachmentRepository.deleteByTicketAndAttachmentIds(ticket, attachmentIdsToRemove);
 
-            // 삭제 대상 첨부파일이 다른 티켓에서도 사용되는지 확인
             List<Long> usedAttachmentIds = ticketAttachmentRepository.findAttachmentIdsInUse(attachmentIdsToRemove);
             List<Long> finalAttachmentsToDelete = attachmentIdsToRemove.stream()
-                    .filter(id -> !usedAttachmentIds.contains(id)) // 다른 티켓에서 사용되지 않는 것만 필터링
+                    .filter(id -> !usedAttachmentIds.contains(id))
                     .toList();
 
             if (!finalAttachmentsToDelete.isEmpty()) {
-                // 사용되지 않는 첨부파일 삭제
                 attachmentService.deleteAttachments(finalAttachmentsToDelete);
             }
         }
-        // 티켓 필드 업데이트
         ticket.updateTitle(request.getTitle());
         ticket.updateContent(request.getContent());
         ticket.updateCategories(firstCategory, secondCategory);
@@ -238,7 +217,6 @@ public class TicketCudServiceImpl implements TicketCudService {
 
     @Override
     public void tempDeleteTickets(Long memberId, List<Long> ticketIds) {
-        // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
         // 삭제할 티켓 조회

@@ -7,8 +7,5 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
-    void deleteAllByIdIn(List<Long> attachmentIds);
-
     Optional<Object> findByUrl(String attachmentUrl);
-
 }

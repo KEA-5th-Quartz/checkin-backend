@@ -39,7 +39,6 @@ public class TicketLogServiceImpl implements TicketLogService {
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final WebhookService webhookService;
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',
             'A', 'E', 'I', 'O', 'U');
@@ -49,7 +48,6 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         Ticket ticket = getValidTicket(ticketId);
         Member manager = getValidMember(memberId);
-
         validateTicketForUpdate(ticket, manager, true, true, false);
         ticket.closeTicket();
         ticketRepository.save(ticket);
@@ -117,9 +115,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         if (oldSecondCategory.equals(newSecondCategory.getName())) {
             return new TicketLogResponse(null);
         }
-
         String newCustomId = updateTicketCategoryAndCustomId(ticket, firstCategory, newSecondCategory);
-
         return createAndSaveTicketLog(ticket, manager, null, oldSecondCategory, null, newSecondCategory.getName(), oldCustomId, newCustomId, "second");
     }
 
@@ -142,7 +138,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         }
 
         validateTicketForUpdate(ticket, manager, false, false, true);
-
         ticket.assignManager(manager);
         ticketRepository.save(ticket);
 
@@ -218,7 +213,6 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         String firstCategoryAlias = firstCategory.getAlias();
         String secondCategoryAlias = secondCategory.getAlias();
-
         String datePart = ticket.getCreatedAt().format(DateTimeFormatter.ofPattern("MMdd"));
         String oldCustomId = ticket.getCustomId();
         String numberPart = oldCustomId.substring(oldCustomId.length() - 3);
@@ -236,7 +230,6 @@ public class TicketLogServiceImpl implements TicketLogService {
             String newFirstCategory, String newSecondCategory, String oldCustomId, String newCustomId, String actionType) {
 
         String subjectParticle = getSubjectParticle(manager.getUsername());
-
         String logContent;
         if (actionType.equals("first")) {
             logContent = String.format(
@@ -269,7 +262,6 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .build();
 
         ticketLogRepository.save(ticketLog);
-
         eventPublisher.publishEvent(new TicketCategoryChangedEvent(ticket.getId(), ticket.getCustomId(), ticket.getAgitId(), manager.getId(),
                 oldFirstCategory != null ? oldFirstCategory : oldSecondCategory,
                 newFirstCategory != null ? newFirstCategory : newSecondCategory,
@@ -284,10 +276,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         char lastChar = word.charAt(word.length() - 1);
         boolean isEnglish = word.chars().allMatch(Character::isLetter);
 
-        if (isEnglish) {
-            return ENGLISH_VOWELS.contains(lastChar) ? "가" : "이";
-        }
-
+        if (isEnglish) { return ENGLISH_VOWELS.contains(lastChar) ? "가" : "이"; }
         return (lastChar >= '가' && lastChar <= '힣' && (lastChar - '가') % 28 != 0) ? "이" : "가";
     }
 
@@ -297,9 +286,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         char lastChar = word.charAt(word.length() - 1);
         boolean isEnglish = word.chars().allMatch(Character::isLetter);
 
-        if (isEnglish) {
-            return ENGLISH_VOWELS.contains(lastChar) ? "를" : "을";
-        }
+        if (isEnglish) { return ENGLISH_VOWELS.contains(lastChar) ? "를" : "을"; }
         return (lastChar >= '가' && lastChar <= '힣' && (lastChar - '가') % 28 != 0) ? "을" : "를";
     }
 }

@@ -7,9 +7,12 @@ import com.quartz.checkin.dto.statisitics.response.StatCategoryCountResponse;
 import com.quartz.checkin.dto.statisitics.response.StatCategoryRateResponse;
 import com.quartz.checkin.dto.statisitics.response.StatTotalProgressResponse;
 import com.quartz.checkin.repository.StatsMemberRepository;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.*;
 
 @Service
 public class StatsMemberService {

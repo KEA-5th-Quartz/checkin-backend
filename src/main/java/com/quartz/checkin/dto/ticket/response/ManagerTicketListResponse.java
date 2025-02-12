@@ -14,6 +14,6 @@ public class ManagerTicketListResponse {
     private int page;
     private int size;
     private int totalPages;
-    private int totalElements;
+    private long totalElements;
     private List<ManagerTicketSummaryResponse> tickets;
 }

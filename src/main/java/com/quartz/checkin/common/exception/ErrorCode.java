@@ -8,6 +8,8 @@ public enum ErrorCode {
 
     // 공통 예외
     INVALID_DATA(HttpStatus.BAD_REQUEST, "COMMON_4000", "필수로 요구되는 데이터가 비어있거나 규칙에 맞지 않습니다."),
+    INVALID_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "COMMON_4001", "페이지 번호가 유효하지 않습니다."),
+    INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "COMMON_4002", "페이지 크기가 유효하지 않습니다."),
     INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "COMMON_4010", "유효하지 않거나 만료된 accessToken입니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "COMMON_4011", "유효하지 않거나 만료된 refreshToken입니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "COMMON_4030", "접근 권한이 없습니다."),
@@ -22,8 +24,6 @@ public enum ErrorCode {
     INVALID_ORIGINAL_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4003", "현재 비밀번호가 일치하지 않습니다."),
     INVALID_NEW_PASSWORD(HttpStatus.BAD_REQUEST, "MEMBER_4004", "새 비밀번호가 기존 비밀번호와 동일합니다."),
     INVALID_NEW_ROLE(HttpStatus.BAD_REQUEST, "MEMBER_4005", "기존 권한과 동일합니다."),
-    INVALID_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "MEMBER_4007", "페이지 번호가 유효하지 않습니다."),
-    INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "MEMBER_4008", "페이지 크기가 유효하지 않습니다."),
     INVALID_PASSWORD_RESET_TOKEN(HttpStatus.UNAUTHORIZED, "MEMBER_4009", "비밀번호 초기화 토큰이 유효하지 않습니다."),
     BLOCKED_MEMBER(HttpStatus.FORBIDDEN, "MEMBER_4012", "로그인이 잠긴 사용자입니다."),
     INVALID_USERNAME_OR_PASSWORD(HttpStatus.UNAUTHORIZED, "MEMBER_4013", "일치하는 회원 정보가 없습니다. 아이디 혹은 비밀번호를 다시 확인해주세요."),
@@ -41,8 +41,6 @@ public enum ErrorCode {
     INVALID_TICKET_DUE_DATE(HttpStatus.BAD_REQUEST, "TICKET_4002", "마감 기한을 동시에 선택할 수 없습니다."),
     INVALID_TICKET_STATUS(HttpStatus.BAD_REQUEST, "TICKET_4003", "티켓 상태 값이 유효하지 않습니다."),
     INVALID_TICKET_MANAGER(HttpStatus.BAD_REQUEST, "TICKET_4006", "담당자 정보가 유효하지 않습니다."),
-    INVALID_TICKET_PAGE_NUMBER(HttpStatus.BAD_REQUEST, "TICKET_4007", "페이지 번호가 유효하지 않습니다."),
-    INVALID_TICKET_PAGE_SIZE(HttpStatus.BAD_REQUEST, "TICKET_4008", "페이지 크기가 유효하지 않습니다."),
     CANNOT_CHANGE_COMPLETED_TICKET(HttpStatus.BAD_REQUEST, "TICKET_4009", "이미 완료된 티켓은 상태를 변경할 수 없습니다."),
     TICKET_NOT_FOUND(HttpStatus.NOT_FOUND, "TICKET_4040", "존재하지 않는 티켓입니다."),
     TICKET_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "TICKET_4090", "이미 담당자가 할당된 상태입니다."),

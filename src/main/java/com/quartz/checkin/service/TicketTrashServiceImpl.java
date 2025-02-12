@@ -2,24 +2,24 @@ package com.quartz.checkin.service;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
-import com.quartz.checkin.dto.ticket.response.DeletedTicketDetail;
-import com.quartz.checkin.dto.ticket.response.QDeletedTicketDetail;
+import com.quartz.checkin.converter.TicketResponseConverter;
 import com.quartz.checkin.dto.ticket.response.SoftDeletedTicketResponse;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.QMember;
 import com.quartz.checkin.entity.QTicket;
 import com.quartz.checkin.entity.Status;
 import com.quartz.checkin.entity.Ticket;
-import com.quartz.checkin.event.TicketCreatedEvent;
 import com.quartz.checkin.repository.TicketQueryRepository;
 import com.quartz.checkin.repository.TicketRepository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -42,53 +42,10 @@ public class TicketTrashServiceImpl implements TicketTrashService {
     @Transactional
     @Override
     public void restoreTickets(Long memberId, List<Long> ticketIds) {
-        // 현재 사용자 조회
-        Member member = memberService.getMemberByIdOrThrow(memberId);
-
-        // 복원할 티켓 조회
-        List<Ticket> tickets = ticketRepository.findAllById(ticketIds);
-
-        // 존재하지 않는 티켓이 있는 경우 예외 처리
-        if (tickets.size() != ticketIds.size()) {
-            throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
-        }
-
-        // 사용자가 생성한 티켓인지 확인
-        for (Ticket ticket : tickets) {
-            if (!ticket.getUser().getId().equals(member.getId())) {
-                throw new ApiException(ErrorCode.FORBIDDEN);
-            }
-        }
-
-//        ArrayList<Ticket> temps = new ArrayList<>();
-        //            LocalDateTime now = LocalDateTime.now();
-        //            // 티켓 복원 시 dueDate를 createdAt와의 차이만큼 더함
-        //            LocalDateTime dueDateTime = ticket.getDueDate().atStartOfDay();
-        //            Duration duration = Duration.between(ticket.getCreatedAt(), dueDateTime);
-        //            ticket.updateDueDate(dueDateTime.plus(duration).toLocalDate());
-        ////            Ticket temp = replaceTicket(ticket, dueDateTime.toLocalDate());
-        ////            temps.add(temp);
-        //            // ticket id를 가져와서 첫 네 글자를 오늘 날짜로 변경(MMDD)
-        //            String id = ticket.getCustomId();
-        //            String today = LocalDate.now().toString().substring(5).replace("-", "");
-        //            ticket.updateCustomId(today + id.substring(4));
-
-        //tickets.forEach(this::restoreTicket);
+        List<Ticket> tickets = findAndValidateTickets(memberId, ticketIds);
 
         for (Ticket ticket : tickets) {
-            restoreTicket(ticket); // 개별 티켓 복원 메서드 호출
-
-            // **OPEN 상태인 경우 기존 방식대로 이벤트 발행**
-            if (ticket.getStatus() == Status.OPEN) {
-                eventPublisher.publishEvent(new TicketCreatedEvent(
-                        ticket.getId(),
-                        ticket.getCustomId(),
-                        ticket.getUser().getId(),
-                        ticket.getTitle(),
-                        ticket.getContent(),
-                        List.of(member.getUsername())
-                ));
-            }
+            ticket.restoreTicket();
         }
 
         ticketRepository.saveAll(tickets);
@@ -97,10 +54,17 @@ public class TicketTrashServiceImpl implements TicketTrashService {
     @Transactional
     @Override
     public void deleteTickets(Long memberId, List<Long> ticketIds) {
+        List<Ticket> tickets = findAndValidateTickets(memberId, ticketIds);
+
+        ticketRepository.deleteAll(tickets);
+    }
+
+    // 티켓을 조회하고 사용자가 생성한 티켓인지 검증하는 공통 메서드
+    private List<Ticket> findAndValidateTickets(Long memberId, List<Long> ticketIds) {
         // 현재 사용자 조회
         Member member = memberService.getMemberByIdOrThrow(memberId);
 
-        // 삭제할 티켓 조회
+        // 요청된 티켓 ID 목록에 해당하는 티켓 조회
         List<Ticket> tickets = ticketRepository.findAllById(ticketIds);
 
         // 존재하지 않는 티켓이 있는 경우 예외 처리
@@ -108,31 +72,14 @@ public class TicketTrashServiceImpl implements TicketTrashService {
             throw new ApiException(ErrorCode.TICKET_NOT_FOUND);
         }
 
-        // 사용자가 생성한 티켓인지 확인
+        // 사용자가 생성한 티켓인지 검증
         for (Ticket ticket : tickets) {
             if (!ticket.getUser().getId().equals(member.getId())) {
                 throw new ApiException(ErrorCode.FORBIDDEN);
             }
         }
 
-        // 티켓 영구 삭제
-        ticketRepository.deleteAll(tickets);
-    }
-
-    private void restoreTicket(Ticket ticket) {
-        // 티켓 복원 시 dueDate를 createdAt와의 차이만큼 더함
-        LocalDateTime dueDateTime = ticket.getDueDate().atStartOfDay();
-        Duration duration = Duration.between(ticket.getCreatedAt(), dueDateTime);
-        ticket.updateDueDate(dueDateTime.plus(duration).toLocalDate());
-//            Ticket temp = replaceTicket(ticket, dueDateTime.toLocalDate());
-//            temps.add(temp);
-
-        // ticket id를 가져와서 첫 네 글자를 오늘 날짜로 변경(MMDD)
-        String id = ticket.getCustomId();
-        String today = LocalDate.now().toString().substring(5).replace("-", "");
-        ticket.updateCustomId(today + id.substring(4));
-
-        ticket.restoreTicket();
+        return tickets; // 검증된 티켓 반환
     }
 
 //    private Ticket replaceTicket(Ticket ticket, LocalDate dueDateTime) {
@@ -201,32 +148,17 @@ public class TicketTrashServiceImpl implements TicketTrashService {
     @Transactional(readOnly = true)
     @Override
     public SoftDeletedTicketResponse getDeletedTickets(Long memberId, int page, int size) {
+        Page<Ticket> ticketPage = fetchDeletedTickets(memberId, page, size);
+        validatePagination(page, size, ticketPage.getTotalPages());
+        return TicketResponseConverter.toSoftDeletedTicketResponse(ticketPage);
+    }
+
+    private Page<Ticket> fetchDeletedTickets(Long memberId, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
 
-        // 삭제된 티켓 개수 조회
-        Long totalCount = queryFactory
-                .select(ticket.count())
-                .from(ticket)
-                .where(ticket.deletedAt.isNotNull()
-                        .and(ticket.user.id.eq(memberId)))
-                .fetchOne();
-
-        long safeTotalCount = (totalCount != null) ? totalCount : 0L; // Null 방지
-
-        // 삭제된 티켓 리스트 조회 (Pagination 적용)
-        List<DeletedTicketDetail> tickets = queryFactory
-                .select(new QDeletedTicketDetail(
-                        ticket.id,
-                        ticket.customId,
-                        ticket.title,
-                        manager.username,
-                        manager.profilePic,
-                        ticket.content,
-                        ticket.dueDate.stringValue(),
-                        ticket.status.stringValue()
-                ))
-                .from(ticket)
-                .leftJoin(manager).on(ticket.manager.id.eq(manager.id))
+        List<Ticket> ticketList = queryFactory
+                .selectFrom(ticket)
+                .leftJoin(ticket.manager, manager).fetchJoin()
                 .where(ticket.deletedAt.isNotNull()
                         .and(ticket.user.id.eq(memberId)))
                 .orderBy(ticket.createdAt.desc())
@@ -234,15 +166,14 @@ public class TicketTrashServiceImpl implements TicketTrashService {
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        return new SoftDeletedTicketResponse(
-                page,
-                size,
-                (int) Math.ceil((double) safeTotalCount / size),
-                safeTotalCount,
-                tickets
-        );
+        long totalCount = Optional.ofNullable(queryFactory
+                .select(ticket.count())
+                .from(ticket)
+                .where(ticket.deletedAt.isNotNull()
+                        .and(ticket.user.id.eq(memberId)))
+                .fetchOne()).orElse(0L);
+        return new PageImpl<>(ticketList, pageable, totalCount);
     }
-
 
     @Transactional
     @Scheduled(cron = "0 0 2 * * ?")
@@ -260,4 +191,16 @@ public class TicketTrashServiceImpl implements TicketTrashService {
         ticketRepository.deleteAll(expiredTickets);
     }
 
+
+    private void validatePagination(int page, int size, int totalPages) {
+        if (page < 1) {
+            throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
+        }
+        if (size <= 0) {
+            throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+        }
+        if (page > totalPages && totalPages > 0) {
+            throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
+        }
+    }
 }

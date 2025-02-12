@@ -5,13 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.dto.statisitics.response.StatCategoryTicketResponse;
 import com.quartz.checkin.dto.statisitics.response.StatClosedRateResponse;
 import com.quartz.checkin.dto.statisitics.response.StatProgressResponse;
-import com.quartz.checkin.dto.statisitics.response.StatTotalProgressResponse;
 import com.quartz.checkin.repository.StatsTicketRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class StatsTicketService {

@@ -1,13 +1,13 @@
 package com.quartz.checkin.repository;
 
-
-
 import com.quartz.checkin.entity.Ticket;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.util.*;
 
 
 @Repository
@@ -34,7 +34,7 @@ public interface StatsTicketRepository extends JpaRepository<Ticket, Long> {
                 t.manager_id, 
                 t.status, 
                 COUNT(*) AS statusCount 
-            FROM ticket t 
+            FROM ticket t
             WHERE t.status IN ('IN_PROGRESS', 'CLOSED') 
                 AND t.deleted_at IS NULL 
                 AND ( 

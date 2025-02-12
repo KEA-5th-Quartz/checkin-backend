@@ -256,10 +256,14 @@ public class TicketQueryServiceImpl implements TicketQueryService {
 
     // 공통 정렬 적용 메서드
     private OrderSpecifier<?>[] getOrderSpecifiers(QTicket ticket, String sortByCreatedAt) {
+        if (!"asc".equalsIgnoreCase(sortByCreatedAt) && !"desc".equalsIgnoreCase(sortByCreatedAt)) {
+            throw new ApiException(ErrorCode.INVALID_DATA);
+        }
         return new OrderSpecifier<?>[]{
                 "asc".equalsIgnoreCase(sortByCreatedAt) ? ticket.createdAt.asc() : ticket.createdAt.desc()
         };
     }
+
 
     // 총 개수 조회 메서드
     private long getTotalCount(BooleanBuilder whereClause) {

@@ -12,7 +12,7 @@ import java.util.*;
 @Repository
 public interface StatsMemberRepository extends JpaRepository<Member, Long> {
 
-    // 각 담당자의 카테고리별 티켓수
+    // 각 담당자의 카테고리별 티켓수 (soft/hard delete 제외)
     @Query(value = """
     SELECT 
         m.username, 
@@ -26,57 +26,66 @@ public interface StatsMemberRepository extends JpaRepository<Member, Long> {
     LEFT JOIN (
         SELECT 
             t.manager_id, 
-            COALESCE(c1.category_id, c2.parent_id) AS parentCategoryId,  -- 별칭 정의
-            COUNT(t.ticket_id) AS ticketCount  -- 소문자로 통일
+            COALESCE(c1.category_id, c2.parent_id) AS parentCategoryId,
+            COUNT(t.ticket_id) AS ticketCount  
         FROM ticket t 
+        JOIN member m ON t.manager_id = m.member_id  -- member 테이블 조인
+            AND m.deleted_at IS NULL  -- member 테이블의 deleted_at
+            AND m.member_id != -1     -- member 테이블의 member_id
         LEFT JOIN category c1 
             ON t.first_category_id = c1.category_id AND c1.parent_id IS NULL 
         LEFT JOIN category c2 
             ON t.first_category_id = c2.category_id AND c2.parent_id IS NOT NULL 
         WHERE t.status = 'IN_PROGRESS' 
-        GROUP BY t.manager_id, COALESCE(c1.category_id, c2.parent_id)  -- MySQL에서 별칭 사용 불가
+            AND t.deleted_at IS NULL  -- ticket 테이블의 deleted_at
+        GROUP BY t.manager_id, COALESCE(c1.category_id, c2.parent_id) 
     ) t ON m.member_id = t.manager_id 
     LEFT JOIN category c1 
         ON t.parentCategoryId = c1.category_id 
     WHERE c1.parent_id IS NULL 
         AND c1.name IS NOT NULL 
+        AND m.deleted_at IS NULL  -- member 테이블의 deleted_at
+        AND m.member_id != -1      -- member 테이블의 member_id
     GROUP BY m.member_id, m.username
     """, nativeQuery = true)
     List<Map<String, Object>> findStatsByCategory();
-    // 전체작업상태 분포(OVERDUE 포함)
+
+    // 전체작업상태 분포(OVERDUE 포함) (soft/hard delete 제외)
     @Query(value = """
     SELECT 
-        -- OVERDUE 계산 (IN_PROGRESS 상태면서 31일 전부터 어제까지 기한이 지난 티켓 수)
+        -- 🔹 'IN_PROGRESS' 상태이며 기간이 지난 티켓 수 (OVERDUE)
         (SELECT COUNT(*) 
-         FROM ticket 
-         WHERE deleted_at IS NULL 
-         AND status = 'IN_PROGRESS'
-         AND due_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 31 DAY) AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
+         FROM ticket t 
+         JOIN member m ON t.manager_id = m.member_id  
+             AND m.deleted_at IS NULL  
+             AND m.member_id != -1     
+         WHERE t.deleted_at IS NULL  
+         AND t.status = 'IN_PROGRESS'
+         AND t.due_date BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 31 DAY) 
+                             AND DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
         ) AS overdue,
-        
-        -- 상태별 티켓 개수를 JSON 형식으로 변환
+
+        -- 🔹 전체 티켓 상태 분포
         CONCAT(
             '[', 
-            GROUP_CONCAT(
+            (SELECT GROUP_CONCAT(
                 CONCAT(
-                    '{\"status\": \"', status, '\", ',
-                    '\"ticketCount\": ', ticketCount, '}'
-                ) 
-                ORDER BY status SEPARATOR ','
-            ), 
+                    '{"status": "', t2.status, '", ',
+                    '"ticketCount": ', t2.ticket_count, '}'  
+                ) ORDER BY t2.status SEPARATOR ','
+            ) 
+            FROM (SELECT t.status, COUNT(*) AS ticket_count  
+                  FROM ticket t
+                  JOIN member m ON t.manager_id = m.member_id  
+                      AND m.deleted_at IS NULL  
+                      AND m.member_id != -1  
+                  WHERE t.deleted_at IS NULL  
+                  GROUP BY t.status) t2
+            ),
             ']'
         ) AS state 
-    FROM ( 
-        SELECT 
-            status, 
-            COUNT(*) AS ticketCount 
-        FROM 
-            ticket 
-        WHERE 
-            deleted_at IS NULL 
-        GROUP BY 
-            status 
-    ) AS statusCounts
+    FROM DUAL
     """, nativeQuery = true)
     List<Object[]> findStatTotalProgress();
+
 }

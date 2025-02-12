@@ -26,14 +26,19 @@ public class StatsMemberService {
         this.objectMapper = objectMapper;
     }
 
-
-    // 2. 카테고리별 진행률 조회
+    // 2. 카테고리별 진행률 조회 (soft delete된 담당자 제외)
     public List<StatCategoryRateResponse> getStatsByCategory() {
         List<Map<String, Object>> result = statsMemberRepository.findStatsByCategory();
         List<StatCategoryRateResponse> response = new ArrayList<>();
 
         for (Map<String, Object> row : result) {
             String username = (String) row.get("userName");
+
+            // soft delete된 담당자 필터링 (username이 null이거나 비어있는 경우 제외)
+            if (username == null || username.isEmpty()) {
+                continue;
+            }
+
             String stateJson = (String) row.get("state");
 
             try {
@@ -49,8 +54,7 @@ public class StatsMemberService {
         return response;
     }
 
-
-
+    // 3. 전체 진행률 조회 (soft delete된 담당자 제외)
     public List<StatTotalProgressResponse> getStatTotalProgress() {
         // NativeQuery 결과를 List<Object[]>로 받음
         List<Object[]> queryResults = statsMemberRepository.findStatTotalProgress();
@@ -81,5 +85,4 @@ public class StatsMemberService {
             throw new RuntimeException("Failed to parse JSON response", e);
         }
     }
-
 }

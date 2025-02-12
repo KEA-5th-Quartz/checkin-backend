@@ -201,7 +201,7 @@ public class TicketTrashServiceImpl implements TicketTrashService {
     @Transactional(readOnly = true)
     @Override
     public SoftDeletedTicketResponse getDeletedTickets(Long memberId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
 
         // 삭제된 티켓 개수 조회
         Long totalCount = queryFactory
@@ -235,7 +235,7 @@ public class TicketTrashServiceImpl implements TicketTrashService {
                 .fetch();
 
         return new SoftDeletedTicketResponse(
-                page + 1,
+                page,
                 size,
                 (int) Math.ceil((double) safeTotalCount / size),
                 safeTotalCount,

@@ -24,7 +24,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class QTicketRepositoryImpl implements QTicketRepository {
+public class TicketRepositoryCustomImpl implements TicketRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 

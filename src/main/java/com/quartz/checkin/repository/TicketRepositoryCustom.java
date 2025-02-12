@@ -9,7 +9,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-public interface QTicketRepository {
+public interface TicketRepositoryCustom {
     TicketProgressResponse getManagerProgress(Long memberId);
     Page<Ticket> fetchSearchedTickets(Long memberId, String keyword, Pageable pageable, String sortByCreatedAt);
 

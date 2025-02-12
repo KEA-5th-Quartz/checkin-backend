@@ -71,6 +71,7 @@ public class TicketQueryServiceImpl implements TicketQueryService {
                                                        Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
 
         Page<Ticket> ticketPage = fetchTickets(null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt);
+        validatePagination(page, size, ticketPage.getTotalPages());
         return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
@@ -79,18 +80,21 @@ public class TicketQueryServiceImpl implements TicketQueryService {
                                                  List<String> categories, List<Priority> priorities,
                                                  Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
         Page<Ticket> ticketPage = fetchTickets(userId, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt);
+        validatePagination(page, size, ticketPage.getTotalPages());
         return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 
     @Override
     public ManagerTicketListResponse searchManagerTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
         Page<Ticket> ticketPage = fetchSearchedTickets(null, keyword, page, size, sortByCreatedAt);
+        validatePagination(page, size, ticketPage.getTotalPages());
         return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
     @Override
     public UserTicketListResponse searchUserTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
         Page<Ticket> ticketPage = fetchSearchedTickets(memberId, keyword, page, size, sortByCreatedAt);
+        validatePagination(page, size, ticketPage.getTotalPages());
         return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 
@@ -159,7 +163,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     }
 
     private Page<Ticket> fetchSearchedTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
-        validatePagination(page, size);
         Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
 
         QTicket ticket = QTicket.ticket;
@@ -171,7 +174,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     private Page<Ticket> fetchTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                       List<String> categories, List<Priority> priorities,
                                       Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
-        validatePagination(page, size);
         Pageable pageable = PageRequest.of(page - 1, size, Sort.unsorted());
 
         QTicket ticket = QTicket.ticket;
@@ -254,10 +256,14 @@ public class TicketQueryServiceImpl implements TicketQueryService {
 
     // 공통 정렬 적용 메서드
     private OrderSpecifier<?>[] getOrderSpecifiers(QTicket ticket, String sortByCreatedAt) {
+        if (!"asc".equalsIgnoreCase(sortByCreatedAt) && !"desc".equalsIgnoreCase(sortByCreatedAt)) {
+            throw new ApiException(ErrorCode.INVALID_DATA);
+        }
         return new OrderSpecifier<?>[]{
                 "asc".equalsIgnoreCase(sortByCreatedAt) ? ticket.createdAt.asc() : ticket.createdAt.desc()
         };
     }
+
 
     // 총 개수 조회 메서드
     private long getTotalCount(BooleanBuilder whereClause) {
@@ -269,8 +275,11 @@ public class TicketQueryServiceImpl implements TicketQueryService {
         ).orElse(0L);
     }
 
-    private void validatePagination(int page, int size) {
-        if (page < 1) throw new ApiException(ErrorCode.INVALID_TICKET_PAGE_NUMBER);
-        if (size <= 0) throw new ApiException(ErrorCode.INVALID_TICKET_PAGE_SIZE);
+    private void validatePagination(int page, int size, int totalPages) {
+        if (page < 1) throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
+        if (size <= 0) throw new ApiException(ErrorCode.INVALID_PAGE_SIZE);
+        if (page > totalPages && totalPages > 0) {
+            throw new ApiException(ErrorCode.INVALID_PAGE_NUMBER);
+        }
     }
 }

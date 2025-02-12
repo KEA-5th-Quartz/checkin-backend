@@ -9,7 +9,6 @@ import com.quartz.checkin.entity.AccessLogType;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.MemberAccessLog;
 import com.quartz.checkin.repository.MemberAccessLogRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -34,7 +33,7 @@ public class MemberAccessLogService {
         Integer size = pageRequest.getSize();
 
         PaginationRequestUtils.checkPageNumberAndPageSize(page, size);
-        if (order == null ||    (!order.equalsIgnoreCase("desc") && !order.equalsIgnoreCase("asc"))) {
+        if (order == null || (!order.equalsIgnoreCase("desc") && !order.equalsIgnoreCase("asc"))) {
             log.error("유효하지 않은 방향값입니다.");
             throw new ApiException(ErrorCode.INVALID_DATA);
         }

@@ -55,7 +55,6 @@ public class TicketResponseConverter {
         );
     }
 
-
     private static int getPageNumber(Page<Ticket> ticketPage) {
         return ticketPage.getNumber() + 1;
     }

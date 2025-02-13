@@ -236,7 +236,6 @@ public class TicketCudServiceImpl implements TicketCudService {
 
 
     private void validateTicketManager(Ticket ticket, Member manager) {
-        // 담당자가 본인이 맞는지 검증
         if (ticket.getManager() == null || !ticket.getManager().getId().equals(manager.getId())) {
             throw new ApiException(ErrorCode.INVALID_TICKET_MANAGER);
         }

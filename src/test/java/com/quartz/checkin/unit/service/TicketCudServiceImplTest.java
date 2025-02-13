@@ -21,6 +21,7 @@ import com.querydsl.core.types.dsl.EntityPathBase;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -105,6 +106,7 @@ class TicketCudServiceImplTest {
     }
 
     @Test
+    @DisplayName("티켓 생성 성공")
     void createTicket_Success() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "DevOps", "Infrastructure",
@@ -120,6 +122,7 @@ class TicketCudServiceImplTest {
     }
 
     @Test
+    @DisplayName("티켓 생성 실패 - 제목 없음")
     void createTicket_Fail_NoTitle() {
         TicketCreateRequest request = new TicketCreateRequest(
                 null, "This is a test ticket.", "DevOps", "Infrastructure",
@@ -131,6 +134,7 @@ class TicketCudServiceImplTest {
     }
 
     @Test
+    @DisplayName("티켓 생성 실패 - 내용 없음")
     void createTicket_Fail_NoContent() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", null, "DevOps", "Infrastructure",
@@ -142,6 +146,7 @@ class TicketCudServiceImplTest {
     }
 
     @Test
+    @DisplayName("티켓 생성 실패 - 첫 번째 카테고리 없음")
     void createTicket_Fail_NoFirstCategory() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "",
@@ -156,6 +161,7 @@ class TicketCudServiceImplTest {
     }
 
     @Test
+    @DisplayName("티켓 생성 실패 - 두 번째 카테고리 없음")
     void createTicket_Fail_NoSecondCategory() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "DevOps",
@@ -170,6 +176,7 @@ class TicketCudServiceImplTest {
     }
 
     @Test
+    @DisplayName("티켓 생성 실패 - 과거 날짜 마감일")
     void createTicket_Fail_InvalidDueDate_PastDate() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "DevOps", "Infrastructure",
@@ -181,6 +188,7 @@ class TicketCudServiceImplTest {
     }
 
     @Test
+    @DisplayName("티켓 생성 실패 - 마감일 없음")
     void createTicket_Fail_InvalidDueDate_Null() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "DevOps", "Infrastructure",

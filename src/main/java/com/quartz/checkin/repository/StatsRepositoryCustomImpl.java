@@ -1,5 +1,7 @@
 package com.quartz.checkin.repository;
 
+import com.quartz.checkin.common.exception.ApiException;
+import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.stat.response.StatCategoryCountResponse;
 import com.quartz.checkin.dto.stat.response.StatCategoryRateResponse;
 import com.quartz.checkin.dto.stat.response.StatTotalProgressResponse;
@@ -117,5 +119,59 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
                 .sum();
 
         return new StatTotalProgressResultResponse(totalTicketCount, ticketStatusList);
+    }
+
+    @Override
+    public List<StatCategoryRateResponse> findStatsByManager(String period) {
+        QMember member = QMember.member;
+        QTicket ticket = QTicket.ticket;
+
+        LocalDate fromDate;
+        switch (period.toUpperCase()) {
+            case "WEEK":
+                fromDate = LocalDate.now().minusWeeks(1);
+                break;
+            case "MONTH":
+                fromDate = LocalDate.now().minusMonths(1);
+                break;
+            case "QUARTER":
+                fromDate = LocalDate.now().minusMonths(3);
+                break;
+            default:
+                throw new ApiException(ErrorCode.INVALID_STATS_PERIOD_FORMAT);
+        }
+
+        List<Tuple> results = queryFactory
+                .select(
+                        member.username,
+                        ticket.status,
+                        ticket.count()
+                )
+                .from(ticket)
+                .join(ticket.manager, member)
+                .where(
+                        ticket.deletedAt.isNull(),
+                        member.deletedAt.isNull(),
+                        ticket.createdAt.after(fromDate.atStartOfDay())
+                )
+                .groupBy(member.username, ticket.status)
+                .fetch();
+
+        if (results.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<String, List<StatCategoryCountResponse>> groupedData = results.stream()
+                .collect(Collectors.groupingBy(
+                        tuple -> tuple.get(member.username),
+                        Collectors.mapping(tuple -> new StatCategoryCountResponse(
+                                tuple.get(ticket.status).name(),
+                                Objects.requireNonNull(tuple.get(ticket.count())).intValue()
+                        ), Collectors.toList())
+                ));
+
+        return groupedData.entrySet().stream()
+                .map(entry -> new StatCategoryRateResponse(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
     }
 }

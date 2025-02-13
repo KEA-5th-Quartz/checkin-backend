@@ -4,7 +4,6 @@ import com.quartz.checkin.dto.common.response.ApiResponse;
 import com.quartz.checkin.dto.stat.response.StatCategoryRateResponse;
 import com.quartz.checkin.dto.stat.response.StatCategoryTicketResponse;
 import com.quartz.checkin.dto.stat.response.StatClosedRateResponse;
-import com.quartz.checkin.dto.stat.response.StatProgressResponse;
 import com.quartz.checkin.dto.stat.response.StatTotalProgressResultResponse;
 import com.quartz.checkin.security.annotation.Admin;
 import com.quartz.checkin.security.annotation.AdminOrManager;
@@ -34,10 +33,10 @@ public class StatisticsController {
     @AdminOrManager
     @Operation(summary = "API 명세서 v0.3 line 66", description = "각 담당자의 상태별 티켓수(type params 필요)- 세로 막대그래프")
     @GetMapping("/managers")
-    public ApiResponse<List<StatProgressResponse>> getProgressRates(
+    public ApiResponse<List<StatCategoryRateResponse>> getStatsByManager(
             @RequestParam(name = "type") String type
     ) {
-        List<StatProgressResponse> response = statsTicketService.getProgressRates(type);
+        List<StatCategoryRateResponse> response = statsService.getStatsByManager(type);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 

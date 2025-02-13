@@ -23,4 +23,9 @@ public class StatsService {
         return statsRepository.findStatTotalProgress();
     }
 
+    public List<StatCategoryRateResponse> getStatsByManager(String period) {
+        return statsRepository.findStatsByManager(period);
+    }
+
+
 }

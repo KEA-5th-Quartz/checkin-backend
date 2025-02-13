@@ -1,5 +1,6 @@
 package com.quartz.checkin.repository;
 
+import com.quartz.checkin.dto.stat.response.StatCategoryCountResponse;
 import com.quartz.checkin.dto.stat.response.StatCategoryRateResponse;
 import com.quartz.checkin.dto.stat.response.StatClosedRateResponse;
 import com.quartz.checkin.dto.stat.response.StatTotalProgressResultResponse;
@@ -10,4 +11,5 @@ public interface StatsRepositoryCustom {
     StatTotalProgressResultResponse findStatTotalProgress();
     List<StatCategoryRateResponse> findStatsByManager(String period);
     StatClosedRateResponse findClosedRate(String period);
+    List<StatCategoryCountResponse> findCategoryInProgressTickets();
 }

@@ -1,5 +1,6 @@
 package com.quartz.checkin.service;
 
+import com.quartz.checkin.dto.stat.response.StatCategoryCountResponse;
 import com.quartz.checkin.dto.stat.response.StatCategoryRateResponse;
 import com.quartz.checkin.dto.stat.response.StatClosedRateResponse;
 import com.quartz.checkin.dto.stat.response.StatTotalProgressResultResponse;
@@ -31,6 +32,9 @@ public class StatsService {
         return statsRepository.findClosedRate(period);
     }
 
+    public List<StatCategoryCountResponse> getCategoryInProgressTickets() {
+        return statsRepository.findCategoryInProgressTickets();
+    }
 
 
 }

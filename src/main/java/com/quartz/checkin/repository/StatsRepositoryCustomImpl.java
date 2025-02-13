@@ -37,7 +37,7 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
 
         List<Tuple> results = queryFactory
                 .select(
-                        member.username,
+                        ticket.manager.id.when(-1L).then("삭제된 사용자").otherwise(member.username),
                         category.name,
                         ticket.count()
                 )
@@ -57,7 +57,7 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
 
         Map<String, List<StatCategoryCountResponse>> groupedData = results.stream()
                 .collect(Collectors.groupingBy(
-                        tuple -> tuple.get(member.username),
+                        tuple -> tuple.get(ticket.manager.id.when(-1L).then("삭제된 사용자").otherwise(member.username)),
                         Collectors.mapping(tuple -> new StatCategoryCountResponse(
                                 tuple.get(category.name),
                                 Objects.requireNonNull(tuple.get(ticket.count())).intValue()
@@ -127,7 +127,7 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
 
         List<Tuple> results = queryFactory
                 .select(
-                        member.username,
+                        ticket.manager.id.when(-1L).then("삭제된 사용자").otherwise(member.username),
                         ticket.status,
                         ticket.count()
                 )
@@ -146,7 +146,7 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
 
         Map<String, List<StatCategoryCountResponse>> groupedData = results.stream()
                 .collect(Collectors.groupingBy(
-                        tuple -> tuple.get(member.username),
+                        tuple -> tuple.get(ticket.manager.id.when(-1L).then("삭제된 사용자").otherwise(member.username)),
                         Collectors.mapping(tuple -> new StatCategoryCountResponse(
                                 tuple.get(ticket.status).name(),
                                 Objects.requireNonNull(tuple.get(ticket.count())).intValue()
@@ -193,13 +193,44 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
         return new StatClosedRateResponse(total, closedRate, closed, unclosed);
     }
 
+    @Override
+    public List<StatCategoryCountResponse> findCategoryInProgressTickets() {
+        QTicket ticket = QTicket.ticket;
+        QCategory category = QCategory.category;
+
+        List<Tuple> results = queryFactory
+                .select(
+                        category.name,
+                        ticket.count()
+                )
+                .from(ticket)
+                .join(ticket.firstCategory, category)
+                .where(
+                        ticket.deletedAt.isNull(),  // 삭제되지 않은 티켓
+                        ticket.status.eq(Status.IN_PROGRESS) // 진행 중(IN_PROGRESS) 상태
+                )
+                .groupBy(category.name)
+                .fetch();
+
+        if (results.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return results.stream()
+                .map(tuple -> new StatCategoryCountResponse(
+                        tuple.get(category.name),
+                        tuple.get(ticket.count()).intValue()
+                ))
+                .collect(Collectors.toList());
+    }
+
+
     private BooleanExpression commonTicketConditions(LocalDate today, LocalDate fromDate) {
         QTicket ticket = QTicket.ticket;
         return ticket.deletedAt.isNull()
                 .and(ticket.createdAt.loe(today.atStartOfDay()))
                 .and(ticket.dueDate.goe(fromDate));
     }
-
 
     private LocalDate getFromDate(String period) {
         return switch (period.toUpperCase()) {

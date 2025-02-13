@@ -76,13 +76,12 @@ spring:
       on-profile: test
 
   datasource:
-    url: jdbc:h2:mem:checkin-test;MODE=MySQL
+    url: jdbc:h2:mem:checkin-test;DB_CLOSE_DELAY=-1;MODE=MySQL
     driver-class-name: org.h2.Driver
     username: sa
     password:
   jpa:
-    hibernate:
-      ddl-auto: update
+    defer-datasource-initialization: true
 
   sql:
     init:

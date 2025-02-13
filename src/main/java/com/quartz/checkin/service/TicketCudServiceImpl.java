@@ -78,6 +78,19 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
         }
 
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            throw new ApiException(ErrorCode.INVALID_DATA, "제목은 필수 입력값입니다.");
+        }
+        if (request.getContent() == null || request.getContent().trim().isEmpty()) {
+            throw new ApiException(ErrorCode.INVALID_DATA, "내용은 필수 입력값입니다.");
+        }
+        if (request.getDueDate() == null) {
+            throw new ApiException(ErrorCode.INVALID_DATA, "마감 기한은 필수 입력값입니다.");
+        }
+        if (request.getDueDate().isBefore(LocalDate.now())) {
+            throw new ApiException(ErrorCode.INVALID_DATA, "마감 기한은 과거일 수 없습니다.");
+        }
+
         Ticket ticket = Ticket.builder()
                 .customId(newCustomId)
                 .user(member)

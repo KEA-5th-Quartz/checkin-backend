@@ -1,12 +1,9 @@
-package com.quartz.checkin.dto.statisitics.response;
-
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+package com.quartz.checkin.dto.stat.response;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@Setter
 @Getter
 @AllArgsConstructor
 public class StatCategoryRateResponse {

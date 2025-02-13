@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-public interface QTicketTrashRepository {
+public interface TicketTrashRepositoryCustom {
     List<Ticket> findExpiredTickets(LocalDate thresholdDate);
     List<Ticket> findOldClosedTickets(LocalDate sixMonthsAgo);
     Page<Ticket> fetchDeletedTickets(Long memberId, Pageable pageable);

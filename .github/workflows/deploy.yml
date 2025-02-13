@@ -28,7 +28,9 @@ jobs:
       # 4. data.sql 생성
       - name: Create data.sql
         run: |
-          echo "${{ secrets.DATA_SQL }}" > src/main/resources/data.sql
+          cat <<'EOF' > data.sql
+          ${{ secrets.DATA_SQL }}
+          EOF
 
       # 5. 스프링 부트 애플리케이션 빌드 (Gradle 사용)
       - name: Build Spring Boot application

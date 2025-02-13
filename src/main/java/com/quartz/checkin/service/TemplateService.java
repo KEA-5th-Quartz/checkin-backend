@@ -3,6 +3,7 @@ package com.quartz.checkin.service;
 import com.quartz.checkin.common.AttachmentUtils;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.common.validator.PaginationValidator;
 import com.quartz.checkin.dto.common.request.SimplePageRequest;
 import com.quartz.checkin.dto.common.response.UploadAttachmentsResponse;
 import com.quartz.checkin.dto.template.request.TemplateDeleteRequest;
@@ -95,6 +96,9 @@ public class TemplateService {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
 
         Page<Template> templatePage = templateRepository.findAllByMemberJoinFetch(member, pageable);
+
+        int totalPages = templatePage.getTotalPages();
+        PaginationValidator.validatePagination(page, size, totalPages);
 
         return TemplateListResponse.from(templatePage);
     }

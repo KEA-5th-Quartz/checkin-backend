@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/stats")
 @RequiredArgsConstructor
-public class StatisticsController {
+public class StatsController {
 
     private final StatsService statsService;
 

@@ -36,7 +36,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     private final TicketAttachmentRepository ticketAttachmentRepository;
     private final MemberRepository memberRepository;
 
-
     @Override
     public TicketDetailResponse getTicketDetail(Long memberId, Long ticketId) {
         Ticket ticket = ticketRepository.findById(ticketId)

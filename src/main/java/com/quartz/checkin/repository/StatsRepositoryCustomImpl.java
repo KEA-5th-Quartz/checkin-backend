@@ -57,7 +57,7 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
 
         Map<String, List<StatCategoryCountResponse>> groupedData = results.stream()
                 .collect(Collectors.groupingBy(
-                        tuple -> tuple.get(ticket.manager.id.when(-1L).then("삭제된 사용자").otherwise(member.username)),
+                        tuple -> Objects.requireNonNull(tuple.get(ticket.manager.id.when(-1L).then("삭제된 사용자").otherwise(member.username))),
                         Collectors.mapping(tuple -> new StatCategoryCountResponse(
                                 tuple.get(category.name),
                                 Objects.requireNonNull(tuple.get(ticket.count())).intValue()
@@ -100,8 +100,8 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
 
         Map<String, Integer> statusTicketCountMap = statusCounts.stream()
                 .collect(Collectors.toMap(
-                        tuple -> tuple.get(ticket.status).name(),
-                        tuple -> tuple.get(ticket.count()).intValue()
+                        tuple -> Objects.requireNonNull(tuple.get(ticket.status)).name(),
+                        tuple -> Objects.requireNonNull(tuple.get(ticket.count())).intValue()
                 ));
 
         List<StatTotalProgressResponse> ticketStatusList = List.of(
@@ -146,9 +146,9 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
 
         Map<String, List<StatCategoryCountResponse>> groupedData = results.stream()
                 .collect(Collectors.groupingBy(
-                        tuple -> tuple.get(ticket.manager.id.when(-1L).then("삭제된 사용자").otherwise(member.username)),
+                        tuple -> Objects.requireNonNull(tuple.get(ticket.manager.id.when(-1L).then("삭제된 사용자").otherwise(member.username))),
                         Collectors.mapping(tuple -> new StatCategoryCountResponse(
-                                tuple.get(ticket.status).name(),
+                                Objects.requireNonNull(tuple.get(ticket.status)).name(),
                                 Objects.requireNonNull(tuple.get(ticket.count())).intValue()
                         ), Collectors.toList())
                 ));

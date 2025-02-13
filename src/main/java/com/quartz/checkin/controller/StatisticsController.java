@@ -60,10 +60,10 @@ public class StatisticsController {
     @Admin
     @Operation(summary = "API 명세서 v0.3 line 68", description = "작업 완성률 조회(type params 필요) - 도넛 그래프")
     @GetMapping("/closed-rate")
-    public ApiResponse<StatClosedRateResponse> getCompletionRate(
+    public ApiResponse<StatClosedRateResponse> getClosedRate(
             @RequestParam(name = "type") String type
     ) {
-        StatClosedRateResponse response = statsTicketService.getCompletionRate(type);
+        StatClosedRateResponse response = statsService.getClosedRate(type);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
     }
 

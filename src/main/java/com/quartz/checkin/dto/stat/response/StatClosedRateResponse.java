@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StatClosedRateResponse {
-
+    private int totalCount;
     private double closedRate;
-
+    private int closedCount;
+    private int unclosedCount;
 }

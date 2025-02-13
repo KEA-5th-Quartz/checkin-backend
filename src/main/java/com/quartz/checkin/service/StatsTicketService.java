@@ -3,13 +3,11 @@ package com.quartz.checkin.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.dto.stat.response.StatCategoryTicketResponse;
-import com.quartz.checkin.dto.stat.response.StatClosedRateResponse;
 import com.quartz.checkin.dto.stat.response.StatProgressResponse;
 import com.quartz.checkin.repository.StatsTicketRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -57,16 +55,6 @@ public class StatsTicketService {
         return response;
     }
 
-    // 작업 완성률 조회
-    public StatClosedRateResponse getCompletionRate(String type) {
-        Optional<Double> closedRate = statsTicketRepository.findCompletionRateByType(type);
-
-        double rate = closedRate.orElse(0.0);
-        rate = Math.max(0.0, Math.min(rate, 100.0));
-        return new StatClosedRateResponse(rate);
-    }
-
-    // 카테고리별 진행중인 티켓 수 조회
     public List<StatCategoryTicketResponse> getCategoryTicketStats() {
         return statsTicketRepository.findCategoryTicketStats().stream()
                 .filter(result ->

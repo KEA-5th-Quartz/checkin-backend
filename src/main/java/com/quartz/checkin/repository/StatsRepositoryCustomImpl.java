@@ -219,7 +219,7 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
         return results.stream()
                 .map(tuple -> new StatCategoryCountResponse(
                         tuple.get(category.name),
-                        tuple.get(ticket.count()).intValue()
+                        Objects.requireNonNull(tuple.get(ticket.count())).intValue()
                 ))
                 .collect(Collectors.toList());
     }

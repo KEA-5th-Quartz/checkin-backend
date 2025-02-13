@@ -34,7 +34,7 @@ jobs:
 
       # 5. 스프링 부트 애플리케이션 빌드 (Gradle 사용)
       - name: Build Spring Boot application
-        run: ./gradlew clean build 화-Dspring.profiles.active=test
+        run: ./gradlew clean build -Dspring.profiles.active=test
 
       # 6. Docker 로그인
       - name: Log in to Docker Hub

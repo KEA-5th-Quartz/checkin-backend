@@ -1,4 +1,4 @@
-package com.quartz.checkin.unit;
+package com.quartz.checkin.unit.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

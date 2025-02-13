@@ -28,7 +28,7 @@ jobs:
       # 4. data.sql 생성
       - name: Create data.sql
         run: |
-          cat <<'EOF' > data.sql
+          cat <<'EOF' > src/main/resources/data.sql
           ${{ secrets.DATA_SQL }}
           EOF
 

@@ -1,4 +1,4 @@
-package com.quartz.checkin.service;
+package com.quartz.checkin.unit.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -11,6 +11,9 @@ import com.quartz.checkin.entity.*;
 import com.quartz.checkin.repository.TicketRepository;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
+import com.quartz.checkin.service.CategoryServiceImpl;
+import com.quartz.checkin.service.MemberService;
+import com.quartz.checkin.service.TicketCudServiceImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Predicate;

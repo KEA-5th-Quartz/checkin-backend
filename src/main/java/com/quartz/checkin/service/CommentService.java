@@ -46,7 +46,6 @@ public class CommentService {
     private final TicketLogRepository ticketLogRepository;
     private final LikeRepository likeRepository;
     private final MemberRepository memberRepository;
-    private final WebhookService webhookService;
     private final ApplicationEventPublisher eventPublisher;
 
     private final S3Service s3Service;
@@ -241,6 +240,17 @@ public class CommentService {
 
     @Transactional
     public CommentAttachmentResponse uploadCommentAttachment(CustomUser user, Long ticketId, MultipartFile file) {
+        if (file.isEmpty()) {
+            log.error("첨부된 파일을 찾을 수 없습니다. {}", file.getOriginalFilename());
+            throw new ApiException(ErrorCode.INVALID_DATA);
+        }
+
+        // 파일 크기가 10MB를 초과하는 경우 업로드 불가
+        if (file.getSize() > 10 * 1024 * 1024) {
+            log.error("파일 크기가 제한을 초과했습니다. 현재 크기: {}", file.getSize());
+            throw new ApiException(ErrorCode.TOO_LARGE_FILE);
+        }
+
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> {
                     log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
@@ -252,6 +262,12 @@ public class CommentService {
                     log.error(ErrorCode.MEMBER_NOT_FOUND.getMessage());
                     return new ApiException(ErrorCode.MEMBER_NOT_FOUND);
                 });
+
+        // 해당 "사용자"가 생성한 티켓이 아닌 경우 댓글 작성 불가
+        if (user.getRole() == Role.USER && !ticket.getUser().getId().equals(user.getId())) {
+            log.error(ErrorCode.FORBIDDEN.getMessage());
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
 
         Comment comment = new Comment();
         comment.setTicket(ticket);

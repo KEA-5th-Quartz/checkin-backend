@@ -91,7 +91,6 @@ public class TicketCudServiceImpl implements TicketCudService {
             throw new ApiException(ErrorCode.INVALID_DATA, "마감 기한은 과거일 수 없습니다.");
         }
 
-        // 티켓 생성 및 저장
         Ticket ticket = Ticket.builder()
                 .customId(newCustomId)
                 .user(member)
@@ -113,7 +112,6 @@ public class TicketCudServiceImpl implements TicketCudService {
 
         ticketAttachmentRepository.saveAll(ticketAttachments);
 
-        // 이벤트 발행
         eventPublisher.publishEvent(new TicketCreatedEvent(
                 savedTicket.getId(),
                 savedTicket.getCustomId(),

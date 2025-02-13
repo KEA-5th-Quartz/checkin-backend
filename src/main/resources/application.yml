@@ -82,8 +82,7 @@ spring:
     password:
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    defer-datasource-initialization: true
+      ddl-auto: create
 
   sql:
     init:

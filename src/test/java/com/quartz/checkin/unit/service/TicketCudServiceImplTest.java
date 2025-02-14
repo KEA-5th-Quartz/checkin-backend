@@ -107,7 +107,7 @@ class TicketCudServiceImplTest {
 
     @Test
     @DisplayName("티켓 생성 성공")
-    void createTicket_Success() {
+    void createTicketSuccess() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "DevOps", "Infrastructure",
                 LocalDate.now().plusDays(1), List.of()
@@ -123,7 +123,7 @@ class TicketCudServiceImplTest {
 
     @Test
     @DisplayName("티켓 생성 실패 - 제목 없음")
-    void createTicket_Fail_NoTitle() {
+    void createTicketFailNoTitle() {
         TicketCreateRequest request = new TicketCreateRequest(
                 null, "This is a test ticket.", "DevOps", "Infrastructure",
                 LocalDate.now().plusDays(1), List.of()
@@ -135,7 +135,7 @@ class TicketCudServiceImplTest {
 
     @Test
     @DisplayName("티켓 생성 실패 - 내용 없음")
-    void createTicket_Fail_NoContent() {
+    void createTicketFailNoContent() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", null, "DevOps", "Infrastructure",
                 LocalDate.now().plusDays(1), List.of()
@@ -147,7 +147,7 @@ class TicketCudServiceImplTest {
 
     @Test
     @DisplayName("티켓 생성 실패 - 첫 번째 카테고리 없음")
-    void createTicket_Fail_NoFirstCategory() {
+    void createTicketFailNoFirstCategory() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "",
                 "Infrastructure", LocalDate.now().plusDays(1), List.of()
@@ -162,7 +162,7 @@ class TicketCudServiceImplTest {
 
     @Test
     @DisplayName("티켓 생성 실패 - 두 번째 카테고리 없음")
-    void createTicket_Fail_NoSecondCategory() {
+    void createTicketFailNoSecondCategory() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "DevOps",
                 "", LocalDate.now().plusDays(1), List.of()
@@ -177,7 +177,7 @@ class TicketCudServiceImplTest {
 
     @Test
     @DisplayName("티켓 생성 실패 - 과거 날짜 마감일")
-    void createTicket_Fail_InvalidDueDate_PastDate() {
+    void createTicketFailInvalidDueDatePastDate() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "DevOps", "Infrastructure",
                 LocalDate.now().minusDays(1), List.of()
@@ -189,7 +189,7 @@ class TicketCudServiceImplTest {
 
     @Test
     @DisplayName("티켓 생성 실패 - 마감일 없음")
-    void createTicket_Fail_InvalidDueDate_Null() {
+    void createTicketFailInvalidDueDateNull() {
         TicketCreateRequest request = new TicketCreateRequest(
                 "Test Ticket", "This is a test ticket.", "DevOps", "Infrastructure",
                 null, List.of()

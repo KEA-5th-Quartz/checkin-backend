@@ -39,7 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 @Service
 @AllArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class CommentService {
     private final TicketRepository ticketRepository;
     private final CommentRepository commentRepository;
@@ -51,7 +51,6 @@ public class CommentService {
 
     private final S3Service s3Service;
 
-    @Transactional
     public CommentResponse writeComment(CustomUser user, Long ticketId, String content) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> {
@@ -133,7 +132,6 @@ public class CommentService {
         }
     }
 
-    @Transactional
     public CommentLikeResponse toggleLike(CustomUser user, Long ticketId, Long commentId) {
         if (!ticketRepository.existsById(ticketId)) {
             log.error(ErrorCode.TICKET_NOT_FOUND.getMessage());
@@ -195,7 +193,6 @@ public class CommentService {
                 .build();
     }
 
-    @Transactional
     public CommentAttachmentResponse uploadCommentAttachment(CustomUser user, Long ticketId, MultipartFile file) {
         if (file.isEmpty()) {
             log.error("첨부된 파일을 찾을 수 없습니다. {}", file.getOriginalFilename());

@@ -18,5 +18,5 @@ public interface TicketRepositoryCustom {
                               Boolean dueToday, Boolean dueThisWeek, Pageable pageable, String sortByCreatedAt);
 
     long getTotalCount(BooleanBuilder whereClause);
-    String findLastTicketId(String prefix);
+    int findLastCustomIdByDate(String datePrefix);
 }

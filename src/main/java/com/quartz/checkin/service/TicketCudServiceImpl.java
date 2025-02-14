@@ -57,17 +57,8 @@ public class TicketCudServiceImpl implements TicketCudService {
         String secondCategoryAlias = secondCategory.getAlias();
         String prefix = datePart + firstCategoryAlias + "-" + secondCategoryAlias;
 
-        String lastCustomId = getLastTicketId(prefix);
-
-        int lastTicketNumber = 1;
-        if (lastCustomId != null && lastCustomId.startsWith(prefix)) {
-            try {
-                lastTicketNumber = Integer.parseInt(lastCustomId.substring(lastCustomId.length() - 3)) + 1;
-            } catch (NumberFormatException e) {
-                throw new ApiException(ErrorCode.INVALID_TICKET_ID_FORMAT);
-            }
-        }
-
+        int lastCustomId = ticketRepository.findLastCustomIdByDate(datePart);
+        int lastTicketNumber = lastCustomId == 0 ? 1 : lastCustomId + 1;
         String newCustomId = prefix + String.format("%03d", lastTicketNumber);
 
         List<Long> attachmentIds = request.getAttachmentIds();
@@ -231,14 +222,9 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
     }
 
-
     private void validateTicketManager(Ticket ticket, Member manager) {
         if (ticket.getManager() == null || !ticket.getManager().getId().equals(manager.getId())) {
             throw new ApiException(ErrorCode.INVALID_TICKET_MANAGER);
         }
-    }
-
-    public String getLastTicketId(String prefix) {
-        return ticketRepository.findLastTicketId(prefix);
     }
 }

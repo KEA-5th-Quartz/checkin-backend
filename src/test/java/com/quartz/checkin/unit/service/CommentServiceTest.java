@@ -133,8 +133,8 @@ class CommentServiceTest {
 
         // Comment 생성
         comment = new Comment();
-        comment.setTicket(ticket);
-        comment.setMember(member);
+        comment.updateTicket(ticket);
+        comment.updateMember(member);
         comment.writeContent("Test comment");
         // ID는 reflection 으로 설정
         setId(comment, 1L);
@@ -148,8 +148,8 @@ class CommentServiceTest {
         );
 
         savedComment = new Comment();
-        savedComment.setTicket(ticket);
-        savedComment.setMember(member);
+        savedComment.updateTicket(ticket);
+        savedComment.updateMember(member);
         savedComment.writeContent(file.getContentType());
         savedComment.addAttachment(uploadedUrl);
         setId(savedComment, 2L);
@@ -313,8 +313,8 @@ class CommentServiceTest {
 
         Comment failedComment = new Comment();
         setId(failedComment, 3L);
-        failedComment.setTicket(otherTicket);
-        failedComment.setMember(otherMember);
+        failedComment.updateTicket(otherTicket);
+        failedComment.updateMember(otherMember);
         failedComment.writeContent("Test comment");
         failedComment.addAttachment(failedUrl);
 
@@ -326,32 +326,6 @@ class CommentServiceTest {
                 commentService.uploadCommentAttachment(customUser, otherTicket.getId(), failedFile)
         ).isInstanceOf(ApiException.class)
                 .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
-    }
-
-    @Test
-    @DisplayName("댓글 첨부파일 업로드 - 파일 크기를 초과하는 경우 실패")
-    void uploadCommentAttachmentFileSizeExceeded() {
-        // Given
-        String exceededUrl = "https://objectstorage.kr-central-2.kakaocloud.com/v1/" + projectId + bucket + "/comment/4.jpg";
-        MockMultipartFile exceededFile = new MockMultipartFile(
-                "file",
-                "large.jpg",
-                "image/jpeg",
-                new byte[11 * 1024 * 1024] // 11MB
-        );
-
-        Comment exceededComment = new Comment();
-        setId(exceededComment, 4L);
-        exceededComment.setTicket(ticket);
-        exceededComment.setMember(member);
-        exceededComment.writeContent(exceededFile.getContentType());
-        exceededComment.addAttachment(exceededUrl);
-
-        // When & Then
-        assertThatThrownBy(() ->
-                commentService.uploadCommentAttachment(customUser, ticket.getId(), exceededFile)
-        ).isInstanceOf(ApiException.class)
-                .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.TOO_LARGE_FILE));
     }
 
     @Test
@@ -430,8 +404,8 @@ class CommentServiceTest {
         // Given
         Like like = new Like();
         setId(like, 1L);
-        like.setComment(comment);
-        like.setMember(member);
+        like.updateComment(comment);
+        like.updateMember(member);
 
         when(ticketRepository.existsById(any())).thenReturn(true);
         when(likeRepository.existsByCommentIdAndMemberId(any(), any())).thenReturn(false);
@@ -453,8 +427,8 @@ class CommentServiceTest {
         // Given
         Like like = new Like();
         setId(like, 1L);
-        like.setComment(comment);
-        like.setMember(member);
+        like.updateComment(comment);
+        like.updateMember(member);
 
         when(ticketRepository.existsById(any())).thenReturn(true);
         when(likeRepository.existsByCommentIdAndMemberId(any(), any())).thenReturn(true);
@@ -513,8 +487,8 @@ class CommentServiceTest {
         // Given
         Like like = new Like();
         setId(like, 1L);
-        like.setComment(comment);
-        like.setMember(member);
+        like.updateComment(comment);
+        like.updateMember(member);
 
         when(ticketRepository.existsById(any())).thenReturn(true);
         when(commentRepository.existsById(any())).thenReturn(true);

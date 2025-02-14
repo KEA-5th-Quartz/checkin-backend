@@ -33,7 +33,6 @@ public enum ErrorCode {
 
     TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "TEMPLATE_4040", "존재하지 않는 템플릿입니다."),
 
-    INVALID_TICKET_ID_FORMAT(HttpStatus.BAD_REQUEST, "TICKET_4001", "티켓 ID 형식이 올바르지 않습니다."),
     INVALID_TICKET_DUE_DATE(HttpStatus.BAD_REQUEST, "TICKET_4002", "마감 기한을 동시에 선택할 수 없습니다."),
     INVALID_TICKET_STATUS(HttpStatus.BAD_REQUEST, "TICKET_4003", "티켓 상태 값이 유효하지 않습니다."),
     INVALID_TICKET_MANAGER(HttpStatus.BAD_REQUEST, "TICKET_4006", "담당자 정보가 유효하지 않습니다."),
@@ -41,7 +40,9 @@ public enum ErrorCode {
     TICKET_NOT_FOUND(HttpStatus.NOT_FOUND, "TICKET_4040", "존재하지 않는 티켓입니다."),
     TICKET_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "TICKET_4090", "이미 담당자가 할당된 상태입니다."),
     TICKET_ALREADY_ASSIGNED_TO_SELF(HttpStatus.CONFLICT, "TICKET_4091", "이미 본인이 담당자로 할당된 상태입니다."),
+    DUPLICATE_TICKET_ID(HttpStatus.CONFLICT, "TICKET_4092", "중복되는 티켓 ID입니다."),
 
+    ATTACHMENT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST,"ATTACHMENT_4000", "첨부파일은 최대 3개까지 첨부 가능합니다."),
     ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "ATTACHMENT_4040", "존재하지 않는 첨부파일입니다."),
 
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_4040", "존재하지 않는 댓글입니다."),

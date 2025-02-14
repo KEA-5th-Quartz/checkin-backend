@@ -57,38 +57,26 @@ public class TicketCudServiceImpl implements TicketCudService {
         String secondCategoryAlias = secondCategory.getAlias();
         String prefix = datePart + firstCategoryAlias + "-" + secondCategoryAlias;
 
-        String lastCustomId = getLastTicketId(prefix);
-
-        int lastTicketNumber = 1;
-        if (lastCustomId != null && lastCustomId.startsWith(prefix)) {
-            try {
-                lastTicketNumber = Integer.parseInt(lastCustomId.substring(lastCustomId.length() - 3)) + 1;
-            } catch (NumberFormatException e) {
-                throw new ApiException(ErrorCode.INVALID_TICKET_ID_FORMAT);
-            }
-        }
-
+        int lastCustomId = ticketRepository.findLastCustomIdByDate(datePart);
+        int lastTicketNumber = lastCustomId == 0 ? 1 : lastCustomId + 1;
         String newCustomId = prefix + String.format("%03d", lastTicketNumber);
 
         List<Long> attachmentIds = request.getAttachmentIds();
         List<Attachment> attachments = attachmentRepository.findAllById(attachmentIds);
 
+        if (ticketRepository.existsByCustomId(newCustomId)) {
+            log.error("중복된 customId가 감지되었습니다: {}", newCustomId);
+            throw new ApiException(ErrorCode.DUPLICATE_TICKET_ID);
+        }
+
+        if (attachmentIds.size() > 3) {
+            log.error("첨부파일은 최대 3개까지 등록 가능합니다.");
+            throw new ApiException(ErrorCode.ATTACHMENT_LIMIT_EXCEEDED);
+        }
+
         if (attachments.size() != attachmentIds.size()) {
             log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
             throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);
-        }
-
-        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
-            throw new ApiException(ErrorCode.INVALID_DATA, "제목은 필수 입력값입니다.");
-        }
-        if (request.getContent() == null || request.getContent().trim().isEmpty()) {
-            throw new ApiException(ErrorCode.INVALID_DATA, "내용은 필수 입력값입니다.");
-        }
-        if (request.getDueDate() == null) {
-            throw new ApiException(ErrorCode.INVALID_DATA, "마감 기한은 필수 입력값입니다.");
-        }
-        if (request.getDueDate().isBefore(LocalDate.now())) {
-            throw new ApiException(ErrorCode.INVALID_DATA, "마감 기한은 과거일 수 없습니다.");
         }
 
         Ticket ticket = Ticket.builder()
@@ -234,14 +222,9 @@ public class TicketCudServiceImpl implements TicketCudService {
                 .orElseThrow(() -> new ApiException(ErrorCode.TICKET_NOT_FOUND));
     }
 
-
     private void validateTicketManager(Ticket ticket, Member manager) {
         if (ticket.getManager() == null || !ticket.getManager().getId().equals(manager.getId())) {
             throw new ApiException(ErrorCode.INVALID_TICKET_MANAGER);
         }
-    }
-
-    public String getLastTicketId(String prefix) {
-        return ticketRepository.findLastTicketId(prefix);
     }
 }

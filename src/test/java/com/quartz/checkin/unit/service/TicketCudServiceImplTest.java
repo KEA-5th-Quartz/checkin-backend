@@ -1,16 +1,28 @@
 package com.quartz.checkin.unit.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
-import com.quartz.checkin.entity.*;
-import com.quartz.checkin.repository.TicketRepository;
+import com.quartz.checkin.entity.Category;
+import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Priority;
+import com.quartz.checkin.entity.Role;
+import com.quartz.checkin.entity.Status;
+import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TicketAttachmentRepository;
+import com.quartz.checkin.repository.TicketRepository;
 import com.quartz.checkin.service.CategoryServiceImpl;
 import com.quartz.checkin.service.MemberService;
 import com.quartz.checkin.service.TicketCudServiceImpl;
@@ -20,6 +32,8 @@ import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.EntityPathBase;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,9 +42,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
 class TicketCudServiceImplTest {
@@ -154,10 +165,10 @@ class TicketCudServiceImplTest {
         );
 
         when(categoryService.getFirstCategoryOrThrow(anyString()))
-                .thenThrow(new ApiException(ErrorCode.INVALID_TICKET_ID_FORMAT));
+                .thenThrow(new ApiException(ErrorCode.DUPLICATE_TICKET_ID));
 
         ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.createTicket(1L, request));
-        assertEquals(ErrorCode.INVALID_TICKET_ID_FORMAT, thrown.getErrorCode());
+        assertEquals(ErrorCode.DUPLICATE_TICKET_ID, thrown.getErrorCode());
     }
 
     @Test
@@ -169,10 +180,10 @@ class TicketCudServiceImplTest {
         );
 
         when(categoryService.getSecondCategoryOrThrow(anyString(), any()))
-                .thenThrow(new ApiException(ErrorCode.INVALID_TICKET_ID_FORMAT));
+                .thenThrow(new ApiException(ErrorCode.DUPLICATE_TICKET_ID));
 
         ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.createTicket(1L, request));
-        assertEquals(ErrorCode.INVALID_TICKET_ID_FORMAT, thrown.getErrorCode());
+        assertEquals(ErrorCode.DUPLICATE_TICKET_ID, thrown.getErrorCode());
     }
 
     @Test

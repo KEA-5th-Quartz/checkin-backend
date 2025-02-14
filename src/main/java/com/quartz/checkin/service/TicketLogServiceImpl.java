@@ -120,7 +120,6 @@ public class TicketLogServiceImpl implements TicketLogService {
         return createAndSaveTicketLog(ticket, manager, null, oldSecondCategory, null, newSecondCategory.getName(), oldCustomId, newCustomId, "second");
     }
 
-
     @Override
     public TicketLogResponse assignManager(Long memberId, Long ticketId, String managerUsername) {
 

@@ -1,6 +1,6 @@
 package com.quartz.checkin.service;
 
-import static com.quartz.checkin.common.PaginationUtils.validatePagination;
+import static com.quartz.checkin.common.validator.PaginationValidator.validatePagination;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
@@ -35,7 +35,6 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     private final TicketRepository ticketRepository;
     private final TicketAttachmentRepository ticketAttachmentRepository;
     private final MemberRepository memberRepository;
-
 
     @Override
     public TicketDetailResponse getTicketDetail(Long memberId, Long ticketId) {

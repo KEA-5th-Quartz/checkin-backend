@@ -191,15 +191,17 @@ public class TicketRepositoryCustomImpl implements TicketRepositoryCustom {
     }
 
     @Override
-    public String findLastTicketId(String prefix) {
-        QTicket ticket = QTicket.ticket;
-
-        return queryFactory
-                .select(ticket.customId)
-                .from(ticket)
-                .where(ticket.customId.startsWith(prefix))
-                .orderBy(ticket.customId.substring(prefix.length() + 1, prefix.length() + 4).castToNum(Integer.class).desc())
-                .limit(1)
+    public int findLastCustomIdByDate(String datePrefix) {
+        Integer lastNumber = queryFactory
+                .select(QTicket.ticket.customId
+                        .substring(QTicket.ticket.customId.length().subtract(3))
+                        .stringValue()
+                        .castToNum(Integer.class)
+                        .max())
+                .from(QTicket.ticket)
+                .where(QTicket.ticket.customId.startsWith(datePrefix))
                 .fetchOne();
+
+        return lastNumber != null ? lastNumber : 0;
     }
 }

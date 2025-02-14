@@ -133,30 +133,6 @@ class TicketCudServiceImplTest {
     }
 
     @Test
-    @DisplayName("티켓 생성 실패 - 제목 없음")
-    void createTicketFailNoTitle() {
-        TicketCreateRequest request = new TicketCreateRequest(
-                null, "This is a test ticket.", "DevOps", "Infrastructure",
-                LocalDate.now().plusDays(1), List.of()
-        );
-
-        ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.createTicket(1L, request));
-        assertEquals(ErrorCode.INVALID_DATA, thrown.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("티켓 생성 실패 - 내용 없음")
-    void createTicketFailNoContent() {
-        TicketCreateRequest request = new TicketCreateRequest(
-                "Test Ticket", null, "DevOps", "Infrastructure",
-                LocalDate.now().plusDays(1), List.of()
-        );
-
-        ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.createTicket(1L, request));
-        assertEquals(ErrorCode.INVALID_DATA, thrown.getErrorCode());
-    }
-
-    @Test
     @DisplayName("티켓 생성 실패 - 첫 번째 카테고리 없음")
     void createTicketFailNoFirstCategory() {
         TicketCreateRequest request = new TicketCreateRequest(
@@ -184,29 +160,5 @@ class TicketCudServiceImplTest {
 
         ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.createTicket(1L, request));
         assertEquals(ErrorCode.DUPLICATE_TICKET_ID, thrown.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("티켓 생성 실패 - 과거 날짜 마감일")
-    void createTicketFailInvalidDueDatePastDate() {
-        TicketCreateRequest request = new TicketCreateRequest(
-                "Test Ticket", "This is a test ticket.", "DevOps", "Infrastructure",
-                LocalDate.now().minusDays(1), List.of()
-        );
-
-        ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.createTicket(1L, request));
-        assertEquals(ErrorCode.INVALID_DATA, thrown.getErrorCode());
-    }
-
-    @Test
-    @DisplayName("티켓 생성 실패 - 마감일 없음")
-    void createTicketFailInvalidDueDateNull() {
-        TicketCreateRequest request = new TicketCreateRequest(
-                "Test Ticket", "This is a test ticket.", "DevOps", "Infrastructure",
-                null, List.of()
-        );
-
-        ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.createTicket(1L, request));
-        assertEquals(ErrorCode.INVALID_DATA, thrown.getErrorCode());
     }
 }

@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -39,6 +40,7 @@ public class TicketLogServiceImpl implements TicketLogService {
     private final MemberRepository memberRepository;
     private final CategoryRepository categoryRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final WebhookService webhookService;
 
     private static final Set<Character> ENGLISH_VOWELS = Set.of('a', 'e', 'i', 'o', 'u',
             'A', 'E', 'I', 'O', 'U');
@@ -48,7 +50,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         Ticket ticket = getValidTicket(ticketId);
         Member manager = getValidMember(memberId);
-        validateTicketForUpdate(ticket, manager, true, true, false);
+        validateTicketForUpdate(ticket, manager, true, true, true);
         ticket.closeTicket();
 
         ticketRepository.save(ticket);
@@ -114,7 +116,7 @@ public class TicketLogServiceImpl implements TicketLogService {
                 .orElseThrow(() -> new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
 
         if (oldSecondCategory.equals(newSecondCategory.getName())) {
-            return new TicketLogResponse(null);
+            return null;
         }
         String newCustomId = updateTicketCategoryAndCustomId(ticket, firstCategory, newSecondCategory);
         return createAndSaveTicketLog(ticket, manager, null, oldSecondCategory, null, newSecondCategory.getName(), oldCustomId, newCustomId, "second");
@@ -172,7 +174,7 @@ public class TicketLogServiceImpl implements TicketLogService {
         eventPublisher.publishEvent(new TicketAssigneeChangedEvent(
                 ticket.getAgitId(),
                 manager.getId(),
-                ticket.getUser().getId(),
+                Objects.requireNonNull(ticket.getUser()).getId(),
                 ticket.getId(),
                 new ArrayList<>(assigneesForInProgress)
         ));

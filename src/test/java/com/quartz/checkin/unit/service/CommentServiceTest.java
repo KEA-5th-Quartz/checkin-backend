@@ -178,7 +178,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 작성 - 성공")
-    void writeComment_Success() {
+    void writeCommentSuccess() {
         // Given
         ArgumentCaptor<CommentAddedEvent> eventCaptor = ArgumentCaptor.forClass(CommentAddedEvent.class);
         when(ticketRepository.findById(any())).thenReturn(Optional.of(ticket));
@@ -197,7 +197,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 작성 - 접근 권한이 없는 경우 실패")
-    void writeComment_ForbiddenForNonTicketOwner() {
+    void writeCommentForbiddenForNonTicketOwner() {
         // Given
         Member otherMember = Member.builder()
                 .id(2L)
@@ -230,7 +230,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 작성 - 회원이 없는 경우 실패")
-    void writeComment_MemberNotFound() {
+    void writeCommentMemberNotFound() {
         // Given
         when(ticketRepository.findById(any())).thenReturn(Optional.of(ticket));
         when(memberRepository.findById(any())).thenReturn(Optional.empty());
@@ -243,7 +243,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 작성 - 티켓이 없는 경우 실패")
-    void writeComment_TicketNotFound() {
+    void writeCommentTicketNotFound() {
         // Given
         when(ticketRepository.findById(any())).thenReturn(Optional.empty());
 
@@ -255,7 +255,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 첨부파일 업로드 - 성공")
-    void uploadCommentAttachment_Success() throws IOException {
+    void uploadCommentAttachmentSuccess() throws IOException {
         // Given
         when(ticketRepository.findById(any())).thenReturn(Optional.of(ticket));
         when(memberRepository.findById(any())).thenReturn(Optional.of(member));
@@ -275,7 +275,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 첨부파일 업로드 - 빈 파일인 경우 실패")
-    void uploadCommentAttachment_EmptyFile() {
+    void uploadCommentAttachmentEmptyFile() {
         // Given
         MockMultipartFile emptyFile = new MockMultipartFile(
                 "file",
@@ -293,7 +293,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 첨부파일 업로드 - 접근 권한이 없는 경우 실패")
-    void uploadCommentAttachment_Forbidden() {
+    void uploadCommentAttachmentForbidden() {
         // Given
         MockMultipartFile failedFile = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
         Member otherMember = Member.builder()
@@ -330,7 +330,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 첨부파일 업로드 - 파일 크기를 초과하는 경우 실패")
-    void uploadCommentAttachment_FileSizeExceeded() {
+    void uploadCommentAttachmentFileSizeExceeded() {
         // Given
         String exceededUrl = "https://objectstorage.kr-central-2.kakaocloud.com/v1/" + projectId + bucket + "/comment/4.jpg";
         MockMultipartFile exceededFile = new MockMultipartFile(
@@ -356,7 +356,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 첨부파일 업로드 - 미존재 티켓인 경우 실패")
-    void uploadCommentAttachment_TicketNotFound() {
+    void uploadCommentAttachmentTicketNotFound() {
         // Given
         MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
         when(ticketRepository.findById(any())).thenReturn(Optional.empty());
@@ -370,7 +370,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 첨부파일 업로드 - 스토리지 오류가 발생하는 경우 실패")
-    void uploadCommentAttachment_StorageError() throws IOException {
+    void uploadCommentAttachmentStorageError() throws IOException {
         // Given
         MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
         when(ticketRepository.findById(any())).thenReturn(Optional.of(ticket));
@@ -386,7 +386,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글과 로그 목록 조회 - 성공")
-    void getCommentsAndLogs_Success() {
+    void getCommentsAndLogsSuccess() {
         // Given
         LocalDateTime now = LocalDateTime.now();
 
@@ -414,7 +414,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글과 로그 목록 조회 - 티켓이 없는 경우 실패")
-    void getCommentsAndLogs_TicketNotFound() {
+    void getCommentsAndLogsTicketNotFound() {
         // Given
         when(ticketRepository.existsById(any())).thenReturn(false);
 
@@ -426,7 +426,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 좋아요 토글 - 좋아요 추가")
-    void toggleLike_Add() {
+    void toggleLikeAdd() {
         // Given
         Like like = new Like();
         setId(like, 1L);
@@ -449,7 +449,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 좋아요 토글 - 좋아요 취소")
-    void toggleLike_Remove() {
+    void toggleLikeRemove() {
         // Given
         Like like = new Like();
         setId(like, 1L);
@@ -470,7 +470,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 좋아요 토글 - 회원이 없는 경우 실패")
-    void toggleLike_MemberNotFound() {
+    void toggleLikeMemberNotFound() {
         // Given
         when(ticketRepository.existsById(any())).thenReturn(true);
         when(commentRepository.findById(any())).thenReturn(Optional.of(comment));
@@ -484,7 +484,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 좋아요 토글 - 티켓이 없는 경우 실패")
-    void toggleLike_TicketNotFound() {
+    void toggleLikeTicketNotFound() {
         // Given
         when(ticketRepository.existsById(any())).thenReturn(false);
 
@@ -496,7 +496,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 좋아요 토글 - 댓글이 없는 경우 실패")
-    void toggleLike_CommentNotFound() {
+    void toggleLikeCommentNotFound() {
         // Given
         when(ticketRepository.existsById(any())).thenReturn(true);
         when(commentRepository.findById(any())).thenReturn(Optional.empty());
@@ -509,7 +509,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 좋아요 목록 조회 - 성공")
-    void getLikingMembersList_Success() {
+    void getLikingMembersListSuccess() {
         // Given
         Like like = new Like();
         setId(like, 1L);
@@ -531,7 +531,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 좋아요 목록 조회 - 티켓이 없는 경우 실패")
-    void getLikingMembersList_TicketNotFound() {
+    void getLikingMembersListTicketNotFound() {
         // Given
         when(ticketRepository.existsById(any())).thenReturn(false);
 
@@ -543,7 +543,7 @@ class CommentServiceTest {
 
     @Test
     @DisplayName("댓글 좋아요 목록 조회 - 댓글이 없는 경우 실패")
-    void getLikingMembersList_CommentNotFound() {
+    void getLikingMembersListCommentNotFound() {
         // Given
         when(ticketRepository.existsById(any())).thenReturn(true);
         when(commentRepository.existsById(any())).thenReturn(false);

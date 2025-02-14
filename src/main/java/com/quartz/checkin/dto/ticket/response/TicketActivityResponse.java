@@ -8,7 +8,6 @@ import lombok.Getter;
 @Builder
 public class TicketActivityResponse {
     private Long id;
-    private String customId;
     private List<ActivityResponse> activities;
 }
 

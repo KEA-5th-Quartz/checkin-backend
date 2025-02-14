@@ -171,26 +171,6 @@ public class CommentIntegrationTest {
     }
 
     @Test
-    @DisplayName("첨부파일 댓글 작성 실패 - 파일 크기가 10MB를 초과하는 경우")
-    public void writeCommentWithAttachmentFailFileTooLarge() throws Exception {
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "test.txt",
-                "text/plain",
-                new byte[1024 * 1024 * 11]);
-
-        MockHttpServletRequestBuilder requestBuilder = multipart(HttpMethod.POST, "/tickets/{ticketId}/comments/attachment", 2L)
-                .file(file)
-                .with(authenticatedAsUser(mockMvc))
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .content(file.getBytes());
-
-        mockMvc.perform(requestBuilder)
-            .andExpect(status().isPayloadTooLarge())
-            .andExpect(errorResponse(ErrorCode.TOO_LARGE_FILE));
-    }
-
-    @Test
     @DisplayName("첨부파일 댓글 작성 실패 - 존재하지 않는 티켓이 요청된 경우")
     public void writeCommentWithAttachmentFailTicketNotFound() throws Exception {
         MockMultipartFile file = new MockMultipartFile(

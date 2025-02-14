@@ -10,7 +10,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long>, TicketRep
         TicketTrashRepositoryCustom {
     List<Ticket> findByUser(Member member);
     List<Ticket> findByManager(Member member);
+    boolean existsByCustomId(String customId);
     boolean existsByFirstCategory(Category secondCategory);
     boolean existsBySecondCategory(Category secondCategory);
-
 }

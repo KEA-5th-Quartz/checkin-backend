@@ -73,6 +73,16 @@ public class TicketCudServiceImpl implements TicketCudService {
         List<Long> attachmentIds = request.getAttachmentIds();
         List<Attachment> attachments = attachmentRepository.findAllById(attachmentIds);
 
+        if (ticketRepository.existsByCustomId(newCustomId)) {
+            log.error("중복된 customId가 감지되었습니다: {}", newCustomId);
+            throw new ApiException(ErrorCode.DUPLICATE_TICKET_ID);
+        }
+
+        if (attachmentIds.size() > 3) {
+            log.error("첨부파일은 최대 3개까지 등록 가능합니다.");
+            throw new ApiException(ErrorCode.ATTACHMENT_LIMIT_EXCEEDED);
+        }
+
         if (attachments.size() != attachmentIds.size()) {
             log.error("존재하지 않는 첨부파일이 포함되어 있습니다.");
             throw new ApiException(ErrorCode.ATTACHMENT_NOT_FOUND);

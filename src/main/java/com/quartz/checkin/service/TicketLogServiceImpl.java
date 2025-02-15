@@ -50,7 +50,7 @@ public class TicketLogServiceImpl implements TicketLogService {
 
         Ticket ticket = getValidTicket(ticketId);
         Member manager = getValidMember(memberId);
-        validateTicketForUpdate(ticket, manager, true, true, true);
+        validateTicketForUpdate(ticket, manager, true, true, false);
         ticket.closeTicket();
 
         ticketRepository.save(ticket);

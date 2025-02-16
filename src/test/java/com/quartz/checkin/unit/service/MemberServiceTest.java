@@ -11,11 +11,13 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
+import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.MemberService;
 import java.util.Collections;
 import java.util.Optional;
@@ -42,6 +44,8 @@ public class MemberServiceTest {
     ApplicationEventPublisher eventPublisher;
     @Mock
     PasswordEncoder passwordEncoder;
+    @Mock
+    JwtService jwtService;
 
     @Nested
     @DisplayName("회원 생성 테스트")
@@ -222,5 +226,81 @@ public class MemberServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("비밀번호 초기화 테스트")
+    class PasswordResetTests {
+
+        private Long id;
+        private String newPassword;
+        private String passwordResetToken;
+        private Member existingMember;
+        private PasswordResetRequest request;
+
+        @BeforeEach
+        public void setUp() {
+            id = 1L;
+            newPassword = "newPassowrd!";
+            passwordResetToken = "passwordResetToken";
+
+            existingMember = Member.builder()
+                    .id(id)
+                    .password("originalPassword!")
+                    .build();
+
+            request = new PasswordResetRequest(passwordResetToken, newPassword);
+        }
+
+        @Test
+        @DisplayName("비밀번호 초기화 성공")
+        public void passwordResetSuccess() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(jwtService.isValidToken(passwordResetToken)).thenReturn(true);
+            when(jwtService.getMemberIdFromPasswordResetToken(passwordResetToken)).thenReturn(id);
+
+            //when & then
+            assertThatNoException().isThrownBy(() -> memberService.resetMemberPassword(id, request));
+            assertThat(existingMember.getPassword()).isEqualTo(newPassword);
+        }
+
+        @Test
+        @DisplayName("비밀번호 초기화 실패 - 존재하지 않는 사용자")
+        public void passwordResetFailsWhenUserDoesNotExist() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy((() -> memberService.resetMemberPassword(id, request)))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("비밀번호 초기화 실패 - 유효하지 않은 비밀번호 초기화 토큰")
+        public void passwordResetFailsWhenPasswordResetTokenIsInvalid() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(jwtService.isValidToken(passwordResetToken)).thenReturn(false);
+
+            //when & then
+            assertThatThrownBy((() -> memberService.resetMemberPassword(id, request)))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_PASSWORD_RESET_TOKEN));
+        }
+
+        @Test
+        @DisplayName("비밀번호 초기화 실패 - 다른 사용자의 비밀번호 초기화 토큰")
+        public void passwordResetFailsWhenUsingAnotherUsersToken() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(jwtService.isValidToken(passwordResetToken)).thenReturn(true);
+            when(jwtService.getMemberIdFromPasswordResetToken(passwordResetToken)).thenReturn(2L);
+
+            //when & then
+            assertThatThrownBy((() -> memberService.resetMemberPassword(id, request)))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
+        }
+    }
 
 }

@@ -10,10 +10,14 @@ import static org.mockito.Mockito.when;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
+import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.service.MemberService;
+import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -103,6 +108,119 @@ public class MemberServiceTest {
 
     }
 
+    @Nested
+    @DisplayName("회원 비밀번호 변경 테스트")
+    class PasswordChangeTests {
+
+        private Long id;
+        private String username;
+        private String originalPassword;
+        private String newPassword;
+        private Role role;
+        private Member existingMember;
+        private CustomUser customUser;
+        private PasswordChangeRequest request;
+
+        @BeforeEach
+        void setUp() {
+            id = 1L;
+            username = "user.a";
+            originalPassword = "originalPassword!";
+            newPassword = "newPassword!";
+            role = Role.USER;
+
+            existingMember = Member.builder()
+                    .id(id)
+                    .password(originalPassword)
+                    .build();
+
+            customUser = new CustomUser(
+                    id,
+                    username,
+                    originalPassword,
+                    "email",
+                    "profile",
+                    role,
+                    null,
+                    Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role.getValue()))
+            );
+
+            request = new PasswordChangeRequest(originalPassword, newPassword);
+        }
+
+
+        @Test
+        @DisplayName("비밀번호 변경 성공")
+        public void passwordChangeSuccess() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(passwordEncoder.matches(originalPassword, existingMember.getPassword())).thenReturn(true);
+
+            //when & then
+            assertThatNoException().isThrownBy(() -> memberService.changeMemberPassword(id, customUser, request));
+        }
+
+        @Test
+        @DisplayName("비밀번호 변경 실패 - 존재하지 않는 사용자")
+        public void passwordChangeFailsUserDoesNotExist() {
+            //given
+            when(memberRepository.findById(any())).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> memberService.changeMemberPassword(2L, customUser, request))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("비밀번호 변경 실패 - 다른 사용자의 비밀번호를 변경")
+        public void passwordChangeFailsTryingToChangeAnotherMembersPassword() {
+            //given
+            Member existingMember = Member.builder()
+                    .id(2L)
+                    .username("user.b")
+                    .password("otherPassword!")
+                    .build();
+
+            when(memberRepository.findById(2L)).thenReturn(Optional.of(existingMember));
+
+            //when & then
+            assertThatThrownBy((() -> memberService.changeMemberPassword(2L, customUser, request)))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
+        }
+
+        @Test
+        @DisplayName("비밀번호 변경 실패 - 기존 비밀번호가 틀림")
+        public void passwordChangeFailsWhenOriginalPasswordIsWrong() {
+            //given
+            String wrongOriginalPassword = "wrongOriginalPassword!";
+            request = new PasswordChangeRequest(wrongOriginalPassword, newPassword);
+
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(passwordEncoder.matches(wrongOriginalPassword, customUser.getPassword())).thenReturn(false);
+
+            //when & then
+            assertThatThrownBy((() -> memberService.changeMemberPassword(id, customUser, request)))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_ORIGINAL_PASSWORD));
+        }
+
+        @Test
+        @DisplayName("비밀번호 변경 실패 - 기존 비밀번호와 새 비밀번호가 같음")
+        public void passwordChangeFailsWhenNewPasswordIsSameAsOriginal() {
+            //given
+            request = new PasswordChangeRequest(originalPassword, originalPassword);
+
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(passwordEncoder.matches(originalPassword, customUser.getPassword())).thenReturn(true);
+
+            //when & then
+            assertThatThrownBy((() -> memberService.changeMemberPassword(id, customUser, request)))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_NEW_PASSWORD));
+        }
+    }
 
 
 }

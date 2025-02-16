@@ -2,10 +2,8 @@ package com.quartz.checkin.unit.service;
 
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
@@ -21,6 +19,7 @@ import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.MemberService;
+import com.quartz.checkin.service.S3Service;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -256,13 +255,15 @@ public class MemberServiceTest {
         @DisplayName("비밀번호 초기화 성공")
         public void passwordResetSuccess() {
             //given
+            String encodedNewPassword = "encodedNewPassword!";
             when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
             when(jwtService.isValidToken(passwordResetToken)).thenReturn(true);
             when(jwtService.getMemberIdFromPasswordResetToken(passwordResetToken)).thenReturn(id);
+            when(passwordEncoder.encode(request.getNewPassword())).thenReturn(encodedNewPassword);
 
             //when & then
             assertThatNoException().isThrownBy(() -> memberService.resetMemberPassword(id, request));
-            assertThat(existingMember.getPassword()).isEqualTo(newPassword);
+            assertThat(existingMember.getPassword()).isEqualTo(encodedNewPassword);
         }
 
         @Test

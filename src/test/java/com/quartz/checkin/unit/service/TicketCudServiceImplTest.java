@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.ticket.request.PriorityUpdateRequest;
 import com.quartz.checkin.dto.ticket.request.TicketCreateRequest;
 import com.quartz.checkin.dto.ticket.response.TicketCreateResponse;
 import com.quartz.checkin.entity.Category;
@@ -74,9 +75,11 @@ class TicketCudServiceImplTest {
     private TicketCudServiceImpl ticketCudService;
 
     private Member mockMember;
+    private Member mockManager;
     private Category firstCategory;
     private Category secondCategory;
     private Ticket mockTicket;
+    private PriorityUpdateRequest requestPriorityUpdate;
 
     @BeforeEach
     void setUp() {
@@ -86,6 +89,14 @@ class TicketCudServiceImplTest {
                 .email("test@example.com")
                 .password("securePassword")
                 .role(Role.USER)
+                .build();
+
+        mockManager = Member.builder()
+                .id(2L)
+                .username("testManager")
+                .email("test2@example.com")
+                .password("securePassword")
+                .role(Role.MANAGER)
                 .build();
 
         firstCategory = new Category(null, "DevOps", "D", "Development and Operations Guide");
@@ -103,6 +114,10 @@ class TicketCudServiceImplTest {
                 .dueDate(LocalDate.now().plusDays(1))
                 .build();
 
+
+        requestPriorityUpdate = new PriorityUpdateRequest();
+        setPriority(requestPriorityUpdate, Priority.HIGH);
+
         mockJPAQuery = mock(JPAQuery.class);
         lenient().when(queryFactory.select(any(Expression.class))).thenReturn(mockJPAQuery);
         lenient().when(mockJPAQuery.from(any(EntityPathBase.class))).thenReturn(mockJPAQuery);
@@ -114,6 +129,16 @@ class TicketCudServiceImplTest {
         lenient().when(categoryService.getFirstCategoryOrThrow(anyString())).thenReturn(firstCategory);
         lenient().when(categoryService.getSecondCategoryOrThrow(anyString(), any())).thenReturn(secondCategory);
         lenient().when(memberService.getMemberByIdOrThrow(1L)).thenReturn(mockMember);
+    }
+
+    private void setPriority(Object entity, Priority priority) {
+        try {
+            var field = entity.getClass().getDeclaredField("priority");
+            field.setAccessible(true);
+            field.set(entity, priority);
+        }  catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -160,5 +185,62 @@ class TicketCudServiceImplTest {
 
         ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.createTicket(1L, request));
         assertEquals(ErrorCode.DUPLICATE_TICKET_ID, thrown.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("티켓 중요도 변경 성공")
+    void updateTicketPrioritySuccess() {
+        // Given
+        mockTicket.assignManager(mockManager);
+        when(ticketRepository.findById(1L)).thenReturn(java.util.Optional.of(mockTicket));
+        when(memberService.getMemberByIdOrThrow(2L)).thenReturn(mockManager);
+        when(ticketRepository.save(any(Ticket.class))).thenReturn(mockTicket);
+
+        // When
+        ticketCudService.updatePriority(2L, 1L, requestPriorityUpdate);
+
+        // Then
+        assertEquals(Priority.HIGH, mockTicket.getPriority());
+    }
+
+    @Test
+    @DisplayName("티켓 중요도 변경 실패 - 담당자 없음")
+    void updateTicketPriorityFailManagerNotFound() {
+        // Given
+        when(memberService.getMemberByIdOrThrow(2L)).thenThrow(new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+
+        // When
+        ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.updatePriority(2L, 1L, requestPriorityUpdate));
+
+        // Then
+        assertEquals(ErrorCode.MEMBER_NOT_FOUND, thrown.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("티켓 중요도 변경 실패 - 티켓 없음")
+    void updateTicketPriorityFailTicketNotFound() {
+        // Given
+        when(ticketRepository.findById(1L)).thenReturn(java.util.Optional.empty());
+
+        // When
+        ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.updatePriority(2L, 1L, requestPriorityUpdate));
+
+        // Then
+        assertEquals(ErrorCode.TICKET_NOT_FOUND, thrown.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("티켓 중요도 변경 실패 - 담당자 불일치")
+    void updateTicketPriorityFailManagerMismatch() {
+        // Given
+        mockTicket.assignManager(mockMember);
+        when(ticketRepository.findById(1L)).thenReturn(java.util.Optional.of(mockTicket));
+        when(memberService.getMemberByIdOrThrow(2L)).thenReturn(mockManager);
+
+        // When
+        ApiException thrown = assertThrows(ApiException.class, () -> ticketCudService.updatePriority(2L, 1L, requestPriorityUpdate));
+
+        // Then
+        assertEquals(ErrorCode.INVALID_TICKET_MANAGER, thrown.getErrorCode());
     }
 }

@@ -728,4 +728,36 @@ public class MemberServiceTest {
         }
 
     }
+
+    @Nested
+    @DisplayName("오래된 소프트 딜리트된 사용자 영구삭제 테스트")
+    class PermanentlyDeleteOldSoftDeletedUsersTest {
+
+        @Test
+        @DisplayName("오래된 소프트 딜리트된 사용자 영구삭제 성공")
+        public void deleteOldSoftDeletedUsersSuccess() {
+            //given
+            Member memberA = Member.builder()
+                    .id(1L)
+                    .deletedAt(LocalDateTime.now().minusMonths(6).minusDays(1))
+                    .build();
+
+            Member memberB= Member.builder()
+                    .id(2L)
+                    .deletedAt(LocalDateTime.now().minusMonths(6).minusDays(1))
+                    .build();
+
+            Member memberC = Member.builder()
+                    .id(1L)
+                    .deletedAt(LocalDateTime.now().minusMonths(5))
+                    .build();
+            when(memberRepository.findAllByDeletedAtIsNotNull()).thenReturn(List.of(memberA, memberB, memberC));
+
+            //when
+            memberService.permanentlyDeleteOldSoftDeletedUsers();
+
+            //then
+            verify(memberRepository, times(2)).delete(any(Member.class));
+        }
+    }
 }

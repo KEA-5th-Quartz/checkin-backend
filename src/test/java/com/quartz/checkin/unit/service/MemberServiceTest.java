@@ -12,19 +12,34 @@ import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
+import com.quartz.checkin.entity.Comment;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
+import com.quartz.checkin.entity.TemplateAttachment;
+import com.quartz.checkin.entity.Ticket;
+import com.quartz.checkin.event.MemberHardDeletedEvent;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.event.RoleUpdateEvent;
 import com.quartz.checkin.event.SoftDeletedEvent;
+import com.quartz.checkin.repository.AttachmentRepository;
+import com.quartz.checkin.repository.CommentRepository;
+import com.quartz.checkin.repository.LikeRepository;
+import com.quartz.checkin.repository.MemberAccessLogRepository;
 import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.repository.TemplateAttachmentRepository;
+import com.quartz.checkin.repository.TemplateRepository;
+import com.quartz.checkin.repository.TicketRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
+import com.quartz.checkin.service.AttachmentService;
 import com.quartz.checkin.service.MemberService;
 import com.quartz.checkin.service.S3Service;
+import jakarta.persistence.EntityManager;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,18 +58,37 @@ import org.springframework.web.multipart.MultipartFile;
 @ExtendWith(MockitoExtension.class)
 public class MemberServiceTest {
 
-    @InjectMocks
-    MemberService memberService;
-    @Mock
-    MemberRepository memberRepository;
     @Mock
     ApplicationEventPublisher eventPublisher;
     @Mock
-    PasswordEncoder passwordEncoder;
+    AttachmentRepository attachmentRepository;
+    @Mock
+    AttachmentService attachmentService;
+    @Mock
+    CommentRepository commentRepository;
+    @Mock
+    EntityManager entityManager;
     @Mock
     JwtService jwtService;
     @Mock
+    LikeRepository likeRepository;
+    @InjectMocks
+    MemberService memberService;
+    @Mock
+    MemberAccessLogRepository memberAccessLogRepository;
+    @Mock
+    MemberRepository memberRepository;
+    @Mock
+    PasswordEncoder passwordEncoder;
+    @Mock
     S3Service s3Service;
+    @Mock
+    TemplateAttachmentRepository templateAttachmentRepository;
+    @Mock
+    TemplateRepository templateRepository;
+    @Mock
+    TicketRepository ticketRepository;
+
 
     @Nested
     @DisplayName("회원 생성 테스트")
@@ -609,4 +643,89 @@ public class MemberServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("하드 딜리트 테스트")
+    class hardDeleteTests {
+
+        private Long id;
+        private Member existingMember;
+        private Member deletedMember;
+        private Ticket ticket;
+        private Comment comment;
+
+
+        @BeforeEach
+        public void setUp() {
+            id = 1L;
+
+            existingMember = Member.builder()
+                    .id(id)
+                    .deletedAt(LocalDateTime.now())
+                    .build();
+
+            deletedMember = Member.builder()
+                    .id(-1L)
+                    .build();
+
+            ticket = Ticket.builder()
+                    .user(existingMember)
+                    .build();
+
+            comment = new Comment();
+            comment.updateMember(existingMember);
+            comment.updateTicket(ticket);
+        }
+
+        @Test
+        @DisplayName("하드 딜리트 성공")
+        public void hardDeleteSuccess() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(-1L)).thenReturn(Optional.of(deletedMember));
+
+            when(ticketRepository.findByUser(existingMember)).thenReturn(List.of(ticket));
+            when(ticketRepository.findByManager(existingMember)).thenReturn(List.of());
+            when(commentRepository.findByMember(existingMember)).thenReturn(List.of(comment));
+            when(templateRepository.findAllByMember(existingMember)).thenReturn(List.of());
+            when(templateAttachmentRepository.findAllByTemplatesJoinFetch(List.of())).thenReturn(List.of());
+
+            //when
+            memberService.hardDeleteMember(id);
+
+            //then
+            assertThat(ticket.getUser()).isEqualTo(deletedMember);
+            assertThat(comment.getMember()).isEqualTo(deletedMember);
+            verify(memberRepository).delete(existingMember);
+            verify(eventPublisher).publishEvent(any(MemberHardDeletedEvent.class));
+        }
+
+        @Test
+        @DisplayName("하드 딜리트 실패 - 존재하지 않는 사용자")
+        public void hardDeleteFailsWhenUserDoesNotExist() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> memberService.hardDeleteMember(id))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("하드 딜리트 실패 - 소프트 딜리트된 사용자가 아님")
+        public void hardDeleteFailsWhenUserIsNotSoftDeleted() {
+            //given
+            existingMember = Member.builder()
+                    .id(id)
+                    .deletedAt(null)
+                    .build();
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+
+            //when & then
+            assertThatThrownBy(() -> memberService.hardDeleteMember(id))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_SOFT_DELETED));
+        }
+
+    }
 }

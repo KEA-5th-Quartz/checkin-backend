@@ -11,10 +11,12 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
+import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
@@ -301,6 +303,58 @@ public class MemberServiceTest {
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
         }
+    }
+
+    @Nested
+    @DisplayName("비밀번호 초기화 이메일 전송 테스트")
+    class PasswordResetEmailTests {
+
+        private Long id;
+        private String username;
+        private String passwordResetToken;
+        private Member existingMember;
+        private PasswordResetEmailRequest request;
+
+        @BeforeEach
+        public void setUp() {
+            id = 1L;
+            username = "user.a";
+            passwordResetToken = "passwordResetToken";
+
+            existingMember = Member.builder()
+                    .id(id)
+                    .username(username)
+                    .build();
+
+            request = new PasswordResetEmailRequest(username);
+        }
+
+        @Test
+        @DisplayName("비밀번호 초기화 이메일 전송 성공")
+        public void sendPasswordResetEmailSuccess() {
+            //given
+            when(memberRepository.findByUsername(username)).thenReturn(Optional.of(existingMember));
+            when(jwtService.createPasswordResetToken(id)).thenReturn(passwordResetToken);
+
+            //when
+            memberService.sendPasswordResetMail(request);
+
+            //then
+            verify(eventPublisher).publishEvent(any(PasswordResetMailEvent.class));
+        }
+
+        @Test
+        @DisplayName("비밀번호 초기화 이메일 전송 실패 - 존재하지 않는 사용자")
+        public void sendPasswordResetEmailFailsWhenUserDoesNotExist() {
+            //given
+            when(memberRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> memberService.sendPasswordResetMail(request))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
     }
 
 }

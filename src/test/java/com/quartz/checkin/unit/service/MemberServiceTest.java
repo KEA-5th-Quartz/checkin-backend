@@ -17,6 +17,7 @@ import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.event.RoleUpdateEvent;
+import com.quartz.checkin.event.SoftDeletedEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
@@ -551,6 +552,61 @@ public class MemberServiceTest {
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_NEW_ROLE));
         }
 
+    }
+
+    @Nested
+    @DisplayName("소프트 딜리트 테스트")
+    class SoftDeleteTests {
+
+        private Long id;
+        private Member existingMember;
+
+        @BeforeEach
+        public void setUp() {
+            id = 1L;
+            existingMember = Member.builder()
+                    .id(id)
+                    .build();
+        }
+
+        @Test
+        @DisplayName("소프트 딜리트 성공")
+        public void softDeleteSuccess() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+
+            //when
+            memberService.softDeleteMember(id);
+
+            //then
+            assertThat(existingMember.getDeletedAt()).isNotNull();
+            verify(eventPublisher).publishEvent(any(SoftDeletedEvent.class));
+        }
+
+        @Test
+        @DisplayName("소프트 딜리트 실패 - 존재하지 않는 사용자")
+        public void softDeleteFailsWhenUserDoesNotExist() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> memberService.softDeleteMember(id))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("소프트 딜리트 실패 - 이미 소프트 딜리트된 사용자")
+        public void softDeleteFailsWhenUserIsAlreadySoftDeleted() {
+            //given
+            existingMember.softDelete();
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+
+            //when & then
+            assertThatThrownBy(() -> memberService.softDeleteMember(id))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_ALREADY_SOFT_DELETED));
+        }
     }
 
 }

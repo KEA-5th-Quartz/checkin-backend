@@ -20,6 +20,7 @@ import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.MemberService;
 import com.quartz.checkin.service.S3Service;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,8 +32,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
 public class MemberServiceTest {
@@ -47,6 +50,8 @@ public class MemberServiceTest {
     PasswordEncoder passwordEncoder;
     @Mock
     JwtService jwtService;
+    @Mock
+    S3Service s3Service;
 
     @Nested
     @DisplayName("회원 생성 테스트")
@@ -354,6 +359,128 @@ public class MemberServiceTest {
             assertThatThrownBy(() -> memberService.sendPasswordResetMail(request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("프로필 사진 업데이트 테스트")
+    class ProfilePicUpdateTests {
+
+        private Long id;
+        private MultipartFile file;
+        private Member existingMember;
+        private CustomUser customUser;
+
+        @BeforeEach
+        public void setUp() {
+            id = 1L;
+            file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
+
+            existingMember = Member.builder()
+                    .id(id)
+                    .build();
+
+            customUser = new CustomUser(
+                    id,
+                    "user.a",
+                    "password",
+                    "email",
+                    "profilePic",
+                    Role.USER,
+                    null,
+                    Collections.singleton(new SimpleGrantedAuthority("ROLE_" + Role.USER.getValue()))
+            );
+        }
+
+        @Test
+        @DisplayName("프로필 사진 업데이트 성공")
+        public void profilePicUpdateSuccess() throws IOException {
+            //given
+            when(s3Service.isImageType(file.getContentType())).thenReturn(true);
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(s3Service.uploadFile(eq(file), anyString())).thenReturn("newProfilePic");
+
+            //when & then
+            assertThatNoException().isThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file));
+            assertThat(existingMember.getProfilePic()).isEqualTo("newProfilePic");
+        }
+
+        @Test
+        @DisplayName("프로필 사진 업데이트 실패 - 이미지 파일이 아닌 경우")
+        public void profilePicUpdateFailsWhenFileIsNotImageType() {
+            //given
+            when(s3Service.isImageType(file.getContentType())).thenReturn(false);
+
+            //when & then
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_DATA));
+        }
+
+        @Test
+        @DisplayName("프로필 사진 업데이트 실패 - 이미지 파일이 5MB를 넘어가는 경우")
+        public void profilePicUpdateFailsWhenFileIsExceedsSizeLimit() {
+            //given
+            byte[] fileContent = new byte[5 * 1024 * 1024 + 1];
+            file = new MockMultipartFile("file", "test.jpg", "image/jpeg", fileContent);
+            when(s3Service.isImageType(file.getContentType())).thenReturn(true);
+
+            //when & then
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.TOO_LARGE_FILE));
+        }
+
+        @Test
+        @DisplayName("프로필 사진 업데이트 실패 - 존재하지 않는 사용자")
+        public void profilePicUpdateFailsWhenUserDoesNotExist() {
+            //given
+            when(s3Service.isImageType(file.getContentType())).thenReturn(true);
+            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("프로필 사진 업데이트 실패 - 다른 사용자의 프로필을 업데이트")
+        public void profilePicUpdateFailsWhenUpdatingAnotherUsersProfile() {
+            //given
+            customUser = new CustomUser(
+                    2L,
+                    "user.b",
+                    "password",
+                    "email",
+                    "profilePic",
+                    Role.USER,
+                    null,
+                    Collections.singleton(new SimpleGrantedAuthority("ROLE_" + Role.USER.getValue()))
+
+            );
+            when(s3Service.isImageType(file.getContentType())).thenReturn(true);
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+
+            //when & then
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
+        }
+
+        @Test
+        @DisplayName("프로필 사진 업데이트 실패 - ObjectStorage 클라이언트 문제 발생")
+        public void profilePicUpdateFailsWhenObjectStorageClientErrorOccurs() throws IOException {
+            //given
+            when(s3Service.isImageType(file.getContentType())).thenReturn(true);
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(s3Service.uploadFile(eq(file), anyString())).thenThrow(new RuntimeException());
+
+            //when & then
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.OBJECT_STORAGE_ERROR));
         }
 
     }

@@ -19,6 +19,7 @@ import com.quartz.checkin.entity.TemplateAttachment;
 import com.quartz.checkin.entity.Ticket;
 import com.quartz.checkin.event.MemberHardDeletedEvent;
 import com.quartz.checkin.event.MemberRegisteredEvent;
+import com.quartz.checkin.event.MemberRestoredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.event.RoleUpdateEvent;
 import com.quartz.checkin.event.SoftDeletedEvent;
@@ -742,7 +743,7 @@ public class MemberServiceTest {
                     .deletedAt(LocalDateTime.now().minusMonths(6).minusDays(1))
                     .build();
 
-            Member memberB= Member.builder()
+            Member memberB = Member.builder()
                     .id(2L)
                     .deletedAt(LocalDateTime.now().minusMonths(6).minusDays(1))
                     .build();
@@ -758,6 +759,65 @@ public class MemberServiceTest {
 
             //then
             verify(memberRepository, times(2)).delete(any(Member.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("회원 복구 테스트")
+    class MemberRestoreTests {
+
+        private Long id;
+        private Member existingMember;
+
+        @BeforeEach
+        public void setUp() {
+            id = 1L;
+            existingMember = Member.builder()
+                    .id(id)
+                    .deletedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        @Test
+        @DisplayName("회원 복구 성공")
+        public void restoreMemberSuccess() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+
+            //when
+            memberService.restoreMember(id);
+
+            //then
+            assertThat(existingMember.getDeletedAt()).isNull();
+            verify(eventPublisher).publishEvent(any(MemberRestoredEvent.class));
+        }
+
+        @Test
+        @DisplayName("회원 복구 실패 - 존재하지 않는 사용자")
+        public void restoreMemberFailsWhenUserDoesNotExist() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> memberService.hardDeleteMember(id))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("회원 복구 실패 - 소프트 딜리트된 사용자가 아님")
+        public void restoreMemberFailsWhenUserIsNotSoftDeleted() {
+            //given
+            existingMember = Member.builder()
+                    .id(id)
+                    .deletedAt(null)
+                    .build();
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+
+            //when & then
+            assertThatThrownBy(() -> memberService.hardDeleteMember(id))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_SOFT_DELETED));
         }
     }
 }

@@ -189,7 +189,7 @@ public class MemberServiceTest {
             when(memberRepository.findById(2L)).thenReturn(Optional.of(existingMember));
 
             //when & then
-            assertThatThrownBy((() -> memberService.changeMemberPassword(2L, customUser, request)))
+            assertThatThrownBy(() -> memberService.changeMemberPassword(2L, customUser, request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
         }
@@ -205,7 +205,7 @@ public class MemberServiceTest {
             when(passwordEncoder.matches(wrongOriginalPassword, customUser.getPassword())).thenReturn(false);
 
             //when & then
-            assertThatThrownBy((() -> memberService.changeMemberPassword(id, customUser, request)))
+            assertThatThrownBy(() -> memberService.changeMemberPassword(id, customUser, request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_ORIGINAL_PASSWORD));
         }
@@ -220,7 +220,7 @@ public class MemberServiceTest {
             when(passwordEncoder.matches(originalPassword, customUser.getPassword())).thenReturn(true);
 
             //when & then
-            assertThatThrownBy((() -> memberService.changeMemberPassword(id, customUser, request)))
+            assertThatThrownBy(() -> memberService.changeMemberPassword(id, customUser, request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_NEW_PASSWORD));
         }
@@ -297,7 +297,7 @@ public class MemberServiceTest {
             when(jwtService.getMemberIdFromPasswordResetToken(passwordResetToken)).thenReturn(2L);
 
             //when & then
-            assertThatThrownBy((() -> memberService.resetMemberPassword(id, request)))
+            assertThatThrownBy(() -> memberService.resetMemberPassword(id, request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
         }

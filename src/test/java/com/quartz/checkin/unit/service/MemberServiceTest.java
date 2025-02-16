@@ -11,10 +11,12 @@ import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
+import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
+import com.quartz.checkin.event.RoleUpdateEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.security.service.JwtService;
@@ -481,6 +483,72 @@ public class MemberServiceTest {
             assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.OBJECT_STORAGE_ERROR));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("권한 변경 테스트")
+    class RoleUpdateTests {
+
+        private Long id;
+        private Role prevRole;
+        private String newRole;
+        private Member existingMember;
+        private RoleUpdateRequest request;
+
+        @BeforeEach
+        public void setUp() {
+            id = 1L;
+            prevRole = Role.USER;
+            newRole = "MANAGER";
+
+            existingMember = Member.builder()
+                    .id(id)
+                    .role(prevRole)
+                    .build();
+
+            request = new RoleUpdateRequest(newRole);
+        }
+
+        @Test
+        @DisplayName("권한 변경 성공")
+        public void RoleUpdateSuccess() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+
+            //when
+            memberService.updateMemberRole(id, request);
+
+            //then
+            assertThat(existingMember.getRole().getValue()).isEqualTo(newRole);
+            verify(eventPublisher).publishEvent(any(RoleUpdateEvent.class));
+        }
+
+        @Test
+        @DisplayName("권한 변경 실패 - 존재하지 않는 사용자")
+        public void RoleUpdateFailsWhenUserDoesNotExist() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> memberService.updateMemberRole(id, request))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("권한 변경 실패 - 기존 권한과 동일함")
+        public void RoleUpdateFailsWhenWhenRoleIsUnchanged() {
+            //given
+            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            newRole = "USER";
+            request = new RoleUpdateRequest(newRole);
+
+            //when & then
+            assertThatThrownBy(() -> memberService.updateMemberRole(id, request))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_NEW_ROLE));
         }
 
     }

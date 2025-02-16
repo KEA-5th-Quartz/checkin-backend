@@ -8,6 +8,8 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
@@ -30,6 +32,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 @ActiveProfiles(value = "test")
@@ -55,6 +58,9 @@ public class MemberCommonIntegrationTest {
     MemberRepository memberRepository;
 
     @Autowired
+    ObjectMapper objectMapper;
+
+    @Autowired
     PasswordEncoder passwordEncoder;
 
     @Value("${user.profile.defaultImageUrl}")
@@ -63,30 +69,27 @@ public class MemberCommonIntegrationTest {
     @Test
     @DisplayName("로그인 성공")
     public void loginSuccess() throws Exception {
-        Member member = Member.builder()
-                .username("test.account")
-                .password(passwordEncoder.encode("testPassword1@"))
-                .role(Role.USER)
-                .email("testAccount@email.com")
-                .profilePic(profilePic)
-                .build();
 
-        Member savedMember = memberRepository.save(member);
-        memberRepository.flush();
+        String username = "test.account";
+        String password = "testPassword1@";
+        String email = "testAccount@email.com";
+        Role role = Role.USER;
 
-        String loginRequestJson = """
+        Member savedMember = registerMember(username, password, email, role);
+
+        String loginRequestJson = String.format("""
                     {
-                        "username": "test.account",
-                        "password": "testPassword1@"
+                        "username": "%s",
+                        "password": "%s"
                     }
-                """;
+                """, username, password);
 
         Map<String, Matcher<?>> expectedData = Map.of(
                 "memberId", notNullValue(),
-                "username", is("test.account"),
-                "email", is("testAccount@email.com"),
+                "username", is(username),
+                "email", is(email),
                 "profilePic", is(profilePic),
-                "role", is("USER"),
+                "role", is(role.getValue()),
                 "accessToken", notNullValue(),
                 "passwordResetToken", notNullValue()
         );
@@ -125,29 +128,27 @@ public class MemberCommonIntegrationTest {
     @DisplayName("로그인 실패 - 비밀번호 틀림")
     public void loginFailsWhenPasswordIsWrong() throws Exception {
 
-        Member member = Member.builder()
-                .username("test.account")
-                .password(passwordEncoder.encode("testPassword1@"))
-                .role(Role.USER)
-                .email("testAccount@email.com")
-                .profilePic(profilePic)
-                .build();
+        String username = "test.account";
+        String password = "testPassword1@";
+        String email = "testAccount@email.com";
+        Role role = Role.USER;
 
-        Member savedMember = memberRepository.save(member);
-        memberRepository.flush();
+        Member savedMember = registerMember(username, password, email, role);
 
-        String loginRequestJson = """
+        String loginRequestJson = String.format("""
                     {
-                        "username": "test.account",
+                        "username": "%s",
                         "password": "wrongPassword@"
                     }
-                """;
+                """, username);
 
-        ErrorCode errorCode = ErrorCode.INVALID_USERNAME_OR_PASSWORD;
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequestJson))
-                .andExpect(errorResponse(errorCode));
+                .andExpect(errorResponse(ErrorCode.INVALID_USERNAME_OR_PASSWORD));
+
+        verify(memberAccessLogService, times(1)).
+                writeWrongPasswordAccessLog(contains(String.valueOf(savedMember.getUsername())), anyString());
     }
 
     @Test
@@ -160,11 +161,10 @@ public class MemberCommonIntegrationTest {
                     }
                 """;
 
-        ErrorCode errorCode = ErrorCode.INVALID_DATA;
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequestJson))
-                .andExpect(errorResponse(errorCode));
+                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
     }
 
 
@@ -172,23 +172,19 @@ public class MemberCommonIntegrationTest {
     @DisplayName("로그인을 5분 이내에 5번 로그인 실패한 회원은 로그인 불가")
     public void loginFailsIfAttemptsExceededWithin5Minutes() throws Exception {
 
-        Member member = Member.builder()
-                .username("new.account")
-                .password(passwordEncoder.encode("testPassword1@"))
-                .role(Role.USER)
-                .email("newAccount@email.com")
-                .profilePic(profilePic)
-                .build();
+        String username = "new.account";
+        String password = "testPassword1@";
+        String email = "newAccount@email.com";
+        Role role = Role.USER;
 
-        Member savedMember = memberRepository.save(member);
-        memberRepository.flush();
+        Member savedMember = registerMember(username, password, email, role);
 
-        String loginRequestJson = """
+        String loginRequestJson = String.format("""
                     {
-                        "username": "new.account",
+                        "username": "%s",
                         "password": "wrongPassword@"
                     }
-                """;
+                """, username);
 
         for (int i = 0; i < 5; i++) {
             mockMvc.perform(post("/auth/login")
@@ -196,11 +192,10 @@ public class MemberCommonIntegrationTest {
                     .content(loginRequestJson));
         }
 
-        ErrorCode errorCode = ErrorCode.BLOCKED_MEMBER;
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequestJson))
-                .andExpect(errorResponse(errorCode));
+                .andExpect(errorResponse(ErrorCode.BLOCKED_MEMBER));
     }
 
     @Test
@@ -216,8 +211,115 @@ public class MemberCommonIntegrationTest {
     @DisplayName("로그인 하지 않은 사용자는 로그아웃 불가")
     public void logoutFailsWhenUserIsNotLoggedIn() throws Exception {
 
-        ErrorCode errorCode = ErrorCode.UNAUTHENTICATED;
         mockMvc.perform(post("/auth/logout"))
-                .andExpect(errorResponse(errorCode));
+                .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
     }
+
+    @Test
+    @DisplayName("토큰 재발급 성공")
+    public void tokenReissueSuccess() throws Exception {
+
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "memberId", notNullValue(),
+                "username", notNullValue(),
+                "email", notNullValue(),
+                "profilePic", notNullValue(),
+                "role", is("USER"),
+                "accessToken", notNullValue(),
+                "passwordResetToken", notNullValue()
+        );
+
+        mockMvc.perform(post("/auth/refresh")
+                        .with(authenticatedAsUser(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+    }
+
+    @Test
+    @DisplayName("토큰 재발급 실패 - refreshToken 누락")
+    public void tokenReissueFailsWhenRefreshTokenDoesNotExist() throws Exception {
+
+        MvcResult mvcResult =
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(USER_LOGIN_REQUEST))
+                        .andReturn();
+
+        String accessToken = getAccessToken(mvcResult);
+
+        mockMvc.perform(post("/auth/refresh")
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
+
+    }
+
+    @Test
+    @DisplayName("토큰 재발급 실패 - 동일한 refreshToken으로 두 번 이상 재발급 불가")
+    public void tokenReissueFailsWhenRefreshTokenIsReused() throws Exception {
+
+        MvcResult mvcResult =
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(USER_LOGIN_REQUEST))
+                        .andReturn();
+
+        String accessToken = getAccessToken(mvcResult);
+        String refreshToken = getRefreshToken(mvcResult);
+
+        mockMvc.perform(post("/auth/refresh")
+                        .with(setAccessToken(accessToken))
+                        .with(setRefreshToken(refreshToken)))
+                .andExpect(status().isOk());
+
+
+
+        mockMvc.perform(post("/auth/refresh")
+                        .with(setAccessToken(accessToken))
+                        .with(setRefreshToken(refreshToken)))
+                .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
+    }
+
+
+    @Test
+    @DisplayName("인증되지 않은 사용자는 인증이 필요한 리소스에 접근 불가")
+    public void denyUnauthenticatedAccess() throws Exception {
+
+        mockMvc.perform(get("/members/stats/role"))
+                .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
+    }
+
+    @Test
+    @DisplayName("인가되지 않은 사용자는 인가를 요구하는 리소스에 접근 불가")
+    public void denyUnAuthorizedAccess() throws Exception {
+
+        mockMvc.perform(get("/members/stats/role")
+                        .with(authenticatedAsUser(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+    }
+
+    private Member registerMember(String username, String password, String email, Role role) {
+        Member member = Member.builder()
+                .username(username)
+                .password(passwordEncoder.encode(password))
+                .role(role)
+                .email(email)
+                .profilePic(profilePic)
+                .build();
+
+        Member savedMember = memberRepository.save(member);
+        memberRepository.flush();
+
+        return savedMember;
+    }
+
+    private String getAccessToken(MvcResult mvcResult) throws Exception {
+        String responseContent = mvcResult.getResponse().getContentAsString();
+        JsonNode jsonNode = objectMapper.readTree(responseContent);
+
+        return jsonNode.path("data").path("accessToken").asText();
+    }
+
+    private String getRefreshToken(MvcResult mvcResult) {
+        return mvcResult.getResponse().getCookie("Refresh").getValue();
+    }
+
 }

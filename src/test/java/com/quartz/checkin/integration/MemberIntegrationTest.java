@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.entity.Member;
@@ -440,19 +441,11 @@ public class MemberIntegrationTest {
         String email = "newUser@email.com";
         String role = "USER";
 
-        String registrationRequestFormat = """
-                        {
-                            "username": "%s",
-                            "email": "%s",
-                            "role": "%s"
-                        }
-                """;
-
-        String registrationRequestJson = String.format(registrationRequestFormat, username, email, role);
+        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role);
 
         mockMvc.perform(post("/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(registrationRequestJson)
+                        .content(objectMapper.writeValueAsString(request))
                         .with(authenticatedAsAdmin(mockMvc)))
                 .andExpect(apiResponse(HttpStatus.CREATED.value(), null));
 
@@ -468,21 +461,13 @@ public class MemberIntegrationTest {
         String email = "newEmail";
         String role = "USER";
 
-        String registrationRequestFormat = """
-                        {
-                            "username": "%s",
-                            "email": "%s",
-                            "role": "%s"
-                        }
-                """;
+        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role);
 
         registerMember(username, "password1!", email, Role.USER);
 
-        String registrationRequestJson = String.format(registrationRequestFormat, username, email, role);
-
         mockMvc.perform(post("/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(registrationRequestJson)
+                        .content(objectMapper.writeValueAsString(request))
                         .with(authenticatedAsAdmin(mockMvc)))
                 .andExpect(errorResponse(ErrorCode.INVALID_DATA));
     }
@@ -495,21 +480,13 @@ public class MemberIntegrationTest {
         String email = "newUser@email.com";
         String role = "USER";
 
-        String registrationRequestFormat = """
-                        {
-                            "username": "%s",
-                            "email": "%s",
-                            "role": "%s"
-                        }
-                """;
+        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role);
 
         registerMember(username, "password1!", "newUser1@email.com", Role.USER);
 
-        String registrationRequestJson = String.format(registrationRequestFormat, username, email, role);
-
         mockMvc.perform(post("/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(registrationRequestJson)
+                        .content(objectMapper.writeValueAsString(request))
                         .with(authenticatedAsAdmin(mockMvc)))
                 .andExpect(errorResponse(ErrorCode.DUPLICATE_USERNAME));
     }
@@ -522,21 +499,13 @@ public class MemberIntegrationTest {
         String email = "newUser@email.com";
         String role = "USER";
 
-        String registrationRequestFormat = """
-                        {
-                            "username": "%s",
-                            "email": "%s",
-                            "role": "%s"
-                        }
-                """;
+        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role);
 
         registerMember("new.User", "password1!", email, Role.USER);
 
-        String registrationRequestJson = String.format(registrationRequestFormat, username, email, role);
-
         mockMvc.perform(post("/members")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(registrationRequestJson)
+                        .content(objectMapper.writeValueAsString(request))
                         .with(authenticatedAsAdmin(mockMvc)))
                 .andExpect(errorResponse(ErrorCode.DUPLICATE_EMAIL));
     }

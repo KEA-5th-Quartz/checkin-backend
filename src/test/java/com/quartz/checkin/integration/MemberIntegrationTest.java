@@ -356,6 +356,47 @@ public class MemberIntegrationTest {
 
     }
 
+    @Nested
+    @DisplayName("회원 페이지네이션 조회 테스트")
+    class ReadMemberInfoListTests {
+        @Test
+        @DisplayName("회원 페이지네이션 조회 성공")
+        public void readMemberInfoListSuccess() throws Exception {
+
+            Map<String, Matcher<?>> expectedData = Map.of(
+                    "page", is(1),
+                    "size", is(10),
+                    "totalPages", greaterThan(0),
+                    "totalMembers", greaterThan(0),
+                    "members[0].memberId", notNullValue(),
+                    "members[0].username", notNullValue(),
+                    "members[0].email", notNullValue(),
+                    "members[0].profilePic", notNullValue(),
+                    "members[0].role", is("USER")
+            );
+
+            mockMvc.perform(get("/members")
+                            .param("role", "USER")
+                            .param("page", "1")
+                            .param("size", "10")
+                            .with(authenticatedAsManager(mockMvc)))
+                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+        }
+
+        @Test
+        @DisplayName("회원 페이지네이션 조회 실패 - 양식에 맞지 않는 요청")
+        public void readMemberInfoListFailsWhenRequestIsInvalid() throws Exception {
+
+            mockMvc.perform(get("/members")
+                            .param("role", "GUEST")
+                            .param("page", "1")
+                            .param("size", "10")
+                            .with(authenticatedAsManager(mockMvc)))
+                    .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+        }
+
+    }
+
 
     private Member registerMember(String username, String password, String email, Role role) {
         Member member = Member.builder()

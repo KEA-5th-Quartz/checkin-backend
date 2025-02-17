@@ -20,18 +20,22 @@ import com.quartz.checkin.service.MemberAccessLogService;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ActiveProfiles(value = "test")
 @AutoConfigureMockMvc
 @SpringBootTest
-@Sql(scripts = "classpath:data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
+@Sql(scripts = "classpath:data.sql", executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
 @Transactional
 public class MemberIntegrationTest {
 
@@ -54,7 +58,6 @@ public class MemberIntegrationTest {
 
     @MockitoBean
     MemberAccessLogService memberAccessLogService;
-
     @Autowired
     MemberRepository memberRepository;
 
@@ -67,381 +70,338 @@ public class MemberIntegrationTest {
     @Value("${user.profile.defaultImageUrl}")
     private String profilePic;
 
-    @Nested
-    @DisplayName("로그인 테스트")
-    class LoginTests {
-
-        @Test
-        @DisplayName("로그인 성공")
-        public void loginSuccess() throws Exception {
-
-            String username = "test.account";
-            String password = "testPassword1@";
-            String email = "testAccount@email.com";
-            Role role = Role.USER;
-
-            Member savedMember = registerMember(username, password, email, role);
-
-            String loginRequestJson = String.format("""
-                        {
-                            "username": "%s",
-                            "password": "%s"
-                        }
-                    """, username, password);
-
-            Map<String, Matcher<?>> expectedData = Map.of(
-                    "memberId", notNullValue(),
-                    "username", is(username),
-                    "email", is(email),
-                    "profilePic", is(profilePic),
-                    "role", is(role.getValue()),
-                    "accessToken", notNullValue(),
-                    "passwordResetToken", notNullValue()
-            );
-
-            mockMvc.perform(post("/auth/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(loginRequestJson))
-                    .andExpect(cookie().exists("Refresh"))
-                    .andExpect(status().isOk())
-                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
-
-            verify(memberAccessLogService, times(1)).
-                    writeLoginSuccessAccessLog(eq(savedMember.getId()), anyString());
-        }
-
-        @Test
-        @DisplayName("로그인 실패 - 존재하지 않는 사용자")
-        public void loginFailsWhenUserDoesNotExist() throws Exception {
-
-            String loginRequestJson = """
-                        {
-                            "username": "wrong.account",
-                            "password": "wrongPassword@"
-                        }
-                    """;
-
-            ErrorCode errorCode = ErrorCode.INVALID_USERNAME_OR_PASSWORD;
-            mockMvc.perform(post("/auth/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(loginRequestJson))
-                    .andExpect(errorResponse(errorCode));
-
-        }
-
-        @Test
-        @DisplayName("로그인 실패 - 비밀번호 틀림")
-        public void loginFailsWhenPasswordIsWrong() throws Exception {
-
-            String username = "test.account";
-            String password = "testPassword1@";
-            String email = "testAccount@email.com";
-            Role role = Role.USER;
-
-            Member savedMember = registerMember(username, password, email, role);
-
-            String loginRequestJson = String.format("""
-                        {
-                            "username": "%s",
-                            "password": "wrongPassword@"
-                        }
-                    """, username);
-
-            mockMvc.perform(post("/auth/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(loginRequestJson))
-                    .andExpect(errorResponse(ErrorCode.INVALID_USERNAME_OR_PASSWORD));
-
-            verify(memberAccessLogService, times(1)).
-                    writeWrongPasswordAccessLog(contains(String.valueOf(savedMember.getUsername())), anyString());
-        }
-
-        @Test
-        @DisplayName("로그인 실패 - 양식에 맞지 않는 요청")
-        public void loginFailsWhenRequestIsInvalid() throws Exception {
-
-            String loginRequestJson = """
-                        {
-                            "username": "test.123"
-                        }
-                    """;
-
-            mockMvc.perform(post("/auth/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(loginRequestJson))
-                    .andExpect(errorResponse(ErrorCode.INVALID_DATA));
-        }
 
 
-        @Test
-        @DisplayName("로그인을 5분 이내에 5번 로그인 실패한 회원은 로그인 불가")
-        public void loginFailsIfAttemptsExceededWithin5Minutes() throws Exception {
+    @Test
+    @DisplayName("로그인 성공")
+    public void loginSuccess() throws Exception {
 
-            String username = "new.account";
-            String password = "testPassword1@";
-            String email = "newAccount@email.com";
-            Role role = Role.USER;
+        String username = "test.account";
+        String password = "testPassword1@";
+        String email = "testAccount@email.com";
+        Role role = Role.USER;
 
-            Member savedMember = registerMember(username, password, email, role);
+        Member savedMember = registerMember(username, password, email, role);
 
-            String loginRequestJson = String.format("""
-                        {
-                            "username": "%s",
-                            "password": "wrongPassword@"
-                        }
-                    """, username);
+        String loginRequestJson = String.format("""
+                    {
+                        "username": "%s",
+                        "password": "%s"
+                    }
+                """, username, password);
 
-            for (int i = 0; i < 5; i++) {
-                mockMvc.perform(post("/auth/login")
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "memberId", notNullValue(),
+                "username", is(username),
+                "email", is(email),
+                "profilePic", is(profilePic),
+                "role", is(role.getValue()),
+                "accessToken", notNullValue(),
+                "passwordResetToken", notNullValue()
+        );
+
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequestJson));
-            }
+                        .content(loginRequestJson))
+                .andExpect(cookie().exists("Refresh"))
+                .andExpect(status().isOk())
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
 
+        verify(memberAccessLogService, times(1)).
+                writeLoginSuccessAccessLog(eq(savedMember.getId()), anyString());
+    }
+
+    @Test
+    @DisplayName("로그인 실패 - 존재하지 않는 사용자")
+    public void loginFailsWhenUserDoesNotExist() throws Exception {
+
+        String loginRequestJson = """
+                    {
+                        "username": "wrong.account",
+                        "password": "wrongPassword@"
+                    }
+                """;
+
+        ErrorCode errorCode = ErrorCode.INVALID_USERNAME_OR_PASSWORD;
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(errorResponse(errorCode));
+
+    }
+
+    @Test
+    @DisplayName("로그인 실패 - 비밀번호 틀림")
+    public void loginFailsWhenPasswordIsWrong() throws Exception {
+
+        String username = "test.account";
+        String password = "testPassword1@";
+        String email = "testAccount@email.com";
+        Role role = Role.USER;
+
+        Member savedMember = registerMember(username, password, email, role);
+
+        String loginRequestJson = String.format("""
+                    {
+                        "username": "%s",
+                        "password": "wrongPassword@"
+                    }
+                """, username);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(errorResponse(ErrorCode.INVALID_USERNAME_OR_PASSWORD));
+
+        verify(memberAccessLogService, times(1)).
+                writeWrongPasswordAccessLog(contains(String.valueOf(savedMember.getUsername())), anyString());
+    }
+
+    @Test
+    @DisplayName("로그인 실패 - 양식에 맞지 않는 요청")
+    public void loginFailsWhenRequestIsInvalid() throws Exception {
+
+        String loginRequestJson = """
+                    {
+                        "username": "test.123"
+                    }
+                """;
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+    }
+
+
+    @Test
+    @DisplayName("로그인을 5분 이내에 5번 로그인 실패한 회원은 로그인 불가")
+    public void loginFailsIfAttemptsExceededWithin5Minutes() throws Exception {
+
+        String username = "new.account";
+        String password = "testPassword1@";
+        String email = "newAccount@email.com";
+        Role role = Role.USER;
+
+        Member savedMember = registerMember(username, password, email, role);
+
+        String loginRequestJson = String.format("""
+                    {
+                        "username": "%s",
+                        "password": "wrongPassword@"
+                    }
+                """, username);
+
+        for (int i = 0; i < 5; i++) {
             mockMvc.perform(post("/auth/login")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(loginRequestJson))
-                    .andExpect(errorResponse(ErrorCode.BLOCKED_MEMBER));
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(loginRequestJson));
         }
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(errorResponse(ErrorCode.BLOCKED_MEMBER));
+    }
+
+    @Test
+    @DisplayName("회원 로그아웃 성공")
+    public void logoutSuccess() throws Exception {
+
+        mockMvc.perform(post("/auth/logout")
+                        .with(authenticatedAsUser(mockMvc)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("로그인 하지 않은 사용자는 로그아웃 불가")
+    public void logoutFailsWhenUserIsNotLoggedIn() throws Exception {
+
+        mockMvc.perform(post("/auth/logout"))
+                .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
+    }
+
+    @Test
+    @DisplayName("토큰 재발급 성공")
+    public void tokenReissueSuccess() throws Exception {
+
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "memberId", notNullValue(),
+                "username", notNullValue(),
+                "email", notNullValue(),
+                "profilePic", notNullValue(),
+                "role", is("USER"),
+                "accessToken", notNullValue(),
+                "passwordResetToken", notNullValue()
+        );
+
+        mockMvc.perform(post("/auth/refresh")
+                        .with(authenticatedAsUser(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+    }
+
+    @Test
+    @DisplayName("토큰 재발급 실패 - refreshToken 누락")
+    public void tokenReissueFailsWhenRefreshTokenDoesNotExist() throws Exception {
+
+        MvcResult mvcResult =
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(USER_LOGIN_REQUEST))
+                        .andReturn();
+
+        String accessToken = getAccessToken(mvcResult);
+
+        mockMvc.perform(post("/auth/refresh")
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
 
     }
 
+    @Test
+    @DisplayName("토큰 재발급 실패 - 동일한 refreshToken으로 두 번 이상 재발급 불가")
+    public void tokenReissueFailsWhenRefreshTokenIsReused() throws Exception {
 
-    @Nested
-    @DisplayName("로그아웃 테스트")
-    class LogoutTests {
-        @Test
-        @DisplayName("회원 로그아웃 성공")
-        public void logoutSuccess() throws Exception {
+        MvcResult mvcResult =
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(USER_LOGIN_REQUEST))
+                        .andReturn();
 
-            mockMvc.perform(post("/auth/logout")
-                            .with(authenticatedAsUser(mockMvc)))
-                    .andExpect(status().isOk());
-        }
+        String accessToken = getAccessToken(mvcResult);
+        String refreshToken = getRefreshToken(mvcResult);
 
-        @Test
-        @DisplayName("로그인 하지 않은 사용자는 로그아웃 불가")
-        public void logoutFailsWhenUserIsNotLoggedIn() throws Exception {
+        mockMvc.perform(post("/auth/refresh")
+                        .with(setAccessToken(accessToken))
+                        .with(setRefreshToken(refreshToken)))
+                .andExpect(status().isOk());
 
-            mockMvc.perform(post("/auth/logout"))
-                    .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
-        }
+        mockMvc.perform(post("/auth/refresh")
+                        .with(setAccessToken(accessToken))
+                        .with(setRefreshToken(refreshToken)))
+                .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
     }
 
-    @Nested
-    @DisplayName("토큰 재발급 테스트")
-    class TokenReissueTests {
+    @Test
+    @DisplayName("인증되지 않은 사용자는 인증이 필요한 리소스에 접근 불가")
+    public void denyUnauthenticatedAccess() throws Exception {
 
-        @Test
-        @DisplayName("토큰 재발급 성공")
-        public void tokenReissueSuccess() throws Exception {
+        mockMvc.perform(get("/members/stats/role"))
+                .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
+    }
 
-            Map<String, Matcher<?>> expectedData = Map.of(
-                    "memberId", notNullValue(),
-                    "username", notNullValue(),
-                    "email", notNullValue(),
-                    "profilePic", notNullValue(),
-                    "role", is("USER"),
-                    "accessToken", notNullValue(),
-                    "passwordResetToken", notNullValue()
-            );
+    @Test
+    @DisplayName("인가되지 않은 사용자는 인가를 요구하는 리소스에 접근 불가")
+    public void denyUnAuthorizedAccess() throws Exception {
 
-            mockMvc.perform(post("/auth/refresh")
-                            .with(authenticatedAsUser(mockMvc)))
-                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
-        }
+        mockMvc.perform(get("/members/stats/role")
+                        .with(authenticatedAsUser(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+    }
 
-        @Test
-        @DisplayName("토큰 재발급 실패 - refreshToken 누락")
-        public void tokenReissueFailsWhenRefreshTokenDoesNotExist() throws Exception {
+    @Test
+    @DisplayName("회원 단건 조회 성공")
+    public void readMemberInfoSuccess() throws Exception {
 
-            MvcResult mvcResult =
-                    mockMvc.perform(post("/auth/login")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(USER_LOGIN_REQUEST))
-                            .andReturn();
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "memberId", notNullValue(),
+                "username", notNullValue(),
+                "email", notNullValue(),
+                "profilePic", notNullValue(),
+                "role", notNullValue()
+        );
 
-            String accessToken = getAccessToken(mvcResult);
-
-            mockMvc.perform(post("/auth/refresh")
-                            .with(setAccessToken(accessToken)))
-                    .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
-
-        }
-
-        @Test
-        @DisplayName("토큰 재발급 실패 - 동일한 refreshToken으로 두 번 이상 재발급 불가")
-        public void tokenReissueFailsWhenRefreshTokenIsReused() throws Exception {
-
-            MvcResult mvcResult =
-                    mockMvc.perform(post("/auth/login")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(USER_LOGIN_REQUEST))
-                            .andReturn();
-
-            String accessToken = getAccessToken(mvcResult);
-            String refreshToken = getRefreshToken(mvcResult);
-
-            mockMvc.perform(post("/auth/refresh")
-                            .with(setAccessToken(accessToken))
-                            .with(setRefreshToken(refreshToken)))
-                    .andExpect(status().isOk());
-
-            mockMvc.perform(post("/auth/refresh")
-                            .with(setAccessToken(accessToken))
-                            .with(setRefreshToken(refreshToken)))
-                    .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
-        }
+        mockMvc.perform(get("/members/{memberId}", 1L)
+                        .with(authenticatedAsUser(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
 
     }
 
-    @Nested
-    @DisplayName("인증 테스트")
-    class AuthenticationTests {
+    @Test
+    @DisplayName("회원 단건 조회 실패 - 존재하지 않는 사용자")
+    public void readMemberInfoFailsWhenUserDoesNotExist() throws Exception {
 
-        @Test
-        @DisplayName("인증되지 않은 사용자는 인증이 필요한 리소스에 접근 불가")
-        public void denyUnauthenticatedAccess() throws Exception {
-
-            mockMvc.perform(get("/members/stats/role"))
-                    .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
-        }
-
+        mockMvc.perform(get("/members/{memberId}", 100000L)
+                        .with(authenticatedAsUser(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.MEMBER_NOT_FOUND));
     }
 
-    @Nested
-    @DisplayName("인가 테스트")
-    class AuthorizationTests {
+    @Test
+    @DisplayName("회원 페이지네이션 조회 성공")
+    public void readMemberInfoListSuccess() throws Exception {
 
-        @Test
-        @DisplayName("인가되지 않은 사용자는 인가를 요구하는 리소스에 접근 불가")
-        public void denyUnAuthorizedAccess() throws Exception {
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "page", is(1),
+                "size", is(10),
+                "totalPages", greaterThan(0),
+                "totalMembers", greaterThan(0),
+                "members[0].memberId", notNullValue(),
+                "members[0].username", notNullValue(),
+                "members[0].email", notNullValue(),
+                "members[0].profilePic", notNullValue(),
+                "members[0].role", is("USER")
+        );
 
-            mockMvc.perform(get("/members/stats/role")
-                            .with(authenticatedAsUser(mockMvc)))
-                    .andExpect(errorResponse(ErrorCode.FORBIDDEN));
-        }
-
+        mockMvc.perform(get("/members")
+                        .param("role", "USER")
+                        .param("page", "1")
+                        .param("size", "10")
+                        .with(authenticatedAsManager(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
     }
 
-    @Nested
-    @DisplayName("회원 단건 조회 테스트")
-    class MemberInfoQueryTests {
+    @Test
+    @DisplayName("회원 페이지네이션 조회 실패 - 양식에 맞지 않는 요청")
+    public void readMemberInfoListFailsWhenRequestIsInvalid() throws Exception {
 
-        @Test
-        @DisplayName("회원 단건 조회 성공")
-        public void readMemberInfoSuccess() throws Exception {
-
-            Map<String, Matcher<?>> expectedData = Map.of(
-                    "memberId", notNullValue(),
-                    "username", notNullValue(),
-                    "email", notNullValue(),
-                    "profilePic", notNullValue(),
-                    "role", notNullValue()
-            );
-
-            mockMvc.perform(get("/members/{memberId}", 1L)
-                            .with(authenticatedAsUser(mockMvc)))
-                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
-
-        }
-
-        @Test
-        @DisplayName("회원 단건 조회 실패 - 존재하지 않는 사용자")
-        public void readMemberInfoFailsWhenUserDoesNotExist() throws Exception {
-
-            mockMvc.perform(get("/members/{memberId}", 100000L)
-                            .with(authenticatedAsUser(mockMvc)))
-                    .andExpect(errorResponse(ErrorCode.MEMBER_NOT_FOUND));
-        }
-
+        mockMvc.perform(get("/members")
+                        .param("role", "GUEST")
+                        .param("page", "1")
+                        .param("size", "10")
+                        .with(authenticatedAsManager(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
     }
 
-    @Nested
-    @DisplayName("회원 페이지네이션 조회 테스트")
-    class MemberInfoListQueryTests {
-        @Test
-        @DisplayName("회원 페이지네이션 조회 성공")
-        public void readMemberInfoListSuccess() throws Exception {
+    @Test
+    @DisplayName("소프트 딜리트 된 회원 조회 성공")
+    public void readSoftDeletedMemberSuccess() throws Exception {
 
-            Map<String, Matcher<?>> expectedData = Map.of(
-                    "page", is(1),
-                    "size", is(10),
-                    "totalPages", greaterThan(0),
-                    "totalMembers", greaterThan(0),
-                    "members[0].memberId", notNullValue(),
-                    "members[0].username", notNullValue(),
-                    "members[0].email", notNullValue(),
-                    "members[0].profilePic", notNullValue(),
-                    "members[0].role", is("USER")
-            );
+        String username = "new.account";
+        String password = "testPassword1@";
+        String email = "newAccount@email.com";
+        Role role = Role.USER;
 
-            mockMvc.perform(get("/members")
-                            .param("role", "USER")
-                            .param("page", "1")
-                            .param("size", "10")
-                            .with(authenticatedAsManager(mockMvc)))
-                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
-        }
+        Member savedMember = registerMember(username, password, email, role);
+        savedMember.softDelete();
 
-        @Test
-        @DisplayName("회원 페이지네이션 조회 실패 - 양식에 맞지 않는 요청")
-        public void readMemberInfoListFailsWhenRequestIsInvalid() throws Exception {
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "page", is(1),
+                "size", is(10),
+                "totalPages", greaterThan(0),
+                "totalMembers", greaterThan(0),
+                "members[0].memberId", notNullValue(),
+                "members[0].username", notNullValue(),
+                "members[0].email", notNullValue(),
+                "members[0].profilePic", notNullValue(),
+                "members[0].role", notNullValue()
+        );
 
-            mockMvc.perform(get("/members")
-                            .param("role", "GUEST")
-                            .param("page", "1")
-                            .param("size", "10")
-                            .with(authenticatedAsManager(mockMvc)))
-                    .andExpect(errorResponse(ErrorCode.INVALID_DATA));
-        }
-
+        mockMvc.perform(get("/members/trash")
+                        .param("page", "1")
+                        .param("size", "10")
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
     }
 
-    @Nested
-    @DisplayName("소프트 딜리트 된 회원 조회 테스트")
-    class SoftDeletedMemberQueryTests {
+    @Test
+    @DisplayName("소프트 딜리트 된 회원 조회 실패 - 양식에 맞지 않는 요청")
+    public void readSoftDeletedMemberFailsWhenRequestIsInvalid() throws Exception {
 
-        @Test
-        @DisplayName("소프트 딜리트 된 회원 조회 성공")
-        public void readSoftDeletedMemberSuccess() throws Exception {
-
-            String username = "new.account";
-            String password = "testPassword1@";
-            String email = "newAccount@email.com";
-            Role role = Role.USER;
-
-            Member savedMember = registerMember(username, password, email, role);
-            savedMember.softDelete();
-
-            Map<String, Matcher<?>> expectedData = Map.of(
-                    "page", is(1),
-                    "size", is(10),
-                    "totalPages", greaterThan(0),
-                    "totalMembers", greaterThan(0),
-                    "members[0].memberId", notNullValue(),
-                    "members[0].username", notNullValue(),
-                    "members[0].email", notNullValue(),
-                    "members[0].profilePic", notNullValue(),
-                    "members[0].role", notNullValue()
-            );
-
-            mockMvc.perform(get("/members/trash")
-                            .param("page", "1")
-                            .param("size", "10")
-                            .with(authenticatedAsAdmin(mockMvc)))
-                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
-        }
-
-        @Test
-        @DisplayName("소프트 딜리트 된 회원 조회 실패 - 양식에 맞지 않는 요청")
-        public void readSoftDeletedMemberFailsWhenRequestIsInvalid() throws Exception {
-
-            mockMvc.perform(get("/members/trash")
-                            .param("page", "0")
-                            .param("size", "10")
-                            .with(authenticatedAsAdmin(mockMvc)))
-                    .andExpect(errorResponse(ErrorCode.INVALID_DATA));
-        }
+        mockMvc.perform(get("/members/trash")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
     }
 
 

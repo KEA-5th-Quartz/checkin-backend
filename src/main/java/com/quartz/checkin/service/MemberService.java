@@ -228,7 +228,7 @@ public class MemberService {
     }
 
     @Transactional
-    public void updateMemberRole(Long id, HttpServletRequest request, RoleUpdateRequest roleUpdateRequest) {
+    public void updateMemberRole(Long id, RoleUpdateRequest roleUpdateRequest) {
         Member member = getMemberByIdOrThrow(id);
 
         Role newRole = Role.fromValue(roleUpdateRequest.getRole());

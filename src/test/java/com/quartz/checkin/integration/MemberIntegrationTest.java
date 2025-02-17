@@ -13,10 +13,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
+import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.LoginBlockCacheService;
@@ -703,6 +705,26 @@ public class MemberIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(errorResponse(ErrorCode.INVALID_PASSWORD_RESET_TOKEN));
+    }
+
+    @Test
+    @DisplayName("비밀번호 초기화 이메일 전송 성공")
+    public void sendPasswordResetEmailSuccess() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        PasswordResetEmailRequest request = new PasswordResetEmailRequest(savedMember.getUsername());
+
+        mockMvc.perform(post("/members/password-reset")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), null));
+
+        verify(eventPublisher, times(1)).
+                publishEvent(ArgumentMatchers.any(PasswordResetMailEvent.class));
     }
 
     private Member registerMember(String username, String password, String email, Role role) {

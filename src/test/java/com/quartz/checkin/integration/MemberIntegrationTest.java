@@ -40,7 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @Sql(scripts = "classpath:data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 @Transactional
-public class MemberCommonIntegrationTest {
+public class MemberIntegrationTest {
 
     @Autowired
     JwtService jwtService;

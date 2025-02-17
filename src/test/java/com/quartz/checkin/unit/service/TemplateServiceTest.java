@@ -7,7 +7,10 @@ import static org.mockito.Mockito.*;
 import com.quartz.checkin.common.AttachmentUtils;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.template.request.TemplateDeleteRequest;
 import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
+import com.quartz.checkin.dto.template.response.TemplateDeleteResponse;
+import com.quartz.checkin.dto.template.response.TemplateIdResponse;
 import com.quartz.checkin.entity.Attachment;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
@@ -17,12 +20,12 @@ import com.quartz.checkin.entity.TemplateAttachment;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TemplateAttachmentRepository;
 import com.quartz.checkin.repository.TemplateRepository;
-import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.security.CustomUser;
 import com.quartz.checkin.service.AttachmentService;
 import com.quartz.checkin.service.CategoryServiceImpl;
 import com.quartz.checkin.service.MemberService;
 import com.quartz.checkin.service.TemplateService;
+import jakarta.persistence.EntityManager;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +51,8 @@ public class TemplateServiceTest {
     AttachmentUtils attachmentUtils;
     @Mock
     CategoryServiceImpl categoryService;
+    @Mock
+    EntityManager entityManager;
     @Mock
     MemberService memberService;
     @Mock
@@ -101,6 +106,17 @@ public class TemplateServiceTest {
                 .content("content")
                 .build();
     }
+
+    private void setId(Object entity, Long id) {
+        try {
+            var field = entity.getClass().getDeclaredField("id");
+            field.setAccessible(true);
+            field.set(entity, id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Nested
     @DisplayName("템플릿 생성 테스트")
     class TemplateCreateTests {
@@ -314,6 +330,84 @@ public class TemplateServiceTest {
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
 
         }
+    }
+
+    @Nested
+    @DisplayName("템플릿 삭제 테스트")
+    class TemplateDeleteTests {
+
+        private TemplateDeleteRequest request;
+        private List<Long> attachmentsToDelete;
+        private List<Template> templates;
+        private List<TemplateAttachment> templateAttachments;
+
+        @BeforeEach
+        public void setUp() {
+            Attachment attachment = new Attachment("attachment1");
+            TemplateAttachment templateAttachment = new TemplateAttachment(template, attachment);
+            setId(attachment, 1L);
+            setId(templateAttachment, 1L);
+
+            request = new TemplateDeleteRequest(List.of(templateId));
+
+            templates = List.of(template);
+            templateAttachments = List.of(templateAttachment);
+            attachmentsToDelete = templateAttachments.stream()
+                    .map(ta -> ta.getAttachment().getId())
+                    .toList();
+        }
+
+        @Test
+        @DisplayName("템플릿 삭제 성공")
+        public void templateDeleteSuccess() {
+            //given
+            when(memberService.getMemberByIdOrThrow(customUser.getId())).thenReturn(existingMember);
+            when(templateRepository.findAllByIdAndMember(request.getTemplateIds(), existingMember))
+                    .thenReturn(templates);
+
+            when(templateAttachmentRepository.findAllByTemplatesJoinFetch(request.getTemplateIds()))
+                    .thenReturn(templateAttachments);
+
+            //when
+            TemplateDeleteResponse response = templateService.deleteTemplates(request, customUser);
+
+            //then
+            verify(templateAttachmentRepository).deleteByTemplates(templates);
+            verify(attachmentService).deleteAttachments(attachmentsToDelete);
+            verify(templateRepository).deleteByTemplateIds(request.getTemplateIds());
+
+            assertThat(response.getDeletedTemplates())
+                    .map(TemplateIdResponse::getTemplateId)
+                    .containsExactlyInAnyOrderElementsOf(request.getTemplateIds());
+        }
+
+        @Test
+        @DisplayName("템플릭 삭제 실패 - 존재하지 않는 사용자")
+        public void templateDeleteFailsWhenUserDoesNotExist() {
+            //given
+            when(memberService.getMemberByIdOrThrow(customUser.getId())).thenThrow(new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+
+            //when & then
+            assertThatThrownBy(() -> templateService.deleteTemplates(request, customUser))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("템플릭 삭제 실패 - 다른 사람의 템플릿을 삭제하려는 경우")
+        public void templateDeleteFailsWhen() {
+            //given
+            when(memberService.getMemberByIdOrThrow(customUser.getId())).thenReturn(existingMember);
+            when(templateRepository.findAllByIdAndMember(request.getTemplateIds(), existingMember))
+                    .thenReturn(List.of());
+
+
+            //when & then
+            assertThatThrownBy(() -> templateService.deleteTemplates(request, customUser))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
+        }
+
     }
 
 

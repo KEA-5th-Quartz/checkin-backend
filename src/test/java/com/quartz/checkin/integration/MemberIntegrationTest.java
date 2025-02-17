@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
@@ -539,6 +540,140 @@ public class MemberIntegrationTest {
                 .andExpect(errorResponse(ErrorCode.DUPLICATE_EMAIL));
     }
 
+    @Test
+    @DisplayName("비밀번호 변경 성공")
+    public void changePasswordSuccess() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+        String newPassword = "newPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String loginRequestJson = String.format("""
+                    {
+                        "username": "%s",
+                        "password": "%s"
+                    }
+                """, username, originalPassword);
+
+        MvcResult mvcResult = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String accessToken = getAccessToken(mvcResult);
+        PasswordChangeRequest request = new PasswordChangeRequest(originalPassword, newPassword);
+
+        mockMvc.perform(put("/members/{memberId}/password", savedMember.getId())
+                        .with(setAccessToken(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), null));
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 실패 - 다른 사람의 비밀번호를 변경")
+    public void changePasswordFailsWhenTryingToChangeAnotherMembersPassword() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+        String newPassword = "newPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String loginRequestJson = String.format("""
+                    {
+                        "username": "%s",
+                        "password": "%s"
+                    }
+                """, username, originalPassword);
+
+        MvcResult mvcResult = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String accessToken = getAccessToken(mvcResult);
+        PasswordChangeRequest request = new PasswordChangeRequest(originalPassword, newPassword);
+
+        mockMvc.perform(put("/members/{memberId}/password", 1L)
+                        .with(setAccessToken(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 실패 - 기존 비밀번호가 틀림")
+    public void changePasswordFailsWhenOriginalPasswordIsWrong() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+        String newPassword = "newPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String loginRequestJson = String.format("""
+                    {
+                        "username": "%s",
+                        "password": "%s"
+                    }
+                """, username, originalPassword);
+
+        MvcResult mvcResult = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String accessToken = getAccessToken(mvcResult);
+        PasswordChangeRequest request = new PasswordChangeRequest("originalPassword2@", newPassword);
+
+        mockMvc.perform(put("/members/{memberId}/password", savedMember.getId())
+                        .with(setAccessToken(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(errorResponse(ErrorCode.INVALID_ORIGINAL_PASSWORD));
+    }
+
+    @Test
+    @DisplayName("비밀번호 변경 실패 - 기존 비밀번호와 새 비밀번호가 같음")
+    public void changePasswordFailsWhenNewPasswordIsSameAsOriginal() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String loginRequestJson = String.format("""
+                    {
+                        "username": "%s",
+                        "password": "%s"
+                    }
+                """, username, originalPassword);
+
+        MvcResult mvcResult = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String accessToken = getAccessToken(mvcResult);
+        PasswordChangeRequest request = new PasswordChangeRequest(originalPassword, originalPassword);
+
+        mockMvc.perform(put("/members/{memberId}/password", savedMember.getId())
+                        .with(setAccessToken(accessToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(errorResponse(ErrorCode.INVALID_NEW_PASSWORD));
+    }
 
     private Member registerMember(String username, String password, String email, Role role) {
         Member member = Member.builder()

@@ -20,6 +20,7 @@ import com.quartz.checkin.service.MemberAccessLogService;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,235 +67,264 @@ public class MemberIntegrationTest {
     @Value("${user.profile.defaultImageUrl}")
     private String profilePic;
 
-    @Test
-    @DisplayName("로그인 성공")
-    public void loginSuccess() throws Exception {
+    @Nested
+    @DisplayName("로그인 테스트")
+    class loginTests {
 
-        String username = "test.account";
-        String password = "testPassword1@";
-        String email = "testAccount@email.com";
-        Role role = Role.USER;
+        @Test
+        @DisplayName("로그인 성공")
+        public void loginSuccess() throws Exception {
 
-        Member savedMember = registerMember(username, password, email, role);
+            String username = "test.account";
+            String password = "testPassword1@";
+            String email = "testAccount@email.com";
+            Role role = Role.USER;
 
-        String loginRequestJson = String.format("""
+            Member savedMember = registerMember(username, password, email, role);
+
+            String loginRequestJson = String.format("""
                     {
                         "username": "%s",
                         "password": "%s"
                     }
                 """, username, password);
 
-        Map<String, Matcher<?>> expectedData = Map.of(
-                "memberId", notNullValue(),
-                "username", is(username),
-                "email", is(email),
-                "profilePic", is(profilePic),
-                "role", is(role.getValue()),
-                "accessToken", notNullValue(),
-                "passwordResetToken", notNullValue()
-        );
+            Map<String, Matcher<?>> expectedData = Map.of(
+                    "memberId", notNullValue(),
+                    "username", is(username),
+                    "email", is(email),
+                    "profilePic", is(profilePic),
+                    "role", is(role.getValue()),
+                    "accessToken", notNullValue(),
+                    "passwordResetToken", notNullValue()
+            );
 
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequestJson))
-                .andExpect(cookie().exists("Refresh"))
-                .andExpect(status().isOk())
-                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+            mockMvc.perform(post("/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(loginRequestJson))
+                    .andExpect(cookie().exists("Refresh"))
+                    .andExpect(status().isOk())
+                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
 
-        verify(memberAccessLogService, times(1)).
-                writeLoginSuccessAccessLog(eq(savedMember.getId()), anyString());
-    }
+            verify(memberAccessLogService, times(1)).
+                    writeLoginSuccessAccessLog(eq(savedMember.getId()), anyString());
+        }
 
-    @Test
-    @DisplayName("로그인 실패 - 존재하지 않는 사용자")
-    public void loginFailsWhenUserDoesNotExist() throws Exception {
+        @Test
+        @DisplayName("로그인 실패 - 존재하지 않는 사용자")
+        public void loginFailsWhenUserDoesNotExist() throws Exception {
 
-        String loginRequestJson = """
+            String loginRequestJson = """
                     {
                         "username": "wrong.account",
                         "password": "wrongPassword@"
                     }
                 """;
 
-        ErrorCode errorCode = ErrorCode.INVALID_USERNAME_OR_PASSWORD;
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequestJson))
-                .andExpect(errorResponse(errorCode));
+            ErrorCode errorCode = ErrorCode.INVALID_USERNAME_OR_PASSWORD;
+            mockMvc.perform(post("/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(loginRequestJson))
+                    .andExpect(errorResponse(errorCode));
 
-    }
+        }
 
-    @Test
-    @DisplayName("로그인 실패 - 비밀번호 틀림")
-    public void loginFailsWhenPasswordIsWrong() throws Exception {
+        @Test
+        @DisplayName("로그인 실패 - 비밀번호 틀림")
+        public void loginFailsWhenPasswordIsWrong() throws Exception {
 
-        String username = "test.account";
-        String password = "testPassword1@";
-        String email = "testAccount@email.com";
-        Role role = Role.USER;
+            String username = "test.account";
+            String password = "testPassword1@";
+            String email = "testAccount@email.com";
+            Role role = Role.USER;
 
-        Member savedMember = registerMember(username, password, email, role);
+            Member savedMember = registerMember(username, password, email, role);
 
-        String loginRequestJson = String.format("""
+            String loginRequestJson = String.format("""
                     {
                         "username": "%s",
                         "password": "wrongPassword@"
                     }
                 """, username);
 
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequestJson))
-                .andExpect(errorResponse(ErrorCode.INVALID_USERNAME_OR_PASSWORD));
+            mockMvc.perform(post("/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(loginRequestJson))
+                    .andExpect(errorResponse(ErrorCode.INVALID_USERNAME_OR_PASSWORD));
 
-        verify(memberAccessLogService, times(1)).
-                writeWrongPasswordAccessLog(contains(String.valueOf(savedMember.getUsername())), anyString());
-    }
+            verify(memberAccessLogService, times(1)).
+                    writeWrongPasswordAccessLog(contains(String.valueOf(savedMember.getUsername())), anyString());
+        }
 
-    @Test
-    @DisplayName("로그인 실패 - 양식에 맞지 않는 요청")
-    public void loginFailsWhenRequestIsInvalid() throws Exception {
+        @Test
+        @DisplayName("로그인 실패 - 양식에 맞지 않는 요청")
+        public void loginFailsWhenRequestIsInvalid() throws Exception {
 
-        String loginRequestJson = """
+            String loginRequestJson = """
                     {
                         "username": "test.123"
                     }
                 """;
 
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequestJson))
-                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
-    }
+            mockMvc.perform(post("/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(loginRequestJson))
+                    .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+        }
 
 
-    @Test
-    @DisplayName("로그인을 5분 이내에 5번 로그인 실패한 회원은 로그인 불가")
-    public void loginFailsIfAttemptsExceededWithin5Minutes() throws Exception {
+        @Test
+        @DisplayName("로그인을 5분 이내에 5번 로그인 실패한 회원은 로그인 불가")
+        public void loginFailsIfAttemptsExceededWithin5Minutes() throws Exception {
 
-        String username = "new.account";
-        String password = "testPassword1@";
-        String email = "newAccount@email.com";
-        Role role = Role.USER;
+            String username = "new.account";
+            String password = "testPassword1@";
+            String email = "newAccount@email.com";
+            Role role = Role.USER;
 
-        Member savedMember = registerMember(username, password, email, role);
+            Member savedMember = registerMember(username, password, email, role);
 
-        String loginRequestJson = String.format("""
+            String loginRequestJson = String.format("""
                     {
                         "username": "%s",
                         "password": "wrongPassword@"
                     }
                 """, username);
 
-        for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 5; i++) {
+                mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson));
+            }
+
             mockMvc.perform(post("/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(loginRequestJson));
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(loginRequestJson))
+                    .andExpect(errorResponse(ErrorCode.BLOCKED_MEMBER));
         }
 
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequestJson))
-                .andExpect(errorResponse(ErrorCode.BLOCKED_MEMBER));
-    }
-
-    @Test
-    @DisplayName("회원 로그아웃 성공")
-    public void logoutSuccess() throws Exception {
-
-        mockMvc.perform(post("/auth/logout")
-                        .with(authenticatedAsUser(mockMvc)))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("로그인 하지 않은 사용자는 로그아웃 불가")
-    public void logoutFailsWhenUserIsNotLoggedIn() throws Exception {
-
-        mockMvc.perform(post("/auth/logout"))
-                .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
-    }
-
-    @Test
-    @DisplayName("토큰 재발급 성공")
-    public void tokenReissueSuccess() throws Exception {
-
-        Map<String, Matcher<?>> expectedData = Map.of(
-                "memberId", notNullValue(),
-                "username", notNullValue(),
-                "email", notNullValue(),
-                "profilePic", notNullValue(),
-                "role", is("USER"),
-                "accessToken", notNullValue(),
-                "passwordResetToken", notNullValue()
-        );
-
-        mockMvc.perform(post("/auth/refresh")
-                        .with(authenticatedAsUser(mockMvc)))
-                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
-    }
-
-    @Test
-    @DisplayName("토큰 재발급 실패 - refreshToken 누락")
-    public void tokenReissueFailsWhenRefreshTokenDoesNotExist() throws Exception {
-
-        MvcResult mvcResult =
-                mockMvc.perform(post("/auth/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(USER_LOGIN_REQUEST))
-                        .andReturn();
-
-        String accessToken = getAccessToken(mvcResult);
-
-        mockMvc.perform(post("/auth/refresh")
-                        .with(setAccessToken(accessToken)))
-                .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
-
-    }
-
-    @Test
-    @DisplayName("토큰 재발급 실패 - 동일한 refreshToken으로 두 번 이상 재발급 불가")
-    public void tokenReissueFailsWhenRefreshTokenIsReused() throws Exception {
-
-        MvcResult mvcResult =
-                mockMvc.perform(post("/auth/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(USER_LOGIN_REQUEST))
-                        .andReturn();
-
-        String accessToken = getAccessToken(mvcResult);
-        String refreshToken = getRefreshToken(mvcResult);
-
-        mockMvc.perform(post("/auth/refresh")
-                        .with(setAccessToken(accessToken))
-                        .with(setRefreshToken(refreshToken)))
-                .andExpect(status().isOk());
-
-
-
-        mockMvc.perform(post("/auth/refresh")
-                        .with(setAccessToken(accessToken))
-                        .with(setRefreshToken(refreshToken)))
-                .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
     }
 
 
-    @Test
-    @DisplayName("인증되지 않은 사용자는 인증이 필요한 리소스에 접근 불가")
-    public void denyUnauthenticatedAccess() throws Exception {
+    @Nested
+    @DisplayName("로그아웃 테스트")
+    class logoutTests {
+        @Test
+        @DisplayName("회원 로그아웃 성공")
+        public void logoutSuccess() throws Exception {
 
-        mockMvc.perform(get("/members/stats/role"))
-                .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
+            mockMvc.perform(post("/auth/logout")
+                            .with(authenticatedAsUser(mockMvc)))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("로그인 하지 않은 사용자는 로그아웃 불가")
+        public void logoutFailsWhenUserIsNotLoggedIn() throws Exception {
+
+            mockMvc.perform(post("/auth/logout"))
+                    .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
+        }
     }
 
-    @Test
-    @DisplayName("인가되지 않은 사용자는 인가를 요구하는 리소스에 접근 불가")
-    public void denyUnAuthorizedAccess() throws Exception {
+    @Nested
+    @DisplayName("토큰 재발급 테스트")
+    class tokenReissueTests {
 
-        mockMvc.perform(get("/members/stats/role")
-                        .with(authenticatedAsUser(mockMvc)))
-                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+        @Test
+        @DisplayName("토큰 재발급 성공")
+        public void tokenReissueSuccess() throws Exception {
+
+            Map<String, Matcher<?>> expectedData = Map.of(
+                    "memberId", notNullValue(),
+                    "username", notNullValue(),
+                    "email", notNullValue(),
+                    "profilePic", notNullValue(),
+                    "role", is("USER"),
+                    "accessToken", notNullValue(),
+                    "passwordResetToken", notNullValue()
+            );
+
+            mockMvc.perform(post("/auth/refresh")
+                            .with(authenticatedAsUser(mockMvc)))
+                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+        }
+
+        @Test
+        @DisplayName("토큰 재발급 실패 - refreshToken 누락")
+        public void tokenReissueFailsWhenRefreshTokenDoesNotExist() throws Exception {
+
+            MvcResult mvcResult =
+                    mockMvc.perform(post("/auth/login")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(USER_LOGIN_REQUEST))
+                            .andReturn();
+
+            String accessToken = getAccessToken(mvcResult);
+
+            mockMvc.perform(post("/auth/refresh")
+                            .with(setAccessToken(accessToken)))
+                    .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
+
+        }
+
+        @Test
+        @DisplayName("토큰 재발급 실패 - 동일한 refreshToken으로 두 번 이상 재발급 불가")
+        public void tokenReissueFailsWhenRefreshTokenIsReused() throws Exception {
+
+            MvcResult mvcResult =
+                    mockMvc.perform(post("/auth/login")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(USER_LOGIN_REQUEST))
+                            .andReturn();
+
+            String accessToken = getAccessToken(mvcResult);
+            String refreshToken = getRefreshToken(mvcResult);
+
+            mockMvc.perform(post("/auth/refresh")
+                            .with(setAccessToken(accessToken))
+                            .with(setRefreshToken(refreshToken)))
+                    .andExpect(status().isOk());
+
+
+
+            mockMvc.perform(post("/auth/refresh")
+                            .with(setAccessToken(accessToken))
+                            .with(setRefreshToken(refreshToken)))
+                    .andExpect(errorResponse(ErrorCode.INVALID_REFRESH_TOKEN));
+        }
+
     }
+
+    @Nested
+    @DisplayName("인증 테스트")
+    class AuthenticationTests {
+
+        @Test
+        @DisplayName("인증되지 않은 사용자는 인증이 필요한 리소스에 접근 불가")
+        public void denyUnauthenticatedAccess() throws Exception {
+
+            mockMvc.perform(get("/members/stats/role"))
+                    .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("인가 테스트")
+    class AuthorizationTests {
+
+        @Test
+        @DisplayName("인가되지 않은 사용자는 인가를 요구하는 리소스에 접근 불가")
+        public void denyUnAuthorizedAccess() throws Exception {
+
+            mockMvc.perform(get("/members/stats/role")
+                            .with(authenticatedAsUser(mockMvc)))
+                    .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+        }
+
+    }
+
 
     private Member registerMember(String username, String password, String email, Role role) {
         Member member = Member.builder()

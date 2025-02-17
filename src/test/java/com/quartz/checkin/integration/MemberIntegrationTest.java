@@ -16,6 +16,7 @@ import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
+import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
@@ -869,6 +870,44 @@ public class MemberIntegrationTest {
                         })
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(errorResponse(ErrorCode.OBJECT_STORAGE_ERROR));
+    }
+
+    @Test
+    @DisplayName("권한 변경 성공")
+    public void updateRoleSuccess() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        RoleUpdateRequest request = new RoleUpdateRequest(Role.MANAGER.getValue());
+
+        mockMvc.perform(put("/members/{memberId}/role", savedMember.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), null));
+    }
+
+    @Test
+    @DisplayName("권한 변경 실패 - 이전과 동일한 권한")
+    public void updateRoleFailsWhenRoleIsUnchanged() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        RoleUpdateRequest request = new RoleUpdateRequest(Role.USER.getValue());
+
+        mockMvc.perform(put("/members/{memberId}/role", savedMember.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.INVALID_NEW_ROLE));
     }
 
     private Member registerMember(String username, String password, String email, Role role) {

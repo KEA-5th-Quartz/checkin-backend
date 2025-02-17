@@ -69,7 +69,7 @@ public class MemberIntegrationTest {
 
     @Nested
     @DisplayName("로그인 테스트")
-    class loginTests {
+    class LoginTests {
 
         @Test
         @DisplayName("로그인 성공")
@@ -208,7 +208,7 @@ public class MemberIntegrationTest {
 
     @Nested
     @DisplayName("로그아웃 테스트")
-    class logoutTests {
+    class LogoutTests {
         @Test
         @DisplayName("회원 로그아웃 성공")
         public void logoutSuccess() throws Exception {
@@ -229,7 +229,7 @@ public class MemberIntegrationTest {
 
     @Nested
     @DisplayName("토큰 재발급 테스트")
-    class tokenReissueTests {
+    class TokenReissueTests {
 
         @Test
         @DisplayName("토큰 재발급 성공")
@@ -325,7 +325,7 @@ public class MemberIntegrationTest {
 
     @Nested
     @DisplayName("회원 단건 조회 테스트")
-    class ReadMemberInfoTests {
+    class MemberInfoQueryTests {
 
         @Test
         @DisplayName("회원 단건 조회 성공")
@@ -358,7 +358,7 @@ public class MemberIntegrationTest {
 
     @Nested
     @DisplayName("회원 페이지네이션 조회 테스트")
-    class ReadMemberInfoListTests {
+    class MemberInfoListQueryTests {
         @Test
         @DisplayName("회원 페이지네이션 조회 성공")
         public void readMemberInfoListSuccess() throws Exception {

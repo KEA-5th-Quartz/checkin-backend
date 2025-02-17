@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
+import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.LoginBlockCacheService;
@@ -21,6 +22,7 @@ import java.util.Map;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -48,6 +50,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberIntegrationTest {
 
     @Autowired
+    ApplicationEventPublisher eventPublisher;
+
+    @Autowired
     JwtService jwtService;
 
     @Autowired
@@ -70,7 +75,14 @@ public class MemberIntegrationTest {
     @Value("${user.profile.defaultImageUrl}")
     private String profilePic;
 
-
+    @TestConfiguration
+    static class MockitoPublisherConfiguration {
+        @Bean
+        @Primary
+        ApplicationEventPublisher publisher() {
+            return mock(ApplicationEventPublisher.class);
+        }
+    }
 
     @Test
     @DisplayName("로그인 성공")
@@ -402,6 +414,115 @@ public class MemberIntegrationTest {
                         .param("size", "10")
                         .with(authenticatedAsAdmin(mockMvc)))
                 .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+    }
+
+    @Test
+    @DisplayName("회원 등록 성공")
+    public void registerMemberSuccess() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String role = "USER";
+
+        String registrationRequestFormat = """
+                        {
+                            "username": "%s",
+                            "email": "%s",
+                            "role": "%s"
+                        }
+                """;
+
+        String registrationRequestJson = String.format(registrationRequestFormat, username, email, role);
+
+        mockMvc.perform(post("/members")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registrationRequestJson)
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.CREATED.value(), null));
+
+        verify(eventPublisher, times(1))
+                .publishEvent(ArgumentMatchers.any(MemberRegisteredEvent.class));
+    }
+
+    @Test
+    @DisplayName("회원 등록 실패 - 양식에 맞지 않는 요청")
+    public void registerMemberFailsWhenRequestIsInvalid() throws Exception {
+
+        String username = "new123";
+        String email = "newEmail";
+        String role = "USER";
+
+        String registrationRequestFormat = """
+                        {
+                            "username": "%s",
+                            "email": "%s",
+                            "role": "%s"
+                        }
+                """;
+
+        registerMember(username, "password1!", email, Role.USER);
+
+        String registrationRequestJson = String.format(registrationRequestFormat, username, email, role);
+
+        mockMvc.perform(post("/members")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registrationRequestJson)
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+    }
+
+    @Test
+    @DisplayName("회원 등록 실패 - 사용자명 중복")
+    public void registerMemberFailsWhenUsernameIsDuplicated() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String role = "USER";
+
+        String registrationRequestFormat = """
+                        {
+                            "username": "%s",
+                            "email": "%s",
+                            "role": "%s"
+                        }
+                """;
+
+        registerMember(username, "password1!", "newUser1@email.com", Role.USER);
+
+        String registrationRequestJson = String.format(registrationRequestFormat, username, email, role);
+
+        mockMvc.perform(post("/members")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registrationRequestJson)
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.DUPLICATE_USERNAME));
+    }
+
+    @Test
+    @DisplayName("회원 등록 실패 - 이메일 중복")
+    public void registerMemberFailsWhenEmailIsDuplicated() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String role = "USER";
+
+        String registrationRequestFormat = """
+                        {
+                            "username": "%s",
+                            "email": "%s",
+                            "role": "%s"
+                        }
+                """;
+
+        registerMember("new.User", "password1!", email, Role.USER);
+
+        String registrationRequestJson = String.format(registrationRequestFormat, username, email, role);
+
+        mockMvc.perform(post("/members")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registrationRequestJson)
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.DUPLICATE_EMAIL));
     }
 
 

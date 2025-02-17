@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.quartz.checkin.common.AttachmentUtils;
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
@@ -16,12 +17,15 @@ import com.quartz.checkin.entity.TemplateAttachment;
 import com.quartz.checkin.repository.AttachmentRepository;
 import com.quartz.checkin.repository.TemplateAttachmentRepository;
 import com.quartz.checkin.repository.TemplateRepository;
+import com.quartz.checkin.repository.TicketAttachmentRepository;
 import com.quartz.checkin.security.CustomUser;
+import com.quartz.checkin.service.AttachmentService;
 import com.quartz.checkin.service.CategoryServiceImpl;
 import com.quartz.checkin.service.MemberService;
 import com.quartz.checkin.service.TemplateService;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,6 +43,10 @@ public class TemplateServiceTest {
     @Mock
     AttachmentRepository attachmentRepository;
     @Mock
+    AttachmentService attachmentService;
+    @Mock
+    AttachmentUtils attachmentUtils;
+    @Mock
     CategoryServiceImpl categoryService;
     @Mock
     MemberService memberService;
@@ -50,7 +58,8 @@ public class TemplateServiceTest {
     TemplateService templateService;
 
 
-    private Long id;
+    private Long memberId;
+    private Long templateId;
     private Category firstCategory;
     private Category secondCategory;
     private CustomUser customUser;
@@ -60,10 +69,11 @@ public class TemplateServiceTest {
 
     @BeforeEach
     public void setUp() {
-        id = 1L;
+        memberId = 1L;
+        templateId = 1L;
 
         existingMember = Member.builder()
-                .id(id)
+                .id(memberId)
                 .build();
 
         customUser = new CustomUser(
@@ -77,13 +87,13 @@ public class TemplateServiceTest {
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_" + Role.USER.getValue()))
         );
 
-        firstCategory = new Category(null, "firstCategrt", "fc", null);
-        secondCategory = new Category(firstCategory, "firstCategrt", "fc", null);
+        firstCategory = new Category(null, "firstCategory", "fc", null);
+        secondCategory = new Category(firstCategory, "secondCategory", "fc", null);
 
         attachments = List.of(new Attachment("attachment1"), new Attachment("attachment2"));
 
         template = Template.builder()
-                .id(id)
+                .id(templateId)
                 .member(existingMember)
                 .firstCategory(firstCategory)
                 .secondCategory(secondCategory)
@@ -91,7 +101,6 @@ public class TemplateServiceTest {
                 .content("content")
                 .build();
     }
-
     @Nested
     @DisplayName("템플릿 생성 테스트")
     class TemplateCreateTests {
@@ -113,7 +122,7 @@ public class TemplateServiceTest {
         @DisplayName("템플릿 생성 성공")
         public void templateCreateSuccess() {
             //given
-            when(memberService.getMemberByIdOrThrow(id)).thenReturn(existingMember);
+            when(memberService.getMemberByIdOrThrow(memberId)).thenReturn(existingMember);
             when(categoryService.getFirstCategoryOrThrow(firstCategory.getName())).thenReturn(firstCategory);
             when(categoryService.getSecondCategoryOrThrow(secondCategory.getName(), firstCategory))
                     .thenReturn(secondCategory);
@@ -141,7 +150,7 @@ public class TemplateServiceTest {
         @DisplayName("템플릿 생성 실페 - 존재하지 않는 사용자")
         public void templateCreateFailsWhenUserDoesNotExist() {
             //given
-            when(memberService.getMemberByIdOrThrow(id)).thenThrow(new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+            when(memberService.getMemberByIdOrThrow(memberId)).thenThrow(new ApiException(ErrorCode.MEMBER_NOT_FOUND));
 
             //when & then
             assertThatThrownBy(() -> templateService.createTemplate(request, customUser))
@@ -153,7 +162,7 @@ public class TemplateServiceTest {
         @DisplayName("템플릿 생성 실페 - 존재하지 않는 1차 카테고리")
         public void templateCreateFailsWhenFirstCategoryDoesNotExist() {
             //given
-            when(memberService.getMemberByIdOrThrow(id)).thenReturn(existingMember);
+            when(memberService.getMemberByIdOrThrow(memberId)).thenReturn(existingMember);
             when(categoryService.getFirstCategoryOrThrow(firstCategory.getName()))
                     .thenThrow(new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
 
@@ -167,7 +176,7 @@ public class TemplateServiceTest {
         @DisplayName("템플릿 생성 실페 - 존재하지 않는 2차 카테고리")
         public void templateCreateFailsWhenSecondCategoryDoesNotExist() {
             //given
-            when(memberService.getMemberByIdOrThrow(id)).thenReturn(existingMember);
+            when(memberService.getMemberByIdOrThrow(memberId)).thenReturn(existingMember);
             when(categoryService.getFirstCategoryOrThrow(firstCategory.getName())).thenReturn(firstCategory);
             when(categoryService.getSecondCategoryOrThrow(secondCategory.getName(), firstCategory))
                     .thenThrow(new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
@@ -176,6 +185,134 @@ public class TemplateServiceTest {
             assertThatThrownBy(() -> templateService.createTemplate(request, customUser))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+        }
+
+        @Test
+        @DisplayName("템플릿 생성 실패 - 존재하지 않는 첨부파일")
+        public void templateCreateFailsWhenAttachmentsAreInvalid() {
+            //given
+            when(memberService.getMemberByIdOrThrow(memberId)).thenReturn(existingMember);
+            when(categoryService.getFirstCategoryOrThrow(firstCategory.getName())).thenReturn(firstCategory);
+            when(categoryService.getSecondCategoryOrThrow(secondCategory.getName(), firstCategory))
+                    .thenReturn(secondCategory);
+
+            List<Attachment> searchedAttachments = List.of(new Attachment("attachment1"));
+            when(attachmentRepository.findAllById(request.getAttachmentIds())).thenReturn(searchedAttachments);
+
+            //when & then
+            assertThatThrownBy(() -> templateService.createTemplate(request, customUser))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.ATTACHMENT_NOT_FOUND));
+        }
+    }
+
+    @Nested
+    @DisplayName("템플릿 업데이트 단위 테스트")
+    class TemplateUpdateTests {
+
+        private String newTitle;
+        private String newContent;
+        private Category newFirstCategory;
+        private Category newSecondCategory;
+        private TemplateSaveRequest request;
+
+        @BeforeEach
+        public void setUp() {
+
+            newTitle = "newTitle";
+            newContent = "newContent";
+
+            newFirstCategory = new Category(null, "newFirstCategory", "nfc", null);
+            newSecondCategory = new Category(newFirstCategory, "newSecondCategory", "nsc", null);
+
+            request = new TemplateSaveRequest(
+                    newTitle,
+                    newFirstCategory.getName(),
+                    newSecondCategory.getName(),
+                    newContent,
+                    List.of(2L, 3L));
+        }
+
+        @Test
+        @DisplayName("템플릿 업데이트 성공")
+        public void templateUpdateSuccess() {
+            //given
+            when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
+            when(memberService.getMemberByIdOrThrow(memberId)).thenReturn(existingMember);
+
+            when(categoryService.getFirstCategoryOrThrow(newFirstCategory.getName())).thenReturn(newFirstCategory);
+            when(categoryService.getSecondCategoryOrThrow(newSecondCategory.getName(), newFirstCategory))
+                    .thenReturn(newSecondCategory);
+
+            //when
+            templateService.updateTemplate(templateId, request, customUser);
+
+            //then
+            assertThat(template.getTitle()).isEqualTo(newTitle);
+            assertThat(template.getContent()).isEqualTo(newContent);
+            assertThat(template.getFirstCategory().getName()).isEqualTo(newFirstCategory.getName());
+            assertThat(template.getSecondCategory().getName()).isEqualTo(newSecondCategory.getName());
+
+            verify(attachmentUtils).handleTemplateAttachments(template, request.getAttachmentIds());
+        }
+
+        @Test
+        @DisplayName("템플릿 업데이트 실패 - 존재하지 않는 템플릿")
+        public void templateUpdateFailsWhenTemplateDoesNotExist() {
+            //given
+            when(templateRepository.findById(templateId)).thenReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> templateService.updateTemplate(templateId, request, customUser))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.TEMPLATE_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("템플릿 업데이트 실패 - 존재하지 않는 사용자")
+        public void templateUpdateFailsWhenUserDoesNotExist() {
+            //given
+            when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
+            when(memberService.getMemberByIdOrThrow(memberId)).thenThrow(new ApiException(ErrorCode.MEMBER_NOT_FOUND));
+
+            //when & then
+            assertThatThrownBy(() -> templateService.updateTemplate(templateId, request, customUser))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("템플릿 업데이트 실패 - 존재하지 않는 1차 카테고리")
+        public void templateUpdateFailsWhenFirstCategoryDoesNotExist() {
+            //given
+            when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
+            when(memberService.getMemberByIdOrThrow(memberId)).thenReturn(existingMember);
+
+            when(categoryService.getFirstCategoryOrThrow(newFirstCategory.getName())).
+                    thenThrow(new ApiException(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+
+            //when & then
+            assertThatThrownBy(() -> templateService.updateTemplate(templateId, request, customUser))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.CATEGORY_NOT_FOUND_FIRST));
+        }
+
+        @Test
+        @DisplayName("템플릿 업데이트 실패 - 존재하지 않는 2차 카테고리")
+        public void templateUpdateFailsWhenSecondCategoryDoesNotExist() {
+            //given
+            when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
+            when(memberService.getMemberByIdOrThrow(memberId)).thenReturn(existingMember);
+
+            when(categoryService.getFirstCategoryOrThrow(newFirstCategory.getName())).thenReturn(newFirstCategory);
+            when(categoryService.getSecondCategoryOrThrow(newSecondCategory.getName(), newFirstCategory)).
+                    thenThrow(new ApiException(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+
+            //when & then
+            assertThatThrownBy(() -> templateService.updateTemplate(templateId, request, customUser))
+                    .isInstanceOf(ApiException.class)
+                    .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.CATEGORY_NOT_FOUND_SECOND));
+
         }
     }
 

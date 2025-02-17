@@ -137,9 +137,8 @@ public class MemberController {
     @Operation(summary = "API 명세서 v0.3 line 20", description = "관리자가 회원의 권한 변경")
     @PutMapping("/{memberId}/role")
     public ApiResponse<Void> updateRole(@PathVariable(name = "memberId") Long memberId,
-                                        HttpServletRequest request,
                                         @RequestBody @Valid RoleUpdateRequest roleUpdateRequest) {
-        memberService.updateMemberRole(memberId, request, roleUpdateRequest);
+        memberService.updateMemberRole(memberId, roleUpdateRequest);
 
         return ApiResponse.createSuccessResponse(HttpStatus.OK.value());
     }

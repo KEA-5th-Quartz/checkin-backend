@@ -397,6 +397,53 @@ public class MemberIntegrationTest {
 
     }
 
+    @Nested
+    @DisplayName("소프트 딜리트 된 회원 조회 테스트")
+    class SoftDeletedMemberQueryTests {
+
+        @Test
+        @DisplayName("소프트 딜리트 된 회원 조회 성공")
+        public void readSoftDeletedMemberSuccess() throws Exception {
+
+            String username = "new.account";
+            String password = "testPassword1@";
+            String email = "newAccount@email.com";
+            Role role = Role.USER;
+
+            Member savedMember = registerMember(username, password, email, role);
+            savedMember.softDelete();
+
+            Map<String, Matcher<?>> expectedData = Map.of(
+                    "page", is(1),
+                    "size", is(10),
+                    "totalPages", greaterThan(0),
+                    "totalMembers", greaterThan(0),
+                    "members[0].memberId", notNullValue(),
+                    "members[0].username", notNullValue(),
+                    "members[0].email", notNullValue(),
+                    "members[0].profilePic", notNullValue(),
+                    "members[0].role", notNullValue()
+            );
+
+            mockMvc.perform(get("/members/trash")
+                            .param("page", "1")
+                            .param("size", "10")
+                            .with(authenticatedAsAdmin(mockMvc)))
+                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+        }
+
+        @Test
+        @DisplayName("소프트 딜리트 된 회원 조회 실패 - 양식에 맞지 않는 요청")
+        public void readSoftDeletedMemberFailsWhenRequestIsInvalid() throws Exception {
+
+            mockMvc.perform(get("/members/trash")
+                            .param("page", "0")
+                            .param("size", "10")
+                            .with(authenticatedAsAdmin(mockMvc)))
+                    .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+        }
+    }
+
 
     private Member registerMember(String username, String password, String email, Role role) {
         Member member = Member.builder()

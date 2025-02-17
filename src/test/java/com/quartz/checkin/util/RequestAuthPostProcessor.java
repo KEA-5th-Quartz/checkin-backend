@@ -46,7 +46,7 @@ public class RequestAuthPostProcessor {
     }
 
 
-    public static RequestPostProcessor authenticatedAsAdmin(MockMvc mockMvc, String loginRequest) throws Exception {
+    public static RequestPostProcessor authenticatedAsAdmin(MockMvc mockMvc) throws Exception {
         return authenticated(mockMvc, ADMIN_LOGIN_REQUEST);
     }
 

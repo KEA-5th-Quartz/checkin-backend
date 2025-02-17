@@ -83,11 +83,11 @@ public class MemberIntegrationTest {
             Member savedMember = registerMember(username, password, email, role);
 
             String loginRequestJson = String.format("""
-                    {
-                        "username": "%s",
-                        "password": "%s"
-                    }
-                """, username, password);
+                        {
+                            "username": "%s",
+                            "password": "%s"
+                        }
+                    """, username, password);
 
             Map<String, Matcher<?>> expectedData = Map.of(
                     "memberId", notNullValue(),
@@ -115,11 +115,11 @@ public class MemberIntegrationTest {
         public void loginFailsWhenUserDoesNotExist() throws Exception {
 
             String loginRequestJson = """
-                    {
-                        "username": "wrong.account",
-                        "password": "wrongPassword@"
-                    }
-                """;
+                        {
+                            "username": "wrong.account",
+                            "password": "wrongPassword@"
+                        }
+                    """;
 
             ErrorCode errorCode = ErrorCode.INVALID_USERNAME_OR_PASSWORD;
             mockMvc.perform(post("/auth/login")
@@ -141,11 +141,11 @@ public class MemberIntegrationTest {
             Member savedMember = registerMember(username, password, email, role);
 
             String loginRequestJson = String.format("""
-                    {
-                        "username": "%s",
-                        "password": "wrongPassword@"
-                    }
-                """, username);
+                        {
+                            "username": "%s",
+                            "password": "wrongPassword@"
+                        }
+                    """, username);
 
             mockMvc.perform(post("/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -161,10 +161,10 @@ public class MemberIntegrationTest {
         public void loginFailsWhenRequestIsInvalid() throws Exception {
 
             String loginRequestJson = """
-                    {
-                        "username": "test.123"
-                    }
-                """;
+                        {
+                            "username": "test.123"
+                        }
+                    """;
 
             mockMvc.perform(post("/auth/login")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -185,11 +185,11 @@ public class MemberIntegrationTest {
             Member savedMember = registerMember(username, password, email, role);
 
             String loginRequestJson = String.format("""
-                    {
-                        "username": "%s",
-                        "password": "wrongPassword@"
-                    }
-                """, username);
+                        {
+                            "username": "%s",
+                            "password": "wrongPassword@"
+                        }
+                    """, username);
 
             for (int i = 0; i < 5; i++) {
                 mockMvc.perform(post("/auth/login")
@@ -286,8 +286,6 @@ public class MemberIntegrationTest {
                             .with(setRefreshToken(refreshToken)))
                     .andExpect(status().isOk());
 
-
-
             mockMvc.perform(post("/auth/refresh")
                             .with(setAccessToken(accessToken))
                             .with(setRefreshToken(refreshToken)))
@@ -321,6 +319,39 @@ public class MemberIntegrationTest {
             mockMvc.perform(get("/members/stats/role")
                             .with(authenticatedAsUser(mockMvc)))
                     .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+        }
+
+    }
+
+    @Nested
+    @DisplayName("회원 단건 조회 테스트")
+    class ReadMemberInfoTests {
+
+        @Test
+        @DisplayName("회원 단건 조회 성공")
+        public void readMemberInfoSuccess() throws Exception {
+
+            Map<String, Matcher<?>> expectedData = Map.of(
+                    "memberId", notNullValue(),
+                    "username", notNullValue(),
+                    "email", notNullValue(),
+                    "profilePic", notNullValue(),
+                    "role", notNullValue()
+            );
+
+            mockMvc.perform(get("/members/{memberId}", 1L)
+                            .with(authenticatedAsUser(mockMvc)))
+                    .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+
+        }
+
+        @Test
+        @DisplayName("회원 단건 조회 실패 - 존재하지 않는 사용자")
+        public void readMemberInfoFailsWhenUserDoesNotExist() throws Exception {
+
+            mockMvc.perform(get("/members/{memberId}", 100000L)
+                            .with(authenticatedAsUser(mockMvc)))
+                    .andExpect(errorResponse(ErrorCode.MEMBER_NOT_FOUND));
         }
 
     }

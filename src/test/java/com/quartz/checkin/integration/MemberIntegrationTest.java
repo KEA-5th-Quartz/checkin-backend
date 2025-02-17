@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
@@ -23,6 +24,7 @@ import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.LoginBlockCacheService;
 import com.quartz.checkin.service.MemberAccessLogService;
+import com.quartz.checkin.service.S3Service;
 import com.quartz.checkin.service.TokenBlackListCacheService;
 import java.util.Map;
 import org.hamcrest.Matcher;
@@ -39,6 +41,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -47,6 +50,7 @@ import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @ActiveProfiles(value = "test")
 @AutoConfigureMockMvc
@@ -77,6 +81,9 @@ public class MemberIntegrationTest {
 
     @Autowired
     PasswordEncoder passwordEncoder;
+
+    @MockitoBean
+    S3Service s3Service;
 
     @Autowired
     TokenBlackListCacheService tokenBlackListCacheService;
@@ -725,6 +732,143 @@ public class MemberIntegrationTest {
 
         verify(eventPublisher, times(1)).
                 publishEvent(ArgumentMatchers.any(PasswordResetMailEvent.class));
+    }
+
+    @Test
+    @DisplayName("프로필 사진 업데이트 성공")
+    public void updateProfilePicSuccess() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
+
+        when(s3Service.isImageType(anyString())).thenReturn(true);
+        when(s3Service.uploadFile(eq(file), anyString()))
+                .thenReturn("newProfilePic");
+
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "profilePic", notNullValue()
+        );
+
+        String accessToken = jwtService.createAccessToken(
+                savedMember.getId(),
+                username,
+                savedMember.getProfilePic(),
+                savedMember.getRole()
+        );
+
+        mockMvc.perform(multipart("/members/{memberId}/profile-pic", savedMember.getId())
+                        .file(file)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            request.addHeader("Authorization", "Bearer " + accessToken);
+                            return request;
+                        })
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+    }
+
+    @Test
+    @DisplayName("프로필 사진 업데이트 실패 - 유효하지 않은 이미지 파일")
+    public void updateProfilePicFailsWhenFileIsNotImageType() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String accessToken = jwtService.createAccessToken(
+                savedMember.getId(),
+                username,
+                savedMember.getProfilePic(),
+                savedMember.getRole()
+        );
+
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
+
+        when(s3Service.isImageType(anyString())).thenReturn(false);
+
+        mockMvc.perform(multipart("/members/{memberId}/profile-pic", savedMember.getId())
+                        .file(file)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            request.addHeader("Authorization", "Bearer " + accessToken);
+                            return request;
+                        })
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+    }
+
+    @Test
+    @DisplayName("프로필 사진 업데이트 실패 - 이미지 파일이 5MB를 넘어가는 경우")
+    public void updateProfilePicFailsWhenFileIsExceedsSizeLimit() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String accessToken = jwtService.createAccessToken(
+                savedMember.getId(),
+                username,
+                savedMember.getProfilePic(),
+                savedMember.getRole()
+        );
+
+        byte[] fileContent = new byte[5 * 1024 * 1024 + 1];
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", fileContent);
+
+        when(s3Service.isImageType(anyString())).thenReturn(true);
+
+        mockMvc.perform(multipart("/members/{memberId}/profile-pic", savedMember.getId())
+                        .file(file)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            request.addHeader("Authorization", "Bearer " + accessToken);
+                            return request;
+                        })
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(errorResponse(ErrorCode.TOO_LARGE_FILE));
+    }
+
+    @Test
+    @DisplayName("프로필 사진 업데이트 실패 - Object Storage 클라이언트 문제 발생")
+    public void updateProfilePicFailsWhenObjectStorageClientErrorOccurs() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String accessToken = jwtService.createAccessToken(
+                savedMember.getId(),
+                username,
+                savedMember.getProfilePic(),
+                savedMember.getRole()
+        );
+
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
+
+        when(s3Service.isImageType(anyString())).thenReturn(true);
+        when(s3Service.uploadFile(eq(file), anyString()))
+                .thenThrow(new ApiException(ErrorCode.OBJECT_STORAGE_ERROR));
+
+        mockMvc.perform(multipart("/members/{memberId}/profile-pic", savedMember.getId())
+                        .file(file)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            request.addHeader("Authorization", "Bearer " + accessToken);
+                            return request;
+                        })
+                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(errorResponse(ErrorCode.OBJECT_STORAGE_ERROR));
     }
 
     private Member registerMember(String username, String password, String email, Role role) {

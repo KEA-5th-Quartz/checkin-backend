@@ -15,6 +15,7 @@ import com.querydsl.core.Tuple;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +77,6 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
 
         LocalDate today = LocalDate.now();
         LocalDate fromDate = today.minusDays(31);
-        LocalDate toDate = today.minusDays(1);
 
         Long overdueCount = queryFactory
                 .select(ticket.count())
@@ -86,15 +86,16 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
                         .and(member.id.ne(-1L)))
                 .where(ticket.deletedAt.isNull(),
                         ticket.status.eq(Status.IN_PROGRESS),
-                        ticket.dueDate.between(fromDate, toDate))
+                        ticket.dueDate.between(fromDate, today.minusDays(1)))
                 .fetchOne();
 
         List<Tuple> statusCounts = queryFactory
                 .select(ticket.status, ticket.count())
                 .from(ticket)
-                .leftJoin(member).on(ticket.manager.id.eq(member.id)
-                        .and(member.deletedAt.isNull()))
-                .where(commonTicketConditions(today, fromDate))
+                .where(ticket.deletedAt.isNull(),
+                        ticket.createdAt.loe(today.atTime(LocalTime.MAX)),
+                        ticket.dueDate.goe(LocalDate.from(today.atTime(LocalTime.MIN))),
+                        ticket.status.in(Status.OPEN, Status.IN_PROGRESS, Status.CLOSED))
                 .groupBy(ticket.status)
                 .fetch();
 
@@ -223,7 +224,6 @@ public class StatsRepositoryCustomImpl implements StatsRepositoryCustom {
                 ))
                 .collect(Collectors.toList());
     }
-
 
     private BooleanExpression commonTicketConditions(LocalDate today, LocalDate fromDate) {
         QTicket ticket = QTicket.ticket;

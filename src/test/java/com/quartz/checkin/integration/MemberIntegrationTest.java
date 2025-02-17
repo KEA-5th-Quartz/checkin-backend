@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
+import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
@@ -673,6 +674,66 @@ public class MemberIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(errorResponse(ErrorCode.INVALID_NEW_PASSWORD));
+    }
+
+    @Test
+    @DisplayName("비밀번호 초기화 성공")
+    public void passwordResetSuccess() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+        String newPassword = "newPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String passwordResetToken = jwtService.createPasswordResetToken(savedMember.getId());
+        PasswordResetRequest request = new PasswordResetRequest(passwordResetToken, newPassword);
+
+        mockMvc.perform(put("/members/{memberId}/password-reset", savedMember.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), null));
+    }
+
+    @Test
+    @DisplayName("비밀번호 초기화 실패 - 다른 사용자의 비밀번호를 초기화")
+    public void passwordResetFailsWhenToChangeAnotherMembersPassword() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+        String newPassword = "newPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String passwordResetToken = jwtService.createPasswordResetToken(savedMember.getId());
+        PasswordResetRequest request = new PasswordResetRequest(passwordResetToken, newPassword);
+
+        mockMvc.perform(put("/members/{memberId}/password-reset", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+    }
+
+    @Test
+    @DisplayName("비밀번호 초기화 실패 - 유효하지 않은 비밀번호 초기화 토큰")
+    public void passwordResetFailsWhenPasswordResetTokenIsInvalid() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+        String newPassword = "newPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        String passwordResetToken = "invalidPasswordResetToken";
+        PasswordResetRequest request = new PasswordResetRequest(passwordResetToken, newPassword);
+
+        mockMvc.perform(put("/members/{memberId}/password-reset", savedMember.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(errorResponse(ErrorCode.INVALID_PASSWORD_RESET_TOKEN));
     }
 
     private Member registerMember(String username, String password, String email, Role role) {

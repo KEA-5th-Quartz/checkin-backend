@@ -91,27 +91,47 @@ public class MemberServiceTest {
     TicketRepository ticketRepository;
 
 
+    private Long memberId;
+    private String username;
+    private String email;
+    private String role;
+    private CustomUser customUser;
+    private Member existingMember;
+
+    @BeforeEach
+    public void setUp() {
+        memberId = 1L;
+        username = "user.a";
+        email = "userA@email.com";
+        role = "USER";
+
+        existingMember = Member.builder()
+                .id(memberId)
+                .username(username)
+                .email(email)
+                .role(Role.fromValue(role))
+                .build();
+
+        customUser = new CustomUser(
+                memberId,
+                username,
+                "password1!",
+                email,
+                "profile",
+                Role.fromValue(role),
+                null,
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role))
+        );
+    }
+
     @Nested
     @DisplayName("회원 생성 테스트")
     class MemberRegisterTests {
 
-        private String username;
-        private String email;
-        private String role;
-        private Member existingMember;
         private MemberRegistrationRequest request;
 
         @BeforeEach
         void setUp() {
-            username = "new.user";
-            email = "newUser@email.com";
-            role = "USER";
-
-            existingMember = Member.builder()
-                    .id(1L)
-                    .email(email)
-                    .build();
-
             request = new MemberRegistrationRequest(username, email, role);
         }
 
@@ -160,37 +180,29 @@ public class MemberServiceTest {
     @DisplayName("회원 비밀번호 변경 테스트")
     class PasswordChangeTests {
 
-        private Long id;
-        private String username;
         private String originalPassword;
         private String newPassword;
-        private Role role;
-        private Member existingMember;
-        private CustomUser customUser;
         private PasswordChangeRequest request;
 
         @BeforeEach
         void setUp() {
-            id = 1L;
-            username = "user.a";
             originalPassword = "originalPassword!";
             newPassword = "newPassword!";
-            role = Role.USER;
 
             existingMember = Member.builder()
-                    .id(id)
+                    .id(memberId)
                     .password(originalPassword)
                     .build();
 
             customUser = new CustomUser(
-                    id,
+                    memberId,
                     username,
                     originalPassword,
-                    "email",
+                    email,
                     "profile",
-                    role,
+                    Role.fromValue(role),
                     null,
-                    Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role.getValue()))
+                    Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role))
             );
 
             request = new PasswordChangeRequest(originalPassword, newPassword);
@@ -201,11 +213,11 @@ public class MemberServiceTest {
         @DisplayName("비밀번호 변경 성공")
         public void passwordChangeSuccess() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
             when(passwordEncoder.matches(originalPassword, existingMember.getPassword())).thenReturn(true);
 
             //when & then
-            assertThatNoException().isThrownBy(() -> memberService.changeMemberPassword(id, customUser, request));
+            assertThatNoException().isThrownBy(() -> memberService.changeMemberPassword(memberId, customUser, request));
         }
 
         @Test
@@ -245,11 +257,11 @@ public class MemberServiceTest {
             String wrongOriginalPassword = "wrongOriginalPassword!";
             request = new PasswordChangeRequest(wrongOriginalPassword, newPassword);
 
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
             when(passwordEncoder.matches(wrongOriginalPassword, customUser.getPassword())).thenReturn(false);
 
             //when & then
-            assertThatThrownBy(() -> memberService.changeMemberPassword(id, customUser, request))
+            assertThatThrownBy(() -> memberService.changeMemberPassword(memberId, customUser, request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_ORIGINAL_PASSWORD));
         }
@@ -260,11 +272,11 @@ public class MemberServiceTest {
             //given
             request = new PasswordChangeRequest(originalPassword, originalPassword);
 
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
             when(passwordEncoder.matches(originalPassword, customUser.getPassword())).thenReturn(true);
 
             //when & then
-            assertThatThrownBy(() -> memberService.changeMemberPassword(id, customUser, request))
+            assertThatThrownBy(() -> memberService.changeMemberPassword(memberId, customUser, request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_NEW_PASSWORD));
         }
@@ -353,22 +365,12 @@ public class MemberServiceTest {
     @DisplayName("비밀번호 초기화 이메일 전송 테스트")
     class PasswordResetEmailTests {
 
-        private Long id;
-        private String username;
         private String passwordResetToken;
-        private Member existingMember;
         private PasswordResetEmailRequest request;
 
         @BeforeEach
         public void setUp() {
-            id = 1L;
-            username = "user.a";
             passwordResetToken = "passwordResetToken";
-
-            existingMember = Member.builder()
-                    .id(id)
-                    .username(username)
-                    .build();
 
             request = new PasswordResetEmailRequest(username);
         }
@@ -378,7 +380,7 @@ public class MemberServiceTest {
         public void sendPasswordResetEmailSuccess() {
             //given
             when(memberRepository.findByUsername(username)).thenReturn(Optional.of(existingMember));
-            when(jwtService.createPasswordResetToken(id)).thenReturn(passwordResetToken);
+            when(jwtService.createPasswordResetToken(memberId)).thenReturn(passwordResetToken);
 
             //when
             memberService.sendPasswordResetMail(request);
@@ -405,30 +407,11 @@ public class MemberServiceTest {
     @DisplayName("프로필 사진 업데이트 테스트")
     class ProfilePicUpdateTests {
 
-        private Long id;
         private MultipartFile file;
-        private Member existingMember;
-        private CustomUser customUser;
 
         @BeforeEach
         public void setUp() {
-            id = 1L;
             file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
-
-            existingMember = Member.builder()
-                    .id(id)
-                    .build();
-
-            customUser = new CustomUser(
-                    id,
-                    "user.a",
-                    "password",
-                    "email",
-                    "profilePic",
-                    Role.USER,
-                    null,
-                    Collections.singleton(new SimpleGrantedAuthority("ROLE_" + Role.USER.getValue()))
-            );
         }
 
         @Test
@@ -436,11 +419,11 @@ public class MemberServiceTest {
         public void profilePicUpdateSuccess() throws IOException {
             //given
             when(s3Service.isImageType(file.getContentType())).thenReturn(true);
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
             when(s3Service.uploadFile(eq(file), anyString())).thenReturn("newProfilePic");
 
             //when & then
-            assertThatNoException().isThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file));
+            assertThatNoException().isThrownBy(() -> memberService.updateMemberProfilePic(memberId, customUser, file));
             assertThat(existingMember.getProfilePic()).isEqualTo("newProfilePic");
         }
 
@@ -451,7 +434,7 @@ public class MemberServiceTest {
             when(s3Service.isImageType(file.getContentType())).thenReturn(false);
 
             //when & then
-            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(memberId, customUser, file))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_DATA));
         }
@@ -465,7 +448,7 @@ public class MemberServiceTest {
             when(s3Service.isImageType(file.getContentType())).thenReturn(true);
 
             //when & then
-            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(memberId, customUser, file))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.TOO_LARGE_FILE));
         }
@@ -475,10 +458,10 @@ public class MemberServiceTest {
         public void profilePicUpdateFailsWhenUserDoesNotExist() {
             //given
             when(s3Service.isImageType(file.getContentType())).thenReturn(true);
-            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+            when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(memberId, customUser, file))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
         }
@@ -499,10 +482,10 @@ public class MemberServiceTest {
 
             );
             when(s3Service.isImageType(file.getContentType())).thenReturn(true);
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
 
             //when & then
-            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(memberId, customUser, file))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.FORBIDDEN));
         }
@@ -512,11 +495,11 @@ public class MemberServiceTest {
         public void profilePicUpdateFailsWhenObjectStorageClientErrorOccurs() throws IOException {
             //given
             when(s3Service.isImageType(file.getContentType())).thenReturn(true);
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
             when(s3Service.uploadFile(eq(file), anyString())).thenThrow(new RuntimeException());
 
             //when & then
-            assertThatThrownBy(() -> memberService.updateMemberProfilePic(id, customUser, file))
+            assertThatThrownBy(() -> memberService.updateMemberProfilePic(memberId, customUser, file))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.OBJECT_STORAGE_ERROR));
         }
@@ -527,22 +510,12 @@ public class MemberServiceTest {
     @DisplayName("권한 변경 테스트")
     class RoleUpdateTests {
 
-        private Long id;
-        private Role prevRole;
         private String newRole;
-        private Member existingMember;
         private RoleUpdateRequest request;
 
         @BeforeEach
         public void setUp() {
-            id = 1L;
-            prevRole = Role.USER;
             newRole = "MANAGER";
-
-            existingMember = Member.builder()
-                    .id(id)
-                    .role(prevRole)
-                    .build();
 
             request = new RoleUpdateRequest(newRole);
         }
@@ -551,10 +524,10 @@ public class MemberServiceTest {
         @DisplayName("권한 변경 성공")
         public void RoleUpdateSuccess() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
 
             //when
-            memberService.updateMemberRole(id, request);
+            memberService.updateMemberRole(memberId, request);
 
             //then
             assertThat(existingMember.getRole().getValue()).isEqualTo(newRole);
@@ -565,10 +538,10 @@ public class MemberServiceTest {
         @DisplayName("권한 변경 실패 - 존재하지 않는 사용자")
         public void RoleUpdateFailsWhenUserDoesNotExist() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+            when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> memberService.updateMemberRole(id, request))
+            assertThatThrownBy(() -> memberService.updateMemberRole(memberId, request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
         }
@@ -577,12 +550,12 @@ public class MemberServiceTest {
         @DisplayName("권한 변경 실패 - 기존 권한과 동일함")
         public void RoleUpdateFailsWhenWhenRoleIsUnchanged() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
             newRole = "USER";
             request = new RoleUpdateRequest(newRole);
 
             //when & then
-            assertThatThrownBy(() -> memberService.updateMemberRole(id, request))
+            assertThatThrownBy(() -> memberService.updateMemberRole(memberId, request))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.INVALID_NEW_ROLE));
         }
@@ -593,25 +566,14 @@ public class MemberServiceTest {
     @DisplayName("소프트 딜리트 테스트")
     class SoftDeleteTests {
 
-        private Long id;
-        private Member existingMember;
-
-        @BeforeEach
-        public void setUp() {
-            id = 1L;
-            existingMember = Member.builder()
-                    .id(id)
-                    .build();
-        }
-
         @Test
         @DisplayName("소프트 딜리트 성공")
         public void softDeleteSuccess() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
 
             //when
-            memberService.softDeleteMember(id);
+            memberService.softDeleteMember(memberId);
 
             //then
             assertThat(existingMember.getDeletedAt()).isNotNull();
@@ -622,10 +584,10 @@ public class MemberServiceTest {
         @DisplayName("소프트 딜리트 실패 - 존재하지 않는 사용자")
         public void softDeleteFailsWhenUserDoesNotExist() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+            when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> memberService.softDeleteMember(id))
+            assertThatThrownBy(() -> memberService.softDeleteMember(memberId))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
         }
@@ -635,10 +597,10 @@ public class MemberServiceTest {
         public void softDeleteFailsWhenUserIsAlreadySoftDeleted() {
             //given
             existingMember.softDelete();
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
 
             //when & then
-            assertThatThrownBy(() -> memberService.softDeleteMember(id))
+            assertThatThrownBy(() -> memberService.softDeleteMember(memberId))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_ALREADY_SOFT_DELETED));
         }
@@ -648,8 +610,6 @@ public class MemberServiceTest {
     @DisplayName("하드 딜리트 테스트")
     class hardDeleteTests {
 
-        private Long id;
-        private Member existingMember;
         private Member deletedMember;
         private Ticket ticket;
         private Comment comment;
@@ -657,10 +617,8 @@ public class MemberServiceTest {
 
         @BeforeEach
         public void setUp() {
-            id = 1L;
-
             existingMember = Member.builder()
-                    .id(id)
+                    .id(memberId)
                     .deletedAt(LocalDateTime.now())
                     .build();
 
@@ -681,7 +639,7 @@ public class MemberServiceTest {
         @DisplayName("하드 딜리트 성공")
         public void hardDeleteSuccess() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
             when(memberRepository.findById(-1L)).thenReturn(Optional.of(deletedMember));
 
             when(ticketRepository.findByUser(existingMember)).thenReturn(List.of(ticket));
@@ -691,7 +649,7 @@ public class MemberServiceTest {
             when(templateAttachmentRepository.findAllByTemplatesJoinFetch(List.of())).thenReturn(List.of());
 
             //when
-            memberService.hardDeleteMember(id);
+            memberService.hardDeleteMember(memberId);
 
             //then
             assertThat(ticket.getUser()).isEqualTo(deletedMember);
@@ -704,10 +662,10 @@ public class MemberServiceTest {
         @DisplayName("하드 딜리트 실패 - 존재하지 않는 사용자")
         public void hardDeleteFailsWhenUserDoesNotExist() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+            when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> memberService.hardDeleteMember(id))
+            assertThatThrownBy(() -> memberService.hardDeleteMember(memberId))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
         }
@@ -717,13 +675,13 @@ public class MemberServiceTest {
         public void hardDeleteFailsWhenUserIsNotSoftDeleted() {
             //given
             existingMember = Member.builder()
-                    .id(id)
+                    .id(memberId)
                     .deletedAt(null)
                     .build();
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
 
             //when & then
-            assertThatThrownBy(() -> memberService.hardDeleteMember(id))
+            assertThatThrownBy(() -> memberService.hardDeleteMember(memberId))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_SOFT_DELETED));
         }
@@ -766,14 +724,10 @@ public class MemberServiceTest {
     @DisplayName("회원 복구 테스트")
     class MemberRestoreTests {
 
-        private Long id;
-        private Member existingMember;
-
         @BeforeEach
         public void setUp() {
-            id = 1L;
             existingMember = Member.builder()
-                    .id(id)
+                    .id(memberId)
                     .deletedAt(LocalDateTime.now())
                     .build();
         }
@@ -782,10 +736,10 @@ public class MemberServiceTest {
         @DisplayName("회원 복구 성공")
         public void restoreMemberSuccess() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
 
             //when
-            memberService.restoreMember(id);
+            memberService.restoreMember(memberId);
 
             //then
             assertThat(existingMember.getDeletedAt()).isNull();
@@ -796,10 +750,10 @@ public class MemberServiceTest {
         @DisplayName("회원 복구 실패 - 존재하지 않는 사용자")
         public void restoreMemberFailsWhenUserDoesNotExist() {
             //given
-            when(memberRepository.findById(id)).thenReturn(Optional.empty());
+            when(memberRepository.findById(memberId)).thenReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> memberService.hardDeleteMember(id))
+            assertThatThrownBy(() -> memberService.hardDeleteMember(memberId))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_FOUND));
         }
@@ -809,13 +763,13 @@ public class MemberServiceTest {
         public void restoreMemberFailsWhenUserIsNotSoftDeleted() {
             //given
             existingMember = Member.builder()
-                    .id(id)
+                    .id(memberId)
                     .deletedAt(null)
                     .build();
-            when(memberRepository.findById(id)).thenReturn(Optional.of(existingMember));
+            when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
 
             //when & then
-            assertThatThrownBy(() -> memberService.hardDeleteMember(id))
+            assertThatThrownBy(() -> memberService.hardDeleteMember(memberId))
                     .isInstanceOf(ApiException.class)
                     .matches(e -> ((ApiException) e).getErrorCode().equals(ErrorCode.MEMBER_NOT_SOFT_DELETED));
         }

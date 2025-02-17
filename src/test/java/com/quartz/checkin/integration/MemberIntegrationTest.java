@@ -18,6 +18,7 @@ import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.LoginBlockCacheService;
 import com.quartz.checkin.service.MemberAccessLogService;
+import com.quartz.checkin.service.TokenBlackListCacheService;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.DisplayName;
@@ -71,6 +72,9 @@ public class MemberIntegrationTest {
 
     @Autowired
     PasswordEncoder passwordEncoder;
+
+    @Autowired
+    TokenBlackListCacheService tokenBlackListCacheService;
 
     @Value("${user.profile.defaultImageUrl}")
     private String profilePic;
@@ -220,9 +224,19 @@ public class MemberIntegrationTest {
     @DisplayName("회원 로그아웃 성공")
     public void logoutSuccess() throws Exception {
 
+        MvcResult mvcResult =
+                mockMvc.perform(post("/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(USER_LOGIN_REQUEST))
+                        .andReturn();
+
+        String accessToken = getAccessToken(mvcResult);
+
         mockMvc.perform(post("/auth/logout")
-                        .with(authenticatedAsUser(mockMvc)))
+                        .with(setAccessToken(accessToken)))
                 .andExpect(status().isOk());
+
+        tokenBlackListCacheService.evict(accessToken);
     }
 
     @Test

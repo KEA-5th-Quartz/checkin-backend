@@ -224,8 +224,8 @@ public class MemberIntegrationTest {
 
 
     @Test
-    @DisplayName("로그인을 5분 이내에 5번 로그인 실패한 회원은 로그인 불가")
-    public void loginFailsIfAttemptsExceededWithin5Minutes() throws Exception {
+    @DisplayName("로그인 실패 - 로그인을 5분 이내에 5번 로그인 실패한 회원은 로그인 불가")
+    public void loginFailsWhenLoginAttemptsExceededWithin5Minutes() throws Exception {
 
         savedMember = registerMember(username, password, email, role);
 
@@ -288,7 +288,7 @@ public class MemberIntegrationTest {
     }
 
     @Test
-    @DisplayName("로그인 하지 않은 사용자는 로그아웃 불가")
+    @DisplayName("로그아웃 실패 - 로그인 하지 않은 사용자")
     public void logoutFailsWhenUserIsNotLoggedIn() throws Exception {
 
         mockMvc.perform(post("/auth/logout"))

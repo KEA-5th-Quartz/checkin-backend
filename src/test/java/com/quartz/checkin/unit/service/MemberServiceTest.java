@@ -548,7 +548,7 @@ public class MemberServiceTest {
 
         @Test
         @DisplayName("권한 변경 실패 - 기존 권한과 동일함")
-        public void RoleUpdateFailsWhenWhenRoleIsUnchanged() {
+        public void RoleUpdateFailsWhenRoleIsUnchanged() {
             //given
             when(memberRepository.findById(memberId)).thenReturn(Optional.of(existingMember));
             newRole = "USER";

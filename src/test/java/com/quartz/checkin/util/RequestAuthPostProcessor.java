@@ -33,7 +33,7 @@ public class RequestAuthPostProcessor {
         ADMIN_LOGIN_REQUEST = getProperty("test.login.admin");
     }
 
-    private static String getProperty(String key){
+    public static String getProperty(String key){
         return properties.getProperty(key);
     }
 
@@ -65,6 +65,11 @@ public class RequestAuthPostProcessor {
         };
     }
 
+
+    public static RequestPostProcessor authenticatedCustom(MockMvc mockMvc, String username, String password) throws Exception {
+        String loginRequest = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
+        return authenticated(mockMvc, loginRequest);
+    }
 
 
     private static RequestPostProcessor authenticated(MockMvc mockMvc, String loginRequest)

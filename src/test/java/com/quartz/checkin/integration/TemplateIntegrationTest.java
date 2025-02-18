@@ -4,15 +4,12 @@ import static com.quartz.checkin.util.ApiResponseMatchers.*;
 import static com.quartz.checkin.util.ErrorResponseMatchers.*;
 import static com.quartz.checkin.util.RequestAuthPostProcessor.*;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.template.request.TemplateDeleteRequest;
 import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
-import com.quartz.checkin.dto.template.response.TemplateSimpleResponse;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
@@ -70,6 +67,7 @@ public class TemplateIntegrationTest {
     private Category firstCategory;
     private Category secondCategory;
     private Member member;
+    private List<Template> templates;
 
 
     @BeforeEach
@@ -185,43 +183,31 @@ public class TemplateIntegrationTest {
 
         member = memberRepository.save(member);
 
-        Template template1 = Template.builder()
-                .member(member)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title1")
-                .content("content1")
-                .build();
+        initTemplates(member);
 
-        Template template2 = Template.builder()
-                .member(member)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title2")
-                .content("content2")
-                .build();
-
-        template1 = templateRepository.save(template1);
-        template2 = templateRepository.save(template2);
-
-        TemplateDeleteRequest request = new TemplateDeleteRequest(List.of(template1.getId(), template2.getId()));
+        TemplateDeleteRequest request =
+                new TemplateDeleteRequest(List.of(templates.get(0).getId(), templates.get(1).getId()));
 
         Map<String, Matcher<?>> expectedData = Map.of(
                 "deletedTemplates", notNullValue()
         );
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         mockMvc.perform(delete("/members/templates")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .with(setAccessToken(accessToken)))
                 .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+    }
+
+    private String getAccessToken(Member member) {
+        return jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
     }
 
     @Test
@@ -233,33 +219,12 @@ public class TemplateIntegrationTest {
         member = memberRepository.save(member);
         Member anotherMember = memberRepository.findById(1L).get();
 
-        Template template1 = Template.builder()
-                .member(anotherMember)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title1")
-                .content("content1")
-                .build();
+        initTemplates(anotherMember);
 
-        Template template2 = Template.builder()
-                .member(anotherMember)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title2")
-                .content("content2")
-                .build();
+        TemplateDeleteRequest request =
+                new TemplateDeleteRequest(List.of(templates.get(0).getId(), templates.get(1).getId()));
 
-        template1 = templateRepository.save(template1);
-        template2 = templateRepository.save(template2);
-
-        TemplateDeleteRequest request = new TemplateDeleteRequest(List.of(template1.getId(), template2.getId()));
-
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         mockMvc.perform(delete("/members/templates")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -276,15 +241,7 @@ public class TemplateIntegrationTest {
 
         member = memberRepository.save(member);
 
-        Template template = Template.builder()
-                .member(member)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title1")
-                .content("content1")
-                .build();
-
-        template = templateRepository.save(template);
+        initTemplates(member);
 
         TemplateSaveRequest request = new TemplateSaveRequest(
                 title,
@@ -294,14 +251,9 @@ public class TemplateIntegrationTest {
                 List.of(1L, 2L)
         );
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
-        mockMvc.perform(put("/members/templates/{templateId}", template.getId())
+        mockMvc.perform(put("/members/templates/{templateId}", templates.get(0).getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .with(setAccessToken(accessToken)))
@@ -324,12 +276,7 @@ public class TemplateIntegrationTest {
                 List.of(1L, 2L)
         );
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         mockMvc.perform(put("/members/templates/{templateId}", 1000000L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -346,15 +293,7 @@ public class TemplateIntegrationTest {
 
         member = memberRepository.save(member);
 
-        Template template = Template.builder()
-                .member(member)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title1")
-                .content("content1")
-                .build();
-
-        template = templateRepository.save(template);
+        initTemplates(member);
 
         TemplateSaveRequest request = new TemplateSaveRequest(
                 title,
@@ -371,7 +310,7 @@ public class TemplateIntegrationTest {
                 member.getRole()
         );
 
-        mockMvc.perform(put("/members/templates/{templateId}", template.getId())
+        mockMvc.perform(put("/members/templates/{templateId}", templates.get(0).getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .with(setAccessToken(accessToken)))
@@ -387,15 +326,7 @@ public class TemplateIntegrationTest {
         member = memberRepository.save(member);
         Member anotherMember = memberRepository.findById(1L).get();
 
-        Template template = Template.builder()
-                .member(anotherMember)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title1")
-                .content("content1")
-                .build();
-
-        template = templateRepository.save(template);
+        initTemplates(anotherMember);
 
         TemplateSaveRequest request = new TemplateSaveRequest(
                 title,
@@ -405,14 +336,9 @@ public class TemplateIntegrationTest {
                 List.of(1L, 2L)
         );
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
-        mockMvc.perform(put("/members/templates/{templateId}", template.getId())
+        mockMvc.perform(put("/members/templates/{templateId}", templates.get(0).getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
                         .with(setAccessToken(accessToken)))
@@ -427,22 +353,9 @@ public class TemplateIntegrationTest {
 
         member = memberRepository.save(member);
 
-        Template template = Template.builder()
-                .member(member)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title1")
-                .content("content1")
-                .build();
+        initTemplates(member);
 
-        template = templateRepository.save(template);
-
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         Map<String, Matcher<?>> expectedData = Map.of(
                 "templateId", notNullValue(),
@@ -453,7 +366,7 @@ public class TemplateIntegrationTest {
                 "attachmentIds", notNullValue()
         );
 
-        mockMvc.perform(get("/members/templates/{templateId}", template.getId())
+        mockMvc.perform(get("/members/templates/{templateId}", templates.get(0).getId())
                         .with(setAccessToken(accessToken)))
                 .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
     }
@@ -466,12 +379,7 @@ public class TemplateIntegrationTest {
 
         member = memberRepository.save(member);
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         mockMvc.perform(get("/members/templates/{templateId}", 100000L)
                         .with(setAccessToken(accessToken)))
@@ -487,24 +395,11 @@ public class TemplateIntegrationTest {
         member = memberRepository.save(member);
         Member anotherMember = memberRepository.findById(1L).get();
 
-        Template template = Template.builder()
-                .member(anotherMember)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title1")
-                .content("content1")
-                .build();
+        initTemplates(anotherMember);
 
-        template = templateRepository.save(template);
+        String accessToken = getAccessToken(member);
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
-
-        mockMvc.perform(get("/members/templates/{templateId}", template.getId())
+        mockMvc.perform(get("/members/templates/{templateId}", templates.get(0).getId())
                         .with(setAccessToken(accessToken)))
                 .andExpect(errorResponse(ErrorCode.FORBIDDEN));
     }
@@ -517,40 +412,17 @@ public class TemplateIntegrationTest {
 
         member = memberRepository.save(member);
 
-        Template template1 = Template.builder()
-                .member(member)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title1")
-                .content("content1")
-                .build();
-
-        Template template2 = Template.builder()
-                .member(member)
-                .firstCategory(firstCategory)
-                .secondCategory(secondCategory)
-                .title("title2")
-                .content("content2")
-                .build();
-
-        templateRepository.save(template1);
-        templateRepository.save(template2);
-
+        initTemplates(member);
 
         Map<String, Matcher<?>> expectedData = Map.of(
                 "page", notNullValue(),
                 "size", notNullValue(),
                 "totalPages", notNullValue(),
-                "totalTemplates", is(2),
+                "totalTemplates", is(templates.size()),
                 "templates", notNullValue()
         );
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         mockMvc.perform(get("/members/{memberId}/templates", member.getId())
                         .param("page", "1")
@@ -567,12 +439,7 @@ public class TemplateIntegrationTest {
 
         member = memberRepository.save(member);
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         mockMvc.perform(get("/members/{memberId}/templates", member.getId())
                         .param("page", "0")
@@ -589,12 +456,7 @@ public class TemplateIntegrationTest {
 
         member = memberRepository.save(member);
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         mockMvc.perform(get("/members/{memberId}/templates", 10000L)
                         .param("page", "1")
@@ -612,12 +474,7 @@ public class TemplateIntegrationTest {
         member = memberRepository.save(member);
         Member anotherMember = memberRepository.findById(1L).get();
 
-        String accessToken = jwtService.createAccessToken(
-                member.getId(),
-                member.getUsername(),
-                member.getProfilePic(),
-                member.getRole()
-        );
+        String accessToken = getAccessToken(member);
 
         mockMvc.perform(get("/members/{memberId}/templates", anotherMember.getId())
                         .param("page", "1")
@@ -629,6 +486,30 @@ public class TemplateIntegrationTest {
     private void initCategory() {
         firstCategory = categoryRepository.save(new Category(null, firstCategoryName, "fc", content));
         secondCategory = categoryRepository.save(new Category(firstCategory, secondCategoryName, "sc", content));
+    }
+
+    private void initTemplates(Member member) {
+
+        Template template1 = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        Template template2 = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title2")
+                .content("content2")
+                .build();
+
+        template1 = templateRepository.save(template1);
+        template2 = templateRepository.save(template2);
+
+        templates = List.of(template1, template2);
     }
 
 }

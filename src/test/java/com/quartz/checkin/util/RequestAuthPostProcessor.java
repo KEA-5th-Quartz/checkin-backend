@@ -33,7 +33,7 @@ public class RequestAuthPostProcessor {
         ADMIN_LOGIN_REQUEST = getProperty("test.login.admin");
     }
 
-    private static String getProperty(String key){
+    public static String getProperty(String key){
         return properties.getProperty(key);
     }
 

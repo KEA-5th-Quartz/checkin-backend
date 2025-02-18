@@ -25,6 +25,7 @@ import com.quartz.checkin.event.SoftDeletedEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.LoginBlockCacheService;
+import com.quartz.checkin.service.LoginFailureCacheService;
 import com.quartz.checkin.service.MemberAccessLogService;
 import com.quartz.checkin.service.S3Service;
 import com.quartz.checkin.service.TokenBlackListCacheService;
@@ -70,6 +71,9 @@ public class MemberIntegrationTest {
 
     @Autowired
     LoginBlockCacheService loginBlockCacheService;
+
+    @Autowired
+    LoginFailureCacheService loginFailureCacheService;
 
     @Autowired
     MockMvc mockMvc;
@@ -119,6 +123,11 @@ public class MemberIntegrationTest {
         originalPassword = "originalPassword1!";
         newPassword = "newPassword1!";
         role = Role.USER;
+
+
+        String key = "127.0.0.1:" + username;
+        loginFailureCacheService.evictLoginFailureInfo(key);
+        loginBlockCacheService.evict(key);
     }
 
 

@@ -85,4 +85,10 @@ spring:
 
   sql:
     init:
-      mode: always
+      mode: never
+
+test:
+  login:
+    user: "${USER_LOGIN_REQUEST}"
+    manager: "${MANAGER_LOGIN_REQUEST}"
+    admin: "${ADMIN_LOGIN_REQUEST}"

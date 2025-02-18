@@ -54,6 +54,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             )
             FROM Member m
             WHERE m.deletedAt IS NULL
+            AND m.id != -1
              """)
     MemberRoleCount findRoleCounts();
 }

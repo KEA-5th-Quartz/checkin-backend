@@ -5,11 +5,11 @@ import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.config.S3Config;
 import com.quartz.checkin.dto.common.request.SimplePageRequest;
+import com.quartz.checkin.dto.member.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.member.request.MemberRegistrationRequest;
 import com.quartz.checkin.dto.member.request.PasswordChangeRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetEmailRequest;
 import com.quartz.checkin.dto.member.request.PasswordResetRequest;
-import com.quartz.checkin.dto.member.request.MemberInfoListRequest;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.dto.member.response.MemberInfoListResponse;
 import com.quartz.checkin.dto.member.response.MemberInfoResponse;
@@ -102,7 +102,7 @@ public class MemberService {
 
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by("id").ascending());
 
-        Page<Member> memberPage = null;
+        Page<Member> memberPage;
         if (username == null || username.isBlank()) {
             memberPage = memberRepository.findByRoleAndDeletedAtIsNull(role, pageable);
         } else {
@@ -228,7 +228,7 @@ public class MemberService {
     }
 
     @Transactional
-    public void updateMemberRole(Long id, HttpServletRequest request, RoleUpdateRequest roleUpdateRequest) {
+    public void updateMemberRole(Long id, RoleUpdateRequest roleUpdateRequest) {
         Member member = getMemberByIdOrThrow(id);
 
         Role newRole = Role.fromValue(roleUpdateRequest.getRole());
@@ -287,7 +287,6 @@ public class MemberService {
 
         memberAccessLogRepository.deleteAllByMember(member);
 
-        // 템플릿 관련된 데이터는 영구삭제
         List<Template> templates = templateRepository.findAllByMember(member);
         List<Long> templateIds = templates.stream()
                 .map(Template::getId)
@@ -320,7 +319,6 @@ public class MemberService {
         List<Member> softDeletedMembers = memberRepository.findAllByDeletedAtIsNotNull();
 
         for (Member member : softDeletedMembers) {
-            // 회원의 deletedAt 값이 6개월 전보다 이전인 경우, 회원 삭제
             if (member.getDeletedAt().isBefore(sixMonthsAgo)) {
                 log.info("사용자 {}가 소트트 딜리트 된 지 6개월이 넘어 영구삭제합니다.", member.getUsername());
                 memberRepository.delete(member);

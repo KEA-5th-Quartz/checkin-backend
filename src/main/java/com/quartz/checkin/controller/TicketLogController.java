@@ -30,7 +30,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 46", description = "티켓 완료 처리")
     @PatchMapping("/{ticketId}/close")
     public ApiResponse<TicketLogResponse> closeTicket(
-            @PathVariable Long ticketId,
+            @PathVariable("ticketId") Long ticketId,
             @AuthenticationPrincipal CustomUser user) {
         TicketLogResponse response = ticketLogService.closeTicket(user.getId(), ticketId);
         return ApiResponse.createSuccessResponseWithData(HttpStatus.OK.value(), response);
@@ -40,7 +40,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 47", description = "1차 카테고리 수정")
     @PatchMapping("/{ticketId}/category")
     public ApiResponse<TicketLogResponse> updateFirstCategory(
-            @PathVariable Long ticketId,
+            @PathVariable("ticketId") Long ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid FirstCategoryPatchRequest request) {
 
@@ -52,8 +52,8 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 48", description = "2차 카테고리 수정")
     @PatchMapping("/{ticketId}/category/{firstCategoryId}")
     public ApiResponse<TicketLogResponse> updateSecondCategory(
-            @PathVariable Long ticketId,
-            @PathVariable Long firstCategoryId,
+            @PathVariable("ticketId") Long ticketId,
+            @PathVariable("firstCategoryId") Long firstCategoryId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid SecondCategoryPatchRequest request) {
 
@@ -65,7 +65,7 @@ public class TicketLogController {
     @Operation(summary = "API 명세서 v0.3 line 49", description = "담당자 변경")
     @PatchMapping("/{ticketId}/assign")
     public ApiResponse<TicketLogResponse> reassignManager(
-            @PathVariable Long ticketId,
+            @PathVariable("ticketId") Long ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody Map<String, String> request) {
 

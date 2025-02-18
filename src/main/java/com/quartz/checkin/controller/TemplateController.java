@@ -79,7 +79,7 @@ public class TemplateController {
     @Operation(summary = "API 명세서 v0.3 line 26", description = "사용자가 템플릿 수정")
     @PutMapping("/templates/{templateId}")
     public ApiResponse<Void> updateTemplate(
-            @PathVariable Long templateId,
+            @PathVariable(name = "templateId") Long templateId,
             @RequestBody @Valid TemplateSaveRequest templateSaveRequest,
             @AuthenticationPrincipal CustomUser customUser) {
         templateService.updateTemplate(templateId, templateSaveRequest, customUser);
@@ -91,7 +91,7 @@ public class TemplateController {
     @Operation(summary = "API 명세서 v0.3 line 28", description = "사용자가 템플릿 단건 조회, 첨부파일 포함")
     @GetMapping("/templates/{templateId}")
     public ApiResponse<TemplateDetailResponse> template(
-            @PathVariable Long templateId,
+            @PathVariable(name = "templateId") Long templateId,
             @AuthenticationPrincipal CustomUser customUser) {
         TemplateDetailResponse response = templateService.readTemplate(templateId, customUser);
 
@@ -102,7 +102,7 @@ public class TemplateController {
     @Operation(summary = "API 명세서 v0.3 line 29", description = "사용자의 템플릿 목록 조회, 첨부파일의 경우 단건조회에서 확인")
     @GetMapping("/{memberId}/templates")
     public ApiResponse<TemplateListResponse> templates(
-            @PathVariable Long memberId,
+            @PathVariable(name = "memberId") Long memberId,
             @ModelAttribute @Valid SimplePageRequest pageRequest,
             @AuthenticationPrincipal CustomUser customUser) {
         TemplateListResponse response = templateService.readTemplates(memberId, pageRequest, customUser);

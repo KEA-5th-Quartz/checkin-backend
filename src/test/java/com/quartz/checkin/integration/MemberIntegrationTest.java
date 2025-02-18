@@ -21,6 +21,7 @@ import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
+import com.quartz.checkin.event.SoftDeletedEvent;
 import com.quartz.checkin.repository.MemberRepository;
 import com.quartz.checkin.security.service.JwtService;
 import com.quartz.checkin.service.LoginBlockCacheService;
@@ -28,6 +29,7 @@ import com.quartz.checkin.service.MemberAccessLogService;
 import com.quartz.checkin.service.S3Service;
 import com.quartz.checkin.service.TokenBlackListCacheService;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,7 +53,6 @@ import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @ActiveProfiles(value = "test")
 @AutoConfigureMockMvc
@@ -908,6 +909,41 @@ public class MemberIntegrationTest {
                         .content(objectMapper.writeValueAsString(request))
                         .with(authenticatedAsAdmin(mockMvc)))
                 .andExpect(errorResponse(ErrorCode.INVALID_NEW_ROLE));
+    }
+
+    @Test
+    @DisplayName("소프트 딜리트 성공")
+    public void softDeleteSuccess() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        mockMvc.perform(delete("/members/{memberId}", savedMember.getId())
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), null));
+
+        Assertions.assertThat(savedMember.getDeletedAt()).isNotNull();
+        verify(eventPublisher, times(1))
+                .publishEvent(ArgumentMatchers.any(SoftDeletedEvent.class));
+    }
+
+    @Test
+    @DisplayName("소프트 딜리트 실패 - 이미 소프트 딜리트된 사용자")
+    public void softDeleteFailsWhenUserAlreadyIsSoftDeleted() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember.softDelete();
+
+        mockMvc.perform(delete("/members/{memberId}", savedMember.getId())
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.MEMBER_ALREADY_SOFT_DELETED));
     }
 
     private Member registerMember(String username, String password, String email, Role role) {

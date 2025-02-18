@@ -946,6 +946,37 @@ public class MemberIntegrationTest {
                 .andExpect(errorResponse(ErrorCode.MEMBER_ALREADY_SOFT_DELETED));
     }
 
+    @Test
+    @DisplayName("회원 복구 성공")
+    public void restoreSuccess() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember.softDelete();
+
+        mockMvc.perform(patch("/members/trash/{memberId}/restore", savedMember.getId())
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), null));
+    }
+
+    @Test
+    @DisplayName("회원 복구 실패 - 소프트 딜리트된 사용자가 아님")
+    public void restoreFailsWhenUserIsNotSoftDeleted() throws Exception {
+
+        String username = "new.user";
+        String email = "newUser@email.com";
+        String originalPassword = "originalPassword1!";
+
+        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+
+        mockMvc.perform(patch("/members/trash/{memberId}/restore", savedMember.getId())
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.MEMBER_NOT_SOFT_DELETED));
+    }
+
     private Member registerMember(String username, String password, String email, Role role) {
         Member member = Member.builder()
                 .username(username)

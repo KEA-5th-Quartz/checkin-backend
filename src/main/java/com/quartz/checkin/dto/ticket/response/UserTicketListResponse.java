@@ -14,6 +14,6 @@ public class UserTicketListResponse {
     private int page;
     private int size;
     private int totalPages;
-    private int totalTickets;
+    private long totalTickets;
     private List<UserTicketSummaryResponse> tickets;
 }

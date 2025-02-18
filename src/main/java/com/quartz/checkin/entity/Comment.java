@@ -34,11 +34,11 @@ public class Comment extends BaseEntity {
 
     private String attachment;
 
-    public void setTicket(Ticket ticket) {
+    public void updateTicket(Ticket ticket) {
         this.ticket = ticket;
     }
 
-    public void setMember(Member member) {
+    public void updateMember(Member member) {
         this.member = member;
     }
 

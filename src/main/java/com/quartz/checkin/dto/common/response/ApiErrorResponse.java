@@ -30,7 +30,6 @@ public class ApiErrorResponse<T> {
                 .build();
     }
 
-    // 검증 실패의 경우처럼, 추가적인 데이터를 보내는 경우
     public static <T> ApiErrorResponse<T> createErrorResponseWithData(ErrorCode errorCode, T data) {
         return ApiErrorResponse.<T>builder()
                 .status(errorCode.getStatus().value())

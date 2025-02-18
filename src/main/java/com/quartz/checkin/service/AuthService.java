@@ -68,6 +68,7 @@ public class AuthService {
         return AuthenticationResponse.builder()
                 .memberId(memberId)
                 .username(username)
+                .email(member.getEmail())
                 .role(role.getValue())
                 .profilePic(profilePic)
                 .passwordResetToken(passwordResetToken)

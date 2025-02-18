@@ -77,7 +77,6 @@ public class CustomUsernamePasswordAuthenticationFilter extends AbstractAuthenti
             return null;
         }
 
-        // 로그인 실패 핸들러에서 사용자 정보를 얻기 위해 저장
         request.setAttribute("username", username);
 
         UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(username,

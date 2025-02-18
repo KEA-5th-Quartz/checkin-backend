@@ -36,6 +36,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("소프트 딜리트된 사용자입니다.");
         }
 
+
         return new CustomUser(
                 member.getId(),
                 member.getUsername(),

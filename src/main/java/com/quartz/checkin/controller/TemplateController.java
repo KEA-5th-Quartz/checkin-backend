@@ -79,7 +79,7 @@ public class TemplateController {
     @Operation(summary = "API 명세서 v0.3 line 26", description = "사용자가 템플릿 수정")
     @PutMapping("/templates/{templateId}")
     public ApiResponse<Void> updateTemplate(
-            @PathVariable Long templateId,
+            @PathVariable(name = "templateId") Long templateId,
             @RequestBody @Valid TemplateSaveRequest templateSaveRequest,
             @AuthenticationPrincipal CustomUser customUser) {
         templateService.updateTemplate(templateId, templateSaveRequest, customUser);

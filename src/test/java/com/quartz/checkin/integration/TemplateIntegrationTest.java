@@ -267,6 +267,158 @@ public class TemplateIntegrationTest {
                 .andExpect(errorResponse(ErrorCode.FORBIDDEN));
     }
 
+    @Test
+    @DisplayName("템플릿 업데이트 성공")
+    public void updateTemplateSuccess() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+
+        Template template = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        template = templateRepository.save(template);
+
+        TemplateSaveRequest request = new TemplateSaveRequest(
+                title,
+                firstCategoryName,
+                secondCategoryName,
+                content,
+                List.of(1L, 2L)
+        );
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(put("/members/templates/{templateId}", template.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                .with(setAccessToken(accessToken)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), null));
+    }
+
+    @Test
+    @DisplayName("템플릿 업데이트 실패 - 존재하지 않는 템플릿")
+    public void updateTemplateFailsWhenTemplateDoesNotExist() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+
+        TemplateSaveRequest request = new TemplateSaveRequest(
+                title,
+                firstCategoryName,
+                secondCategoryName,
+                content,
+                List.of(1L, 2L)
+        );
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(put("/members/templates/{templateId}", 1000000L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.TEMPLATE_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("템플릿 업데이트 실패 - 존재하지 않는 사용자")
+    public void updateTemplateFailsWhenUserDoesNotExist() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+
+        Template template = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        template = templateRepository.save(template);
+
+        TemplateSaveRequest request = new TemplateSaveRequest(
+                title,
+                firstCategoryName,
+                secondCategoryName,
+                content,
+                List.of(1L, 2L)
+        );
+
+        String accessToken = jwtService.createAccessToken(
+                100000L,
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(put("/members/templates/{templateId}", template.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("템플릿 업데이트 실패 - 다른 사용자의 템플릿을 업데이트")
+    public void updateTemplateFailsWhenUpdatingOthersTemplates() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+        Member anotherMember = memberRepository.findById(1L).get();
+
+        Template template = Template.builder()
+                .member(anotherMember)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        template = templateRepository.save(template);
+
+        TemplateSaveRequest request = new TemplateSaveRequest(
+                title,
+                firstCategoryName,
+                secondCategoryName,
+                content,
+                List.of(1L, 2L)
+        );
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(put("/members/templates/{templateId}", template.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+    }
+
+
 
 
     private void initCategory() {

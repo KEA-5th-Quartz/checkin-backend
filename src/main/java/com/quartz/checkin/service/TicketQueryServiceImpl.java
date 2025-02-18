@@ -1,6 +1,7 @@
 package com.quartz.checkin.service;
 
 import static com.quartz.checkin.common.validator.PaginationValidator.validatePagination;
+import static com.quartz.checkin.common.validator.PaginationValidator.validateNumberAndSize;
 
 import com.quartz.checkin.common.exception.ApiException;
 import com.quartz.checkin.common.exception.ErrorCode;
@@ -57,9 +58,9 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     public ManagerTicketListResponse getManagerTickets(Long memberId, List<Status> statuses, List<String> usernames,
                                                        List<String> categories, List<Priority> priorities,
                                                        Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
-
+        validateNumberAndSize(page, size);
         Page<Ticket> ticketPage = fetchTickets(null, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt);
-        validatePagination(page, size, ticketPage.getTotalPages());
+        validatePagination(page, ticketPage.getTotalPages());
         return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
@@ -67,22 +68,25 @@ public class TicketQueryServiceImpl implements TicketQueryService {
     public UserTicketListResponse getUserTickets(Long userId, List<Status> statuses, List<String> usernames,
                                                  List<String> categories, List<Priority> priorities,
                                                  Boolean dueToday, Boolean dueThisWeek, int page, int size, String sortByCreatedAt) {
+        validateNumberAndSize(page, size);
         Page<Ticket> ticketPage = fetchTickets(userId, statuses, usernames, categories, priorities, dueToday, dueThisWeek, page, size, sortByCreatedAt);
-        validatePagination(page, size, ticketPage.getTotalPages());
+        validatePagination(page, ticketPage.getTotalPages());
         return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 
     @Override
     public ManagerTicketListResponse searchManagerTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
+        validateNumberAndSize(page, size);
         Page<Ticket> ticketPage = fetchSearchedTickets(null, keyword, page, size, sortByCreatedAt);
-        validatePagination(page, size, ticketPage.getTotalPages());
+        validatePagination(page, ticketPage.getTotalPages());
         return TicketResponseConverter.toManagerTicketListResponse(ticketPage);
     }
 
     @Override
     public UserTicketListResponse searchUserTickets(Long memberId, String keyword, int page, int size, String sortByCreatedAt) {
+        validateNumberAndSize(page, size);
         Page<Ticket> ticketPage = fetchSearchedTickets(memberId, keyword, page, size, sortByCreatedAt);
-        validatePagination(page, size, ticketPage.getTotalPages());
+        validatePagination(page, ticketPage.getTotalPages());
         return TicketResponseConverter.toUserTicketListResponse(ticketPage);
     }
 

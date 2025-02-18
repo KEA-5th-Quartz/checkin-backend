@@ -19,6 +19,7 @@ import com.quartz.checkin.dto.member.request.PasswordResetRequest;
 import com.quartz.checkin.dto.member.request.RoleUpdateRequest;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
+import com.quartz.checkin.event.MemberHardDeletedEvent;
 import com.quartz.checkin.event.MemberRegisteredEvent;
 import com.quartz.checkin.event.PasswordResetMailEvent;
 import com.quartz.checkin.event.SoftDeletedEvent;
@@ -123,7 +124,6 @@ public class MemberIntegrationTest {
         originalPassword = "originalPassword1!";
         newPassword = "newPassword1!";
         role = Role.USER;
-
 
         String key = "127.0.0.1:" + username;
         loginFailureCacheService.evictLoginFailureInfo(key);
@@ -894,6 +894,33 @@ public class MemberIntegrationTest {
                         .with(authenticatedAsAdmin(mockMvc)))
                 .andExpect(errorResponse(ErrorCode.MEMBER_NOT_SOFT_DELETED));
     }
+
+    @Test
+    @DisplayName("회원 영구 삭제 성공")
+    public void hardDeleteSuccess() throws Exception {
+
+        savedMember = registerMember(username, password, email, role);
+        savedMember.softDelete();
+
+        mockMvc.perform(delete("/members/trash/{memberId}", savedMember.getId())
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), null));
+
+        verify(eventPublisher, times(1)).publishEvent(ArgumentMatchers.any(MemberHardDeletedEvent.class));
+    }
+
+    @Test
+    @DisplayName("회원 영구 삭제 실패 - 소프트 딜리트 된 사용자가 아님")
+    public void hardDeleteFailsWhenUserIsNotSoftDeleted() throws Exception {
+
+        savedMember = registerMember(username, password, email, role);
+
+        mockMvc.perform(delete("/members/trash/{memberId}", savedMember.getId())
+                        .with(authenticatedAsAdmin(mockMvc)))
+                .andExpect(errorResponse(ErrorCode.MEMBER_NOT_SOFT_DELETED));
+    }
+
+
 
     private Member registerMember(String username, String password, String email, Role role) {
 

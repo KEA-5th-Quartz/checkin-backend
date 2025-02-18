@@ -102,7 +102,7 @@ public class TemplateController {
     @Operation(summary = "API 명세서 v0.3 line 29", description = "사용자의 템플릿 목록 조회, 첨부파일의 경우 단건조회에서 확인")
     @GetMapping("/{memberId}/templates")
     public ApiResponse<TemplateListResponse> templates(
-            @PathVariable Long memberId,
+            @PathVariable(name = "memberId") Long memberId,
             @ModelAttribute @Valid SimplePageRequest pageRequest,
             @AuthenticationPrincipal CustomUser customUser) {
         TemplateListResponse response = templateService.readTemplates(memberId, pageRequest, customUser);

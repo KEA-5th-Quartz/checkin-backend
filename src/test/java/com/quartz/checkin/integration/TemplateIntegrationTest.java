@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
 import com.quartz.checkin.dto.template.request.TemplateDeleteRequest;
 import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
+import com.quartz.checkin.dto.template.response.TemplateSimpleResponse;
 import com.quartz.checkin.entity.Category;
 import com.quartz.checkin.entity.Member;
 import com.quartz.checkin.entity.Role;
@@ -508,6 +509,122 @@ public class TemplateIntegrationTest {
                 .andExpect(errorResponse(ErrorCode.FORBIDDEN));
     }
 
+    @Test
+    @DisplayName("템플릿 리스트 조회 성공")
+    public void readTemplateListSuccess() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+
+        Template template1 = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        Template template2 = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title2")
+                .content("content2")
+                .build();
+
+        templateRepository.save(template1);
+        templateRepository.save(template2);
+
+
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "page", notNullValue(),
+                "size", notNullValue(),
+                "totalPages", notNullValue(),
+                "totalTemplates", is(2),
+                "templates", notNullValue()
+        );
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(get("/members/{memberId}/templates", member.getId())
+                        .param("page", "1")
+                        .param("size", "10")
+                        .with(setAccessToken(accessToken)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+    }
+
+    @Test
+    @DisplayName("템플릿 리스트 조회 실패 - 양식에 맞지 않는 요청")
+    public void readTemplateListFailsWhenRequestIsInvalid() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(get("/members/{memberId}/templates", member.getId())
+                        .param("page", "0")
+                        .param("size", "10")
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+    }
+
+    @Test
+    @DisplayName("템플릿 리스트 조회 실패 - 존재하지 않는 사용자")
+    public void readTemplateListFailsWhenUserDoesNotExist() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(get("/members/{memberId}/templates", 10000L)
+                        .param("page", "1")
+                        .param("size", "10")
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("템플릿 리스트 조회 실패 - 다른 사용자의 템플릿 리스트 조회")
+    public void readTemplateListFailsWhenReadingOthersTemplateList() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+        Member anotherMember = memberRepository.findById(1L).get();
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(get("/members/{memberId}/templates", anotherMember.getId())
+                        .param("page", "1")
+                        .param("size", "10")
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+    }
 
     private void initCategory() {
         firstCategory = categoryRepository.save(new Category(null, firstCategoryName, "fc", content));

@@ -91,7 +91,7 @@ public class TemplateController {
     @Operation(summary = "API 명세서 v0.3 line 28", description = "사용자가 템플릿 단건 조회, 첨부파일 포함")
     @GetMapping("/templates/{templateId}")
     public ApiResponse<TemplateDetailResponse> template(
-            @PathVariable Long templateId,
+            @PathVariable(name = "templateId") Long templateId,
             @AuthenticationPrincipal CustomUser customUser) {
         TemplateDetailResponse response = templateService.readTemplate(templateId, customUser);
 

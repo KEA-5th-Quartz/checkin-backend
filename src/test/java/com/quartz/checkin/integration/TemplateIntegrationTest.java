@@ -203,7 +203,7 @@ public class TemplateIntegrationTest {
         template1 = templateRepository.save(template1);
         template2 = templateRepository.save(template2);
 
-        TemplateDeleteRequest request =  new TemplateDeleteRequest(List.of(template1.getId(), template2.getId()));
+        TemplateDeleteRequest request = new TemplateDeleteRequest(List.of(template1.getId(), template2.getId()));
 
         Map<String, Matcher<?>> expectedData = Map.of(
                 "deletedTemplates", notNullValue()
@@ -251,7 +251,7 @@ public class TemplateIntegrationTest {
         template1 = templateRepository.save(template1);
         template2 = templateRepository.save(template2);
 
-        TemplateDeleteRequest request =  new TemplateDeleteRequest(List.of(template1.getId(), template2.getId()));
+        TemplateDeleteRequest request = new TemplateDeleteRequest(List.of(template1.getId(), template2.getId()));
 
         String accessToken = jwtService.createAccessToken(
                 member.getId(),
@@ -303,7 +303,7 @@ public class TemplateIntegrationTest {
         mockMvc.perform(put("/members/templates/{templateId}", template.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
-                .with(setAccessToken(accessToken)))
+                        .with(setAccessToken(accessToken)))
                 .andExpect(apiResponse(HttpStatus.OK.value(), null));
     }
 
@@ -418,7 +418,95 @@ public class TemplateIntegrationTest {
                 .andExpect(errorResponse(ErrorCode.FORBIDDEN));
     }
 
+    @Test
+    @DisplayName("템플릿 단건 조회 성공")
+    public void readTemplateSuccess() throws Exception {
 
+        initCategory();
+
+        member = memberRepository.save(member);
+
+        Template template = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        template = templateRepository.save(template);
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "templateId", notNullValue(),
+                "title", notNullValue(),
+                "firstCategory", notNullValue(),
+                "secondCategory", notNullValue(),
+                "content", notNullValue(),
+                "attachmentIds", notNullValue()
+        );
+
+        mockMvc.perform(get("/members/templates/{templateId}", template.getId())
+                        .with(setAccessToken(accessToken)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
+    }
+
+    @Test
+    @DisplayName("템플릿 단건 조회 실패 - 존재하지 않는 템플릿")
+    public void readTemplateFailsWhenTemplateDoesNotExist() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(get("/members/templates/{templateId}", 100000L)
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.TEMPLATE_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("템플릿 단건 조회 실패 - 다른 사용자의 템플릿을 조회")
+    public void readTemplateFailsWhenReadingOthersTemplate() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+        Member anotherMember = memberRepository.findById(1L).get();
+
+        Template template = Template.builder()
+                .member(anotherMember)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        template = templateRepository.save(template);
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(get("/members/templates/{templateId}", template.getId())
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+    }
 
 
     private void initCategory() {

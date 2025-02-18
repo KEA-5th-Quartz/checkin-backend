@@ -48,6 +48,11 @@ public class RequestAuthPostProcessor {
         return authenticated(mockMvc, adminLoginRequest);
     }
 
+    public static RequestPostProcessor authenticatedCustom(MockMvc mockMvc, String username, String password) throws Exception {
+        String loginRequest = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
+        return authenticated(mockMvc, loginRequest);
+    }
+
 
     private static RequestPostProcessor authenticated(MockMvc mockMvc, String loginRequest)
             throws Exception {

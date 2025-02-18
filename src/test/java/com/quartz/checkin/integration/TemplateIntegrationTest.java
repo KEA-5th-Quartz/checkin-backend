@@ -10,9 +10,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quartz.checkin.common.exception.ErrorCode;
+import com.quartz.checkin.dto.template.request.TemplateDeleteRequest;
 import com.quartz.checkin.dto.template.request.TemplateSaveRequest;
 import com.quartz.checkin.entity.Category;
+import com.quartz.checkin.entity.Member;
+import com.quartz.checkin.entity.Role;
+import com.quartz.checkin.entity.Template;
 import com.quartz.checkin.repository.CategoryRepository;
+import com.quartz.checkin.repository.MemberRepository;
+import com.quartz.checkin.repository.TemplateRepository;
+import com.quartz.checkin.security.service.JwtService;
 import java.util.List;
 import java.util.Map;
 import org.hamcrest.Matcher;
@@ -41,6 +48,15 @@ public class TemplateIntegrationTest {
     CategoryRepository categoryRepository;
 
     @Autowired
+    JwtService jwtService;
+
+    @Autowired
+    TemplateRepository templateRepository;
+
+    @Autowired
+    MemberRepository memberRepository;
+
+    @Autowired
     MockMvc mockMvc;
 
     @Autowired
@@ -50,6 +66,10 @@ public class TemplateIntegrationTest {
     private String title;
     private String firstCategoryName;
     private String secondCategoryName;
+    private Category firstCategory;
+    private Category secondCategory;
+    private Member member;
+
 
     @BeforeEach
     public void setUp() {
@@ -57,6 +77,14 @@ public class TemplateIntegrationTest {
         title = "title";
         firstCategoryName = "firstCategory";
         secondCategoryName = "secondCategory";
+
+        member = Member.builder()
+                .username("test.a")
+                .email("testA@email.com")
+                .password("password1!")
+                .profilePic("profilePic")
+                .role(Role.USER)
+                .build();
     }
 
     @Test
@@ -148,13 +176,102 @@ public class TemplateIntegrationTest {
                 .andExpect(errorResponse(ErrorCode.ATTACHMENT_NOT_FOUND));
     }
 
-    private void initCategory() {
+    @Test
+    @DisplayName("템플릿 다중 삭제 성공")
+    public void deleteTemplatesSuccess() throws Exception {
 
-        Category firstCategory = new Category(null, firstCategoryName, "fc", content);
-        Category secondCategory = new Category(firstCategory, secondCategoryName, "sc", content);
-        categoryRepository.save(firstCategory);
-        categoryRepository.save(secondCategory);
+        initCategory();
 
-        categoryRepository.flush();
+        member = memberRepository.save(member);
+
+        Template template1 = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        Template template2 = Template.builder()
+                .member(member)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title2")
+                .content("content2")
+                .build();
+
+        template1 = templateRepository.save(template1);
+        template2 = templateRepository.save(template2);
+
+        TemplateDeleteRequest request =  new TemplateDeleteRequest(List.of(template1.getId(), template2.getId()));
+
+        Map<String, Matcher<?>> expectedData = Map.of(
+                "deletedTemplates", notNullValue()
+        );
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(delete("/members/templates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(setAccessToken(accessToken)))
+                .andExpect(apiResponse(HttpStatus.OK.value(), expectedData));
     }
+
+    @Test
+    @DisplayName("템플릿 다중 삭제 실패 - 다른 사용자의 탬플릿 삭제")
+    public void deleteTemplatesFailsWhenDeletingOthersTemplates() throws Exception {
+
+        initCategory();
+
+        member = memberRepository.save(member);
+        Member anotherMember = memberRepository.findById(1L).get();
+
+        Template template1 = Template.builder()
+                .member(anotherMember)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title1")
+                .content("content1")
+                .build();
+
+        Template template2 = Template.builder()
+                .member(anotherMember)
+                .firstCategory(firstCategory)
+                .secondCategory(secondCategory)
+                .title("title2")
+                .content("content2")
+                .build();
+
+        template1 = templateRepository.save(template1);
+        template2 = templateRepository.save(template2);
+
+        TemplateDeleteRequest request =  new TemplateDeleteRequest(List.of(template1.getId(), template2.getId()));
+
+        String accessToken = jwtService.createAccessToken(
+                member.getId(),
+                member.getUsername(),
+                member.getProfilePic(),
+                member.getRole()
+        );
+
+        mockMvc.perform(delete("/members/templates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .with(setAccessToken(accessToken)))
+                .andExpect(errorResponse(ErrorCode.FORBIDDEN));
+    }
+
+
+
+    private void initCategory() {
+        firstCategory = categoryRepository.save(new Category(null, firstCategoryName, "fc", content));
+        secondCategory = categoryRepository.save(new Category(firstCategory, secondCategoryName, "sc", content));
+    }
+
 }

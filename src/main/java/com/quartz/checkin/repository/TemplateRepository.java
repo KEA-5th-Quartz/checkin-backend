@@ -31,7 +31,7 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
 
     @Query("SELECT t FROM Template t "
             + "WHERE t.id IN :templateIds AND t.member = :member")
-    List<Template> findAllByIdAndMember(List<Long> templateIds, Member member);
+    List<Template> findAllByIdAndMember(@Param("templateIds") List<Long> templateIds, @Param("member") Member member);
 
     @Modifying
     @Query("DELETE FROM Template t WHERE t.id IN :templateIds")

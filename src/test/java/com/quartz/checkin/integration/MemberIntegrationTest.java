@@ -31,6 +31,7 @@ import com.quartz.checkin.service.TokenBlackListCacheService;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -102,16 +103,30 @@ public class MemberIntegrationTest {
         }
     }
 
+    private String username;
+    private String password;
+    private String email;
+    private String originalPassword;
+    private String newPassword;
+    private Role role;
+    private Member savedMember;
+
+    @BeforeEach
+    public void setUp() {
+        username = "test.user";
+        password = "testPassword1@";
+        email = "testUser@email.com";
+        originalPassword = "originalPassword1!";
+        newPassword = "newPassword1!";
+        role = Role.USER;
+    }
+
+
     @Test
     @DisplayName("로그인 성공")
     public void loginSuccess() throws Exception {
 
-        String username = "test.account";
-        String password = "testPassword1@";
-        String email = "testAccount@email.com";
-        Role role = Role.USER;
-
-        Member savedMember = registerMember(username, password, email, role);
+        savedMember = registerMember(username, password, email, role);
 
         String loginRequestJson = String.format("""
                     {
@@ -164,12 +179,7 @@ public class MemberIntegrationTest {
     @DisplayName("로그인 실패 - 비밀번호 틀림")
     public void loginFailsWhenPasswordIsWrong() throws Exception {
 
-        String username = "test.account";
-        String password = "testPassword1@";
-        String email = "testAccount@email.com";
-        Role role = Role.USER;
-
-        Member savedMember = registerMember(username, password, email, role);
+        savedMember = registerMember(username, password, email, role);
 
         String loginRequestJson = String.format("""
                     {
@@ -208,12 +218,7 @@ public class MemberIntegrationTest {
     @DisplayName("로그인을 5분 이내에 5번 로그인 실패한 회원은 로그인 불가")
     public void loginFailsIfAttemptsExceededWithin5Minutes() throws Exception {
 
-        String username = "new.account";
-        String password = "testPassword1@";
-        String email = "newAccount@email.com";
-        Role role = Role.USER;
-
-        Member savedMember = registerMember(username, password, email, role);
+        savedMember = registerMember(username, password, email, role);
 
         String loginRequestJson = String.format("""
                     {
@@ -406,12 +411,7 @@ public class MemberIntegrationTest {
     @DisplayName("소프트 딜리트 된 회원 조회 성공")
     public void readSoftDeletedMemberSuccess() throws Exception {
 
-        String username = "new.account";
-        String password = "testPassword1@";
-        String email = "newAccount@email.com";
-        Role role = Role.USER;
-
-        Member savedMember = registerMember(username, password, email, role);
+        savedMember = registerMember(username, password, email, role);
         savedMember.softDelete();
 
         Map<String, Matcher<?>> expectedData = Map.of(
@@ -448,11 +448,7 @@ public class MemberIntegrationTest {
     @DisplayName("회원 등록 성공")
     public void registerMemberSuccess() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String role = "USER";
-
-        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role);
+        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role.getValue());
 
         mockMvc.perform(post("/members")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -468,13 +464,12 @@ public class MemberIntegrationTest {
     @DisplayName("회원 등록 실패 - 양식에 맞지 않는 요청")
     public void registerMemberFailsWhenRequestIsInvalid() throws Exception {
 
-        String username = "new123";
-        String email = "newEmail";
-        String role = "USER";
+        username = "new123";
+        email = "invalidEmail";
 
-        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role);
+        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role.getValue());
 
-        registerMember(username, "password1!", email, Role.USER);
+        registerMember(username, password, email, role);
 
         mockMvc.perform(post("/members")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -487,13 +482,9 @@ public class MemberIntegrationTest {
     @DisplayName("회원 등록 실패 - 사용자명 중복")
     public void registerMemberFailsWhenUsernameIsDuplicated() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String role = "USER";
+        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role.getValue());
 
-        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role);
-
-        registerMember(username, "password1!", "newUser1@email.com", Role.USER);
+        registerMember(username, "password1!", "newUser1@email.com", role);
 
         mockMvc.perform(post("/members")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -506,13 +497,9 @@ public class MemberIntegrationTest {
     @DisplayName("회원 등록 실패 - 이메일 중복")
     public void registerMemberFailsWhenEmailIsDuplicated() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String role = "USER";
+        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role.getValue());
 
-        MemberRegistrationRequest request = new MemberRegistrationRequest(username, email, role);
-
-        registerMember("new.User", "password1!", email, Role.USER);
+        registerMember("new.user", "password1!", email, role);
 
         mockMvc.perform(post("/members")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -525,12 +512,7 @@ public class MemberIntegrationTest {
     @DisplayName("비밀번호 변경 성공")
     public void changePasswordSuccess() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-        String newPassword = "newPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, originalPassword, email, role);
 
         String loginRequestJson = String.format("""
                     {
@@ -559,12 +541,7 @@ public class MemberIntegrationTest {
     @DisplayName("비밀번호 변경 실패 - 다른 사람의 비밀번호를 변경")
     public void changePasswordFailsWhenTryingToChangeAnotherMembersPassword() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-        String newPassword = "newPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, originalPassword, email, role);
 
         String loginRequestJson = String.format("""
                     {
@@ -593,12 +570,7 @@ public class MemberIntegrationTest {
     @DisplayName("비밀번호 변경 실패 - 기존 비밀번호가 틀림")
     public void changePasswordFailsWhenOriginalPasswordIsWrong() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-        String newPassword = "newPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, originalPassword, email, role);
 
         String loginRequestJson = String.format("""
                     {
@@ -627,11 +599,7 @@ public class MemberIntegrationTest {
     @DisplayName("비밀번호 변경 실패 - 기존 비밀번호와 새 비밀번호가 같음")
     public void changePasswordFailsWhenNewPasswordIsSameAsOriginal() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, originalPassword, email, role);
 
         String loginRequestJson = String.format("""
                     {
@@ -660,12 +628,7 @@ public class MemberIntegrationTest {
     @DisplayName("비밀번호 초기화 성공")
     public void passwordResetSuccess() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-        String newPassword = "newPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, originalPassword, email, role);
 
         String passwordResetToken = jwtService.createPasswordResetToken(savedMember.getId());
         PasswordResetRequest request = new PasswordResetRequest(passwordResetToken, newPassword);
@@ -680,12 +643,7 @@ public class MemberIntegrationTest {
     @DisplayName("비밀번호 초기화 실패 - 다른 사용자의 비밀번호를 초기화")
     public void passwordResetFailsWhenToChangeAnotherMembersPassword() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-        String newPassword = "newPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, originalPassword, email, role);
 
         String passwordResetToken = jwtService.createPasswordResetToken(savedMember.getId());
         PasswordResetRequest request = new PasswordResetRequest(passwordResetToken, newPassword);
@@ -700,12 +658,7 @@ public class MemberIntegrationTest {
     @DisplayName("비밀번호 초기화 실패 - 유효하지 않은 비밀번호 초기화 토큰")
     public void passwordResetFailsWhenPasswordResetTokenIsInvalid() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-        String newPassword = "newPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, originalPassword, email, role);
 
         String passwordResetToken = "invalidPasswordResetToken";
         PasswordResetRequest request = new PasswordResetRequest(passwordResetToken, newPassword);
@@ -720,11 +673,7 @@ public class MemberIntegrationTest {
     @DisplayName("비밀번호 초기화 이메일 전송 성공")
     public void sendPasswordResetEmailSuccess() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, originalPassword, email, role);
         PasswordResetEmailRequest request = new PasswordResetEmailRequest(savedMember.getUsername());
 
         mockMvc.perform(post("/members/password-reset")
@@ -740,11 +689,7 @@ public class MemberIntegrationTest {
     @DisplayName("프로필 사진 업데이트 성공")
     public void updateProfilePicSuccess() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
 
         MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
 
@@ -778,11 +723,7 @@ public class MemberIntegrationTest {
     @DisplayName("프로필 사진 업데이트 실패 - 유효하지 않은 이미지 파일")
     public void updateProfilePicFailsWhenFileIsNotImageType() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
 
         String accessToken = jwtService.createAccessToken(
                 savedMember.getId(),
@@ -810,11 +751,7 @@ public class MemberIntegrationTest {
     @DisplayName("프로필 사진 업데이트 실패 - 이미지 파일이 5MB를 넘어가는 경우")
     public void updateProfilePicFailsWhenFileIsExceedsSizeLimit() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
 
         String accessToken = jwtService.createAccessToken(
                 savedMember.getId(),
@@ -843,11 +780,7 @@ public class MemberIntegrationTest {
     @DisplayName("프로필 사진 업데이트 실패 - Object Storage 클라이언트 문제 발생")
     public void updateProfilePicFailsWhenObjectStorageClientErrorOccurs() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
 
         String accessToken = jwtService.createAccessToken(
                 savedMember.getId(),
@@ -877,11 +810,7 @@ public class MemberIntegrationTest {
     @DisplayName("권한 변경 성공")
     public void updateRoleSuccess() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
 
         RoleUpdateRequest request = new RoleUpdateRequest(Role.MANAGER.getValue());
 
@@ -896,11 +825,7 @@ public class MemberIntegrationTest {
     @DisplayName("권한 변경 실패 - 이전과 동일한 권한")
     public void updateRoleFailsWhenRoleIsUnchanged() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, Role.USER);
 
         RoleUpdateRequest request = new RoleUpdateRequest(Role.USER.getValue());
 
@@ -915,11 +840,7 @@ public class MemberIntegrationTest {
     @DisplayName("소프트 딜리트 성공")
     public void softDeleteSuccess() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
 
         mockMvc.perform(delete("/members/{memberId}", savedMember.getId())
                         .with(authenticatedAsAdmin(mockMvc)))
@@ -934,11 +855,7 @@ public class MemberIntegrationTest {
     @DisplayName("소프트 딜리트 실패 - 이미 소프트 딜리트된 사용자")
     public void softDeleteFailsWhenUserAlreadyIsSoftDeleted() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
         savedMember.softDelete();
 
         mockMvc.perform(delete("/members/{memberId}", savedMember.getId())
@@ -950,11 +867,7 @@ public class MemberIntegrationTest {
     @DisplayName("회원 복구 성공")
     public void restoreSuccess() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
         savedMember.softDelete();
 
         mockMvc.perform(patch("/members/trash/{memberId}/restore", savedMember.getId())
@@ -966,11 +879,7 @@ public class MemberIntegrationTest {
     @DisplayName("회원 복구 실패 - 소프트 딜리트된 사용자가 아님")
     public void restoreFailsWhenUserIsNotSoftDeleted() throws Exception {
 
-        String username = "new.user";
-        String email = "newUser@email.com";
-        String originalPassword = "originalPassword1!";
-
-        Member savedMember = registerMember(username, originalPassword, email, Role.USER);
+        savedMember = registerMember(username, password, email, role);
 
         mockMvc.perform(patch("/members/trash/{memberId}/restore", savedMember.getId())
                         .with(authenticatedAsAdmin(mockMvc)))
@@ -978,6 +887,7 @@ public class MemberIntegrationTest {
     }
 
     private Member registerMember(String username, String password, String email, Role role) {
+
         Member member = Member.builder()
                 .username(username)
                 .password(passwordEncoder.encode(password))

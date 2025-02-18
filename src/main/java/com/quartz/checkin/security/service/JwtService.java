@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -90,6 +91,7 @@ public class JwtService {
         return Jwts
                 .builder()
                 .subject(REFRESH_TOKEN_SUBJECT)
+                .claim("jti", UUID.randomUUID().toString())
                 .expiration(new Date(now.getTime() + REFRESH_TOKEN_EXPIRATION_PERIOD))
                 .signWith(key)
                 .compact();

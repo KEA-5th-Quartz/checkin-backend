@@ -5,6 +5,7 @@ import com.quartz.checkin.config.CacheConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache.ValueWrapper;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -30,5 +31,9 @@ public class LoginBlockCacheService {
 
     public void block(String key) {
         loginBlockCache.put(key, System.currentTimeMillis());
+    }
+
+    @CacheEvict(cacheNames = {CacheConfig.LOGIN_BLOCK_CACHE})
+    public void evict(String key) {
     }
 }

@@ -51,7 +51,9 @@ public class TokenBlacklistCache extends ConcurrentMapCache {
 
     @Override
     public void evict(Object key) {
-        cache.remove((String) key);
+        String k = (String) key;
+        log.info("토큰{{}}를 블랙리스트에서 제거합니다. ", k);
+        cache.remove(k);
     }
 
     @Override

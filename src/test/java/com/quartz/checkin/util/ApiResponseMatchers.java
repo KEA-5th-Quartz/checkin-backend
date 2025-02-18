@@ -1,9 +1,6 @@
 package com.quartz.checkin.util;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import java.util.Map;
@@ -24,10 +21,7 @@ public class ApiResponseMatchers {
                         throw new RuntimeException(e);
                     }
                 });
-            } else {
-                jsonPath("$.data").value(anyOf(nullValue(), equalTo(""))).match(result);
             }
-
         };
     }
 

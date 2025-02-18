@@ -5,13 +5,13 @@
 - TMS(Ticket Management System)을 개발합니다. 
 
 #### 서비스 배포 주소
-- 
+- https://kc.quartz-checkin.xyz
 
 #### 개발 기간
 - 팀 구성 및 기획
   2025.01.06 ~ 2025.01.19
 - 프로젝트 개발
-  2025.01.20 ~
+  2025.01.20 ~ 2025.02.18
 
   
 ## 🧑‍💻 개발자 소개
@@ -53,14 +53,33 @@
 
 ## 💻 주요 기능
 1. **대시보드**
-   - 내용
+   - 담당자별 티켓 현황 및 진행상태 조회
+     - <img width="1728" alt="image" src="https://github.com/user-attachments/assets/22b2db06-f56a-4b16-9dfb-9cbaaf1c49cb" />
+   - 전체 작업 진행률 모니터링
 
 2. **티켓 생성 및 관리**
-   - 내용
+   - 티켓 생성, 수정, 삭제 기능
+     - <img width="1507" alt="image" src="https://github.com/user-attachments/assets/43dab943-8957-4fbd-b64a-9c7f4d05a9e7" />
+     - <img width="1507" alt="image" src="https://github.com/user-attachments/assets/9fc4fda4-536f-4d86-8f62-5fb7a77e5e98" />
+     - <img width="1507" alt="image" src="https://github.com/user-attachments/assets/24336a85-3443-45fd-bbad-f2152d00ef2d" />
+   - 첨부파일 업로드/다운로드 지원
+     - <img width="1507" alt="image" src="https://github.com/user-attachments/assets/352c85e5-334c-4189-a567-55139c5a6634" />
+   - 댓글 작성 및 좋아요 기능
+     - <img width="1507" alt="image" src="https://github.com/user-attachments/assets/8f0c4bc9-0496-4ecc-9e23-bea3da3bdfe2" />
+   - 티켓 상태 관리 (완료 처리, 임시 삭제, 복구)
+   - 티켓 검색 및 필터링 (상태, 담당자, 카테고리, 우선순위)
+   - 휴지통 기능 (삭제된 티켓 관리)
 
 3. **템플릿 저장 및 사용**
-   - 내용
+   - 자주 사용하는 티켓 양식 템플릿 저장
+   - 템플릿 생성, 수정, 삭제 기능
+   - 템플릿 첨부파일 관리
+   - 개인별 템플릿 목록 조회
 
 4. **통계 조회**
-   - 내용
-     
+   - 담당자별 티켓 처리 현황
+     - <img width="1728" alt="image" src="https://github.com/user-attachments/assets/33a4ddaa-1d62-4f4f-b4c6-da40b2ad6e24" />
+   - 카테고리별 티켓 분포도
+     - <img width="1728" alt="image" src="https://github.com/user-attachments/assets/cc3c9575-90bd-48fb-8fc8-2875c8795e19" />
+   - 전체 작업 완료율 분석
+   - 진행 상태별 티켓 통계

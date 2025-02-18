@@ -4,8 +4,10 @@ import com.quartz.checkin.common.validator.ValidRole;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 @AllArgsConstructor
 public class RoleUpdateRequest {
 

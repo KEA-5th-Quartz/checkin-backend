@@ -5,6 +5,7 @@ import com.quartz.checkin.config.CacheConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache.ValueWrapper;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -25,4 +26,7 @@ public class TokenBlackListCacheService {
     public void addBlacklist(String key) {
         tokenBlacklistCache.put(key, System.currentTimeMillis());
     }
+
+    @CacheEvict(cacheNames = {CacheConfig.TOKEN_BLACKLIST_CACHE})
+    public void evict(String key) {}
 }

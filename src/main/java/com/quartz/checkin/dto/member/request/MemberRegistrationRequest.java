@@ -6,8 +6,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 @AllArgsConstructor
 public class MemberRegistrationRequest {
     @NotBlank(message = "사용자 이름은 필수 입력값입니다.")

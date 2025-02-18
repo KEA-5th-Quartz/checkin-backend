@@ -249,6 +249,26 @@ public class MemberIntegrationTest {
     }
 
     @Test
+    @DisplayName("로그인 실패 - 소프트 딜리트 된 회원은 로그인 불가")
+    public void loginFailsWhenUserIsSoftDeleted() throws Exception {
+
+        savedMember = registerMember(username, password, email, role);
+        savedMember.softDelete();
+
+        String loginRequestJson = String.format("""
+                    {
+                        "username": "%s",
+                        "password": "%s"
+                    }
+                """, username, password);
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequestJson))
+                .andExpect(errorResponse(ErrorCode.INVALID_USERNAME_OR_PASSWORD));
+    }
+
+    @Test
     @DisplayName("회원 로그아웃 성공")
     public void logoutSuccess() throws Exception {
 

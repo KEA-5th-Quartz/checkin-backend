@@ -409,7 +409,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 수정 성공")
     public void updateTicketSuccess() throws Exception {
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(ticketUpdateRequest)))
@@ -419,7 +419,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 수정 실패 - 담당이 아닌 담당자가 수정")
     public void updateTicketFailUnauthorizedManager() throws Exception {
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(ticketCreateRequest)))
@@ -434,7 +434,7 @@ public class TicketIntegrationTest {
         password = password.replaceAll("[\\s\"]", "");
 
         System.out.println(password);
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .with(authenticatedCustom(mockMvc, "user.a", password))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(ticketCreateRequest)))
@@ -445,7 +445,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 수정 실패 - 로그인 요구")
     public void updateTicketFailForbidden() throws Exception {
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(ticketCreateRequest)))
             .andExpect(status().isForbidden())
@@ -464,7 +464,7 @@ public class TicketIntegrationTest {
                 ticketUpdateRequest.getAttachmentIds()
         );
 
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(modifiedRequest)))
@@ -484,7 +484,7 @@ public class TicketIntegrationTest {
                 ticketUpdateRequest.getAttachmentIds()
         );
 
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(modifiedRequest)))
@@ -504,7 +504,7 @@ public class TicketIntegrationTest {
                 ticketUpdateRequest.getAttachmentIds()
         );
 
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(modifiedRequest)))
@@ -524,7 +524,7 @@ public class TicketIntegrationTest {
                 ticketUpdateRequest.getAttachmentIds()
         );
 
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(modifiedRequest)))
@@ -544,7 +544,7 @@ public class TicketIntegrationTest {
                 ticketUpdateRequest.getAttachmentIds()
         );
 
-        mockMvc.perform(put("/tickets/2")
+        mockMvc.perform(put("/tickets/{ticketId}", 2L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(modifiedRequest)))
@@ -555,7 +555,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 수정 실패 - 미존재 티켓")
     public void updateTicketFailNoTicket() throws Exception {
-        mockMvc.perform(put("/tickets/1000")
+        mockMvc.perform(put("/tickets/{ticketId}", 1000L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(ticketUpdateRequest)))
@@ -607,7 +607,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상세 조회 성공")
     public void getTicketDetailSuccess() throws Exception {
-        mockMvc.perform(get("/tickets/2")
+        mockMvc.perform(get("/tickets/{ticketId}", 2L)
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -618,7 +618,7 @@ public class TicketIntegrationTest {
         String password = getProperty("test.login.user").split(",")[1].split(":")[1].split("}")[0];
         password = password.replaceAll("[\\s\"]", "");
 
-        mockMvc.perform(get("/tickets/2")
+        mockMvc.perform(get("/tickets/{ticketId}", 2L)
                 .with(authenticatedCustom(mockMvc, "user.b", password)))
             .andExpect(status().isForbidden())
             .andExpect(errorResponse(ErrorCode.FORBIDDEN));
@@ -627,7 +627,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상세 조회 실패 - 미존재 티켓")
     public void getTicketDetailFailNoTicket() throws Exception {
-        mockMvc.perform(get("/tickets/1000")
+        mockMvc.perform(get("/tickets/{ticketId}", 1000L)
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isNotFound())
             .andExpect(errorResponse(ErrorCode.TICKET_NOT_FOUND));
@@ -644,7 +644,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 성공 - 상태 필터링")
     public void getTicketListSuccessFilterStatus() throws Exception {
-        mockMvc.perform(get("/tickets?statuses=IN_PROGRESS")
+        mockMvc.perform(get("/tickets")
+                .param("statuses", "IN_PROGRESS")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -652,7 +653,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 성공 - 사용자 필터링")
     public void getTicketListSuccessFilterUser() throws Exception {
-        mockMvc.perform(get("/tickets?username=user.a")
+        mockMvc.perform(get("/tickets")
+                .param("username", "user.a")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -660,7 +662,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 성공 - 카테고리 필터링")
     public void getTicketListSuccessFilterCategory() throws Exception {
-        mockMvc.perform(get("/tickets?categories=개발")
+        mockMvc.perform(get("/tickets")
+                .param("categories", "개발")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -668,7 +671,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 성공 - 중요도 필터링")
     public void getTicketListSuccessFilterPriority() throws Exception {
-        mockMvc.perform(get("/tickets?priorities=EMERGENCY")
+        mockMvc.perform(get("/tickets")
+                .param("priorities", "EMERGENCY")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -676,7 +680,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 성공 - 오늘 마감")
     public void getTicketListSuccessDueToday() throws Exception {
-        mockMvc.perform(get("/tickets?dueToday=true")
+        mockMvc.perform(get("/tickets")
+                .param("dueToday", "true")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -684,7 +689,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 성공 - 이번 주 마감")
     public void getTicketListSuccessDueThisWeek() throws Exception {
-        mockMvc.perform(get("/tickets?dueThisWeek=true")
+        mockMvc.perform(get("/tickets")
+                .param("dueThisWeek", "true")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -692,7 +698,10 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 성공 - 정렬")
     public void getTicketListSuccessSort() throws Exception {
-        mockMvc.perform(get("/tickets?page=1&size=20&sortByCreatedAt=asc")
+        mockMvc.perform(get("/tickets")
+                .param("page", "1")
+                .param("size", "20")
+                .param("sortByCreatedAt", "asc")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -719,7 +728,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 실패 - 페이지 번호 비유효")
     public void getTicketListFailInvalidPage() throws Exception {
-        mockMvc.perform(get("/tickets?page=0")
+        mockMvc.perform(get("/tickets")
+                .param("page", "0")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.INVALID_PAGE_NUMBER));
@@ -728,7 +738,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 실패 - 페이지 크기 비유효")
     public void getTicketListFailInvalidSize() throws Exception {
-        mockMvc.perform(get("/tickets?size=0")
+        mockMvc.perform(get("/tickets")
+                .param("size", "0")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.INVALID_PAGE_SIZE));
@@ -737,7 +748,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 실패 - 페이지 크기 비유효(최대)")
     public void getTicketListFailInvalidSizeMax() throws Exception {
-        mockMvc.perform(get("/tickets?size=101")
+        mockMvc.perform(get("/tickets")
+                .param("size", "101")
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.INVALID_PAGE_SIZE));
@@ -746,25 +758,18 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("전체 담당자 티켓 목록 조회 실패 - 유효하지 않은 필터값")
     public void getTicketListFailInvalidFilter() throws Exception {
-        mockMvc.perform(get("/tickets?statuses=INVALID_STATUS")
+        mockMvc.perform(get("/tickets")
+                        .param("statuses", "INVALID_STATUS")
                         .with(authenticatedAsManager(mockMvc)))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(errorResponse(ErrorCode.METHOD_NOT_ALLOWED));
     }
 
     @Test
-    @DisplayName("전체 담당자 티켓 목록 조회 실패 - 유효하지 않은 정렬 방향")
-    public void getTicketListFailInvalidSortDirection() throws Exception {
-        mockMvc.perform(get("/tickets?sortByCreatedAt=INVALID_DIRECTION")
-                        .with(authenticatedAsManager(mockMvc)))
-                .andExpect(status().isBadRequest())
-                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
-    }
-
-    @Test
     @DisplayName("전체 담당자 티켓 목록 조회 실패 - 유효하지 않은 정렬 기준")
-    public void getTicketListFailInvalidSortCriteria() throws Exception {
-        mockMvc.perform(get("/tickets?sortByInvalidField=asc")
+    public void getTicketListFailInvalidSortDirection() throws Exception {
+        mockMvc.perform(get("/tickets")
+                        .param("sortByCreatedAt", "INVALID_DIRECTION")
                         .with(authenticatedAsManager(mockMvc)))
                 .andExpect(status().isBadRequest())
                 .andExpect(errorResponse(ErrorCode.INVALID_DATA));
@@ -781,7 +786,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 성공 - 상태 필터링")
     public void getMyTicketListSuccessFilterStatus() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?statuses=IN_PROGRESS")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("statuses", "IN_PROGRESS")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -789,7 +795,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 성공 - 사용자 필터링")
     public void getMyTicketListSuccessFilterUser() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?username=user.a")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("username", "user.a")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -797,7 +804,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 성공 - 카테고리 필터링")
     public void getMyTicketListSuccessFilterCategory() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?categories=개발")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("categories", "개발")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -805,7 +813,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 성공 - 중요도 필터링")
     public void getMyTicketListSuccessFilterPriority() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?priorities=EMERGENCY")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("priorities", "EMERGENCY")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -813,7 +822,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 성공 - 오늘 마감")
     public void getMyTicketListSuccessDueToday() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?dueToday=true")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("dueToday", "true")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -821,7 +831,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 성공 - 이번 주 마감")
     public void getMyTicketListSuccessDueThisWeek() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?dueThisWeek=true")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("dueThisWeek", "true")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -829,7 +840,10 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 성공 - 정렬")
     public void getMyTicketListSuccessSort() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?page=1&size=20&sortByDueDate=asc")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("page", "1")
+                .param("size", "20")
+                .param("sortByDueDate", "asc")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -845,25 +859,18 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 실패 - 유효하지 않은 필터값")
     public void getMyTicketListFailInvalidFilter() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?statuses=INVALID_STATUS")
+        mockMvc.perform(get("/tickets/my-tickets")
+                        .param("statuses", "INVALID_STATUS")
                         .with(authenticatedAsUser(mockMvc)))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(errorResponse(ErrorCode.METHOD_NOT_ALLOWED));
     }
 
     @Test
-    @DisplayName("사용자 티켓 목록 조회 실패 - 유효하지 않은 정렬 방향")
-    public void getMyTicketListFailInvalidSortDirection() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?sortByCreatedAt=INVALID_DIRECTION")
-                        .with(authenticatedAsUser(mockMvc)))
-                .andExpect(status().isBadRequest())
-                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
-    }
-
-    @Test
     @DisplayName("사용자 티켓 목록 조회 실패 - 유효하지 않은 정렬 기준")
-    public void getMyTicketListFailInvalidSortCriteria() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?sortByInvalidField=asc")
+    public void getMyTicketListFailInvalidSortDirection() throws Exception {
+        mockMvc.perform(get("/tickets/my-tickets")
+                        .param("sortByCreatedAt", "INVALID_DIRECTION")
                         .with(authenticatedAsUser(mockMvc)))
                 .andExpect(status().isBadRequest())
                 .andExpect(errorResponse(ErrorCode.INVALID_DATA));
@@ -872,7 +879,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 실패 - 비유효 페이지 번호")
     public void getMyTicketListFailInvalidPage() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?page=0")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("page", "0")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.INVALID_PAGE_NUMBER));
@@ -881,7 +889,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 실패 - 비유효 페이지 크기")
     public void getMyTicketListFailInvalidSize() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?size=0")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("size", "0")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.INVALID_PAGE_SIZE));
@@ -890,7 +899,8 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("사용자 티켓 목록 조회 실패 - 비유효 페이지 크기(최대)")
     public void getMyTicketListFailInvalidSizeMax() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?size=101")
+        mockMvc.perform(get("/tickets/my-tickets")
+                .param("size", "101")
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.INVALID_PAGE_SIZE));
@@ -899,7 +909,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상태 완료로 변경 성공")
     public void closeTicketSuccess() throws Exception {
-        mockMvc.perform(patch("/tickets/1/close")
+        mockMvc.perform(patch("/tickets/{ticketId}/close", 1L)
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isOk());
     }
@@ -907,7 +917,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상태 완료로 변경 실패 - 티켓이 이미 완료됨")
     public void closeTicketFailAlreadyClosed() throws Exception {
-        mockMvc.perform(patch("/tickets/88/close")
+        mockMvc.perform(patch("/tickets/{ticketId}/close", 88L)
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.CANNOT_CHANGE_COMPLETED_TICKET));
@@ -916,7 +926,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상태 완료로 변경 실패 - 접근 권한 누락")
     public void closeTicketFailUnauthorized() throws Exception {
-        mockMvc.perform(patch("/tickets/2/close"))
+        mockMvc.perform(patch("/tickets/{ticketId}/close", 2L))
             .andExpect(status().isForbidden())
             .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
     }
@@ -924,7 +934,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상태 완료로 변경 실패 - 담당자 불일치")
     public void closeTicketFailMismacheddManager() throws Exception {
-        mockMvc.perform(patch("/tickets/2/close")
+        mockMvc.perform(patch("/tickets/{ticketId}/close", 2L)
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.INVALID_TICKET_MANAGER));
@@ -933,7 +943,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상태 완료로 변경 실패 - 접근 권한 누락(사용자)")
     public void closeTicketFailUnauthorizedUser() throws Exception {
-        mockMvc.perform(patch("/tickets/2/close")
+        mockMvc.perform(patch("/tickets/{ticketId}/close", 2L)
                 .with(authenticatedAsUser(mockMvc)))
             .andExpect(status().isForbidden())
             .andExpect(errorResponse(ErrorCode.FORBIDDEN));
@@ -942,7 +952,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상태 완료로 변경 실패 - 티켓이 진행중이 아님")
     public void closeTicketFailNotInProgress() throws Exception {
-        mockMvc.perform(patch("/tickets/84/close")
+        mockMvc.perform(patch("/tickets/{ticketId}/close", 84L)
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isBadRequest())
             .andExpect(errorResponse(ErrorCode.INVALID_TICKET_STATUS));
@@ -951,7 +961,7 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 상태 완료로 변경 실패 - 미존재 티켓")
     public void closeTicketFailNoTicket() throws Exception {
-        mockMvc.perform(patch("/tickets/1000/close")
+        mockMvc.perform(patch("/tickets/{ticketId}/close", 1000L)
                 .with(authenticatedAsManager(mockMvc)))
             .andExpect(status().isNotFound())
             .andExpect(errorResponse(ErrorCode.TICKET_NOT_FOUND));
@@ -963,7 +973,7 @@ public class TicketIntegrationTest {
         FirstCategoryPatchRequest firstCategoryPatchRequest = new FirstCategoryPatchRequest();
         setFirstCategoryPatchRequest(firstCategoryPatchRequest, "LB");
 
-        mockMvc.perform(patch("/tickets/1/category")
+        mockMvc.perform(patch("/tickets/{ticketId}/category", 1L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(firstCategoryPatchRequest)))
@@ -976,7 +986,7 @@ public class TicketIntegrationTest {
         FirstCategoryPatchRequest firstCategoryPatchRequest = new FirstCategoryPatchRequest();
         setFirstCategoryPatchRequest(firstCategoryPatchRequest, "LB");
 
-        mockMvc.perform(patch("/tickets/2/category")
+        mockMvc.perform(patch("/tickets/{ticketId}/category", 2L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(firstCategoryPatchRequest)))
             .andExpect(status().isForbidden())
@@ -989,7 +999,7 @@ public class TicketIntegrationTest {
         FirstCategoryPatchRequest firstCategoryPatchRequest = new FirstCategoryPatchRequest();
         setFirstCategoryPatchRequest(firstCategoryPatchRequest, "LB");
 
-        mockMvc.perform(patch("/tickets/2/category")
+        mockMvc.perform(patch("/tickets/{ticketId}/category", 2L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(firstCategoryPatchRequest)))
@@ -1003,7 +1013,7 @@ public class TicketIntegrationTest {
         FirstCategoryPatchRequest firstCategoryPatchRequest = new FirstCategoryPatchRequest();
         setFirstCategoryPatchRequest(firstCategoryPatchRequest, "LB");
 
-        mockMvc.perform(patch("/tickets/1000/category")
+        mockMvc.perform(patch("/tickets/{ticketId}/category", 1000L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(firstCategoryPatchRequest)))
@@ -1017,7 +1027,7 @@ public class TicketIntegrationTest {
         FirstCategoryPatchRequest firstCategoryPatchRequest = new FirstCategoryPatchRequest();
         setFirstCategoryPatchRequest(firstCategoryPatchRequest, "미존재");
 
-        mockMvc.perform(patch("/tickets/1/category")
+        mockMvc.perform(patch("/tickets/{ticketId}/category", 1L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(firstCategoryPatchRequest)))
@@ -1031,7 +1041,7 @@ public class TicketIntegrationTest {
         FirstCategoryPatchRequest firstCategoryPatchRequest = new FirstCategoryPatchRequest();
         setFirstCategoryPatchRequest(firstCategoryPatchRequest, "");
 
-        mockMvc.perform(patch("/tickets/2/category")
+        mockMvc.perform(patch("/tickets/{ticketId}/category", 2L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(firstCategoryPatchRequest)))
@@ -1045,7 +1055,7 @@ public class TicketIntegrationTest {
         SecondCategoryPatchRequest secondCategoryPatchRequest = new SecondCategoryPatchRequest();
         setSecondCategoryPatchRequest(secondCategoryPatchRequest, "기타");
 
-        mockMvc.perform(patch("/tickets/1/category/6")
+        mockMvc.perform(patch("/tickets/{ticketId}/category/{fisrtCategoryId}", 1L, 6L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(secondCategoryPatchRequest)))
@@ -1058,7 +1068,7 @@ public class TicketIntegrationTest {
         SecondCategoryPatchRequest secondCategoryPatchRequest = new SecondCategoryPatchRequest();
         setSecondCategoryPatchRequest(secondCategoryPatchRequest, "변경");
 
-        mockMvc.perform(patch("/tickets/2/category/6")
+        mockMvc.perform(patch("/tickets/{ticketId}/category/{fisrtCategoryId}", 2L, 6L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(secondCategoryPatchRequest)))
             .andExpect(status().isForbidden())
@@ -1071,7 +1081,7 @@ public class TicketIntegrationTest {
         SecondCategoryPatchRequest secondCategoryPatchRequest = new SecondCategoryPatchRequest();
         setSecondCategoryPatchRequest(secondCategoryPatchRequest, "변경");
 
-        mockMvc.perform(patch("/tickets/1/category/6")
+        mockMvc.perform(patch("/tickets/{ticketId}/category/{fisrtCategoryId}", 1L, 6L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(secondCategoryPatchRequest)))
@@ -1085,7 +1095,7 @@ public class TicketIntegrationTest {
         SecondCategoryPatchRequest secondCategoryPatchRequest = new SecondCategoryPatchRequest();
         setSecondCategoryPatchRequest(secondCategoryPatchRequest, "변경");
 
-        mockMvc.perform(patch("/tickets/1000/category/6")
+        mockMvc.perform(patch("/tickets/{ticketId}/category/{fisrtCategoryId}", 1000L, 6L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(secondCategoryPatchRequest)))
@@ -1099,7 +1109,7 @@ public class TicketIntegrationTest {
         SecondCategoryPatchRequest secondCategoryPatchRequest = new SecondCategoryPatchRequest();
         setSecondCategoryPatchRequest(secondCategoryPatchRequest, "미존재");
 
-        mockMvc.perform(patch("/tickets/1/category/6")
+        mockMvc.perform(patch("/tickets/{ticketId}/category/{fisrtCategoryId}", 1L, 6L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(secondCategoryPatchRequest)))
@@ -1113,7 +1123,7 @@ public class TicketIntegrationTest {
         SecondCategoryPatchRequest secondCategoryPatchRequest = new SecondCategoryPatchRequest();
         setSecondCategoryPatchRequest(secondCategoryPatchRequest, "");
 
-        mockMvc.perform(patch("/tickets/1/category/6")
+        mockMvc.perform(patch("/tickets/{ticketId}/category/{fisrtCategoryId}", 1L, 6L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(secondCategoryPatchRequest)))
@@ -1127,7 +1137,7 @@ public class TicketIntegrationTest {
         SecondCategoryPatchRequest secondCategoryPatchRequest = new SecondCategoryPatchRequest();
         setSecondCategoryPatchRequest(secondCategoryPatchRequest, "변경");
 
-        mockMvc.perform(patch("/tickets/1/category/100")
+        mockMvc.perform(patch("/tickets/{ticketId}/category/{fisrtCategoryId}", 1L, 100L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(secondCategoryPatchRequest)))
@@ -1138,8 +1148,11 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 담당자 변경 성공 - 담당자 없음")
     public void reassignManagerSuccess() throws Exception {
-        String request = "{\n" + "  \"manager\": \"king.hj\"\n" + "}";
-        mockMvc.perform(patch("/tickets/84/assign")
+        String request = """
+                {
+                  "manager": "king.hj"
+                }""";
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 84L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
@@ -1149,8 +1162,11 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 담당자 변경 성공 - 다른 담당자에게 넘기기")
     public void reassignManagerSuccessInProgress() throws Exception {
-        String request = "{\n" + "  \"manager\": \"scarlett.kim\"\n" + "}";
-        mockMvc.perform(patch("/tickets/1/assign")
+        String request = """
+                {
+                  "manager": "scarlett.kim"
+                }""";
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 1L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
@@ -1160,8 +1176,11 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 담당자 변경 실패 - 접근 권한 누락")
     public void reassignManagerFailUnauthorized() throws Exception {
-        String request = "{\n" + "  \"manager\": \"king.hj\"\n" + "}";
-        mockMvc.perform(patch("/tickets/84/assign")
+        String request = """
+                {
+                  "manager": "king.hj"
+                }""";
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 84L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
             .andExpect(status().isForbidden())
@@ -1171,8 +1190,11 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 담당자 변경 실패 - 접근 권한 누락(사용자)")
     public void reassignManagerFailUnauthorizedUser() throws Exception {
-        String request = "{\n" + "  \"manager\": \"king.hj\"\n" + "}";
-        mockMvc.perform(patch("/tickets/84/assign")
+        String request = """
+                {
+                  "manager": "king.hj"
+                }""";
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 84L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
@@ -1183,8 +1205,11 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 담당자 변경 실패 - 미존재 티켓")
     public void reassignManagerFailNoTicket() throws Exception {
-        String request = "{\n" + "  \"manager\": \"king.hj\"\n" + "}";
-        mockMvc.perform(patch("/tickets/1000/assign")
+        String request = """
+                {
+                  "manager": "king.hj"
+                }""";
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 1000L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
@@ -1195,8 +1220,11 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 담당자 변경 실패 - 미존재 담당자")
     public void reassignManagerFailManagerNotFound() throws Exception {
-        String request = "{\n" + "  \"manager\": \"no.one\"\n" + "}";
-        mockMvc.perform(patch("/tickets/84/assign")
+        String request = """
+                {
+                  "manager": "no.one"
+                }""";
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 84L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
@@ -1208,7 +1236,7 @@ public class TicketIntegrationTest {
     @DisplayName("티켓 담당자 변경 실패 - 담당자 누락")
     public void reassignManagerFailNoManagerInput() throws Exception {
         String request = "";
-        mockMvc.perform(patch("/tickets/84/assign")
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 84L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
@@ -1219,8 +1247,11 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 담당자 변경 실패 - 진행 중인 티켓 변경 시도")
     public void reassignManagerFailInProgress() throws Exception {
-        String request = "{\n" + "  \"manager\": \"king.hj\"\n" + "}";
-        mockMvc.perform(patch("/tickets/2/assign")
+        String request = """
+                {
+                  "manager": "king.hj"
+                }""";
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 2L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
@@ -1231,8 +1262,11 @@ public class TicketIntegrationTest {
     @Test
     @DisplayName("티켓 담당자 변경 실패 - 담당자 본인을 할당")
     public void reassignManagerFailSelf() throws Exception {
-        String request = "{\n" + "  \"manager\": \"king.hj\"\n" + "}";
-        mockMvc.perform(patch("/tickets/1/assign")
+        String request = """
+                {
+                  "manager": "king.hj"
+                }""";
+        mockMvc.perform(patch("/tickets/{ticketId}/assign", 1L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
@@ -1246,7 +1280,7 @@ public class TicketIntegrationTest {
         PriorityUpdateRequest priorityPatchRequest = new PriorityUpdateRequest();
         setPriorityUpdateRequest(priorityPatchRequest, Priority.EMERGENCY);
 
-        mockMvc.perform(patch("/tickets/1/priority")
+        mockMvc.perform(patch("/tickets/{ticketId}/priority", 1L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(priorityPatchRequest)))
@@ -1259,7 +1293,7 @@ public class TicketIntegrationTest {
         PriorityUpdateRequest priorityPatchRequest = new PriorityUpdateRequest();
         setPriorityUpdateRequest(priorityPatchRequest, Priority.EMERGENCY);
 
-        mockMvc.perform(patch("/tickets/1/priority")
+        mockMvc.perform(patch("/tickets/{ticketId}/priority", 1L)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(priorityPatchRequest)))
             .andExpect(status().isForbidden())
@@ -1272,7 +1306,7 @@ public class TicketIntegrationTest {
         PriorityUpdateRequest priorityPatchRequest = new PriorityUpdateRequest();
         setPriorityUpdateRequest(priorityPatchRequest, Priority.EMERGENCY);
 
-        mockMvc.perform(patch("/tickets/1/priority")
+        mockMvc.perform(patch("/tickets/{ticketId}/priority", 1L)
                 .with(authenticatedAsUser(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(priorityPatchRequest)))
@@ -1286,7 +1320,7 @@ public class TicketIntegrationTest {
         PriorityUpdateRequest priorityPatchRequest = new PriorityUpdateRequest();
         setPriorityUpdateRequest(priorityPatchRequest, Priority.EMERGENCY);
 
-        mockMvc.perform(patch("/tickets/1000/priority")
+        mockMvc.perform(patch("/tickets/{ticketId}/priority", 1000L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(priorityPatchRequest)))
@@ -1300,7 +1334,7 @@ public class TicketIntegrationTest {
         PriorityUpdateRequest priorityPatchRequest = new PriorityUpdateRequest();
         setPriorityUpdateRequest(priorityPatchRequest, null);
 
-        mockMvc.perform(patch("/tickets/1/priority")
+        mockMvc.perform(patch("/tickets/{ticketId}/priority", 1L)
                 .with(authenticatedAsManager(mockMvc))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(priorityPatchRequest)))

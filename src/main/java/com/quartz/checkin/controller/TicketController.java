@@ -96,7 +96,7 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.3 line 35", description = "사용자가 티켓 수정")
     @PutMapping("/{ticketId}")
     public ApiResponse<Void> updateTicket(
-            @PathVariable Long ticketId,
+            @PathVariable("ticketId") Long ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid TicketUpdateRequest request) {
 
@@ -121,7 +121,7 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.3 line 40", description = "티켓 상세 조회")
     @GetMapping("/{ticketId}")
     public ApiResponse<TicketDetailResponse> getTicketDetail(
-            @PathVariable Long ticketId,
+            @PathVariable("ticketId") Long ticketId,
             @AuthenticationPrincipal CustomUser user) {
 
         TicketDetailResponse response = ticketQueryService.getTicketDetail(user.getId(), ticketId);
@@ -132,15 +132,15 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.3 line 41", description = "담당자가 전체 티켓 조회")
     @GetMapping
     public ApiResponse<ManagerTicketListResponse> getTickets(
-            @RequestParam(required = false) List<Status> statuses,
-            @RequestParam(required = false) List<String> usernames,
-            @RequestParam(required = false) List<String> categories,
-            @RequestParam(required = false) List<Priority> priorities,
-            @RequestParam(required = false) Boolean dueToday,
-            @RequestParam(required = false) Boolean dueThisWeek,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
+            @RequestParam(required = false, name = "statuses") List<Status> statuses,
+            @RequestParam(required = false, name = "usernames") List<String> usernames,
+            @RequestParam(required = false, name = "categories") List<String> categories,
+            @RequestParam(required = false, name = "priorities") List<Priority> priorities,
+            @RequestParam(required = false, name = "dueToday") Boolean dueToday,
+            @RequestParam(required = false, name = "dueThisWeek") Boolean dueThisWeek,
+            @RequestParam(defaultValue = "1", name = "page") int page,
+            @RequestParam(defaultValue = "20", name = "size") int size,
+            @RequestParam(defaultValue = "asc", name = "sortByCreatedAt") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         ManagerTicketListResponse response = ticketQueryService.getManagerTickets(
@@ -179,15 +179,15 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.3 line 43", description = "사용자 전체 티켓 조회")
     @GetMapping("/my-tickets")
     public ApiResponse<UserTicketListResponse> getUserTickets(
-            @RequestParam(required = false) List<Status> statuses,
-            @RequestParam(required = false) List<String> usernames,
-            @RequestParam(required = false) List<String> categories,
-            @RequestParam(required = false) List<Priority> priorities,
-            @RequestParam(required = false) Boolean dueToday,
-            @RequestParam(required = false) Boolean dueThisWeek,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "asc") String sortByCreatedAt,
+            @RequestParam(required = false, name = "statuses") List<Status> statuses,
+            @RequestParam(required = false, name = "usernames") List<String> usernames,
+            @RequestParam(required = false, name = "categories") List<String> categories,
+            @RequestParam(required = false, name = "priorities") List<Priority> priorities,
+            @RequestParam(required = false, name = "dueToday") Boolean dueToday,
+            @RequestParam(required = false, name = "dueThisWeek") Boolean dueThisWeek,
+            @RequestParam(defaultValue = "1", name = "page") int page,
+            @RequestParam(defaultValue = "20", name = "size") int size,
+            @RequestParam(defaultValue = "asc", name = "sortByCreatedAt") String sortByCreatedAt,
             @AuthenticationPrincipal CustomUser user) {
 
         UserTicketListResponse response = ticketQueryService.getUserTickets(
@@ -216,7 +216,7 @@ public class TicketController {
     @Operation(summary = "API 명세서 v0.3 line 50", description = "중요도 변경")
     @PatchMapping("/{ticketId}/priority")
     public ApiResponse<Void> updateTicketPriority(
-            @PathVariable Long ticketId,
+            @PathVariable("ticketId") Long ticketId,
             @AuthenticationPrincipal CustomUser user,
             @RequestBody @Valid PriorityUpdateRequest request) {
 

@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 // 생성과 업데이트 처리
 @Getter
+@NoArgsConstructor
 @AllArgsConstructor
 public class TemplateSaveRequest {
     @NotBlank(message = "제목은 필수 입력값입니다.")

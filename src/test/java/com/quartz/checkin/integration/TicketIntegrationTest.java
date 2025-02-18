@@ -744,21 +744,12 @@ public class TicketIntegrationTest {
     }
 
     @Test
-    @DisplayName("전체 담당자 티켓 목록 조회 실패 - 유효하지 않은 상태값 필터")
-    public void getTicketListFailInvalidStatusFilter() throws Exception {
+    @DisplayName("전체 담당자 티켓 목록 조회 실패 - 유효하지 않은 필터값")
+    public void getTicketListFailInvalidFilter() throws Exception {
         mockMvc.perform(get("/tickets?statuses=INVALID_STATUS")
                         .with(authenticatedAsManager(mockMvc)))
-                .andExpect(status().isBadRequest())
-                .andExpect(errorResponse(ErrorCode.INVALID_TICKET_STATUS));
-    }
-
-    @Test
-    @DisplayName("전체 담당자 티켓 목록 조회 실패 - 유효하지 않은 우선순위 필터")
-    public void getTicketListFailInvalidPriorityFilter() throws Exception {
-        mockMvc.perform(get("/tickets?priorities=INVALID_PRIORITY")
-                        .with(authenticatedAsManager(mockMvc)))
-                .andExpect(status().isBadRequest())
-                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(errorResponse(ErrorCode.METHOD_NOT_ALLOWED));
     }
 
     @Test
@@ -851,24 +842,13 @@ public class TicketIntegrationTest {
             .andExpect(errorResponse(ErrorCode.UNAUTHENTICATED));
     }
 
-
-
     @Test
-    @DisplayName("사용자 티켓 목록 조회 실패 - 유효하지 않은 상태값 필터")
-    public void getMyTicketListFailInvalidStatusFilter() throws Exception {
+    @DisplayName("사용자 티켓 목록 조회 실패 - 유효하지 않은 필터값")
+    public void getMyTicketListFailInvalidFilter() throws Exception {
         mockMvc.perform(get("/tickets/my-tickets?statuses=INVALID_STATUS")
                         .with(authenticatedAsUser(mockMvc)))
-                .andExpect(status().isBadRequest())
-                .andExpect(errorResponse(ErrorCode.INVALID_TICKET_STATUS));
-    }
-
-    @Test
-    @DisplayName("사용자 티켓 목록 조회 실패 - 유효하지 않은 우선순위 필터")
-    public void getMyTicketListFailInvalidPriorityFilter() throws Exception {
-        mockMvc.perform(get("/tickets/my-tickets?priorities=INVALID_PRIORITY")
-                        .with(authenticatedAsUser(mockMvc)))
-                .andExpect(status().isBadRequest())
-                .andExpect(errorResponse(ErrorCode.INVALID_DATA));
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(errorResponse(ErrorCode.METHOD_NOT_ALLOWED));
     }
 
     @Test

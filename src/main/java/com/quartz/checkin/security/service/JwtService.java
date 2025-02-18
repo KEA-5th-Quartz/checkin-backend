@@ -31,8 +31,7 @@ public class JwtService {
     private static final String ACCESS_TOKEN_SUBJECT = "AccessToken";
     private static final String PASSWORD_RESET_TOKEN_SUBJECT = "PasswordReset";
     private static final String REFRESH_TOKEN_SUBJECT = "RefreshToken";
-    private static final Long ACCESS_TOKEN_EXPIRATION_PERIOD = 86400000L;
-    // 1시간 private static final Long ACCESS_TOKEN_EXPIRATION_PERIOD = 3600000L;
+    private static final Long ACCESS_TOKEN_EXPIRATION_PERIOD = 3600000L;
     private static final Long PASSWORD_RESET_TOKEN_EXPIRATION_PERIOD = 300000L;
     private static final Long REFRESH_TOKEN_EXPIRATION_PERIOD = 604800000L;
     private static final int REFRESH_TOKEN_COOKIE_MAX_AGE = 604800;
